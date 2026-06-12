@@ -44,4 +44,26 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   );
 });
 
-export { registerCandidate, verifyEmail, loginUser, refreshAccessToken };
+const logoutUser = asyncHandler(async (req, res) => {
+  const result = await authService.logoutUser(
+    req.user.id,
+    req.body.refreshToken,
+  );
+
+  return res.status(200).json(new ApiResponse(200, result.message));
+});
+
+const logoutAllSessions = asyncHandler(async (req, res) => {
+  const result = await authService.logoutAllSessions(req.user.id);
+
+  return res.status(200).json(new ApiResponse(200, result.message));
+});
+
+export {
+  registerCandidate,
+  verifyEmail,
+  loginUser,
+  refreshAccessToken,
+  logoutUser,
+  logoutAllSessions,
+};

@@ -10,12 +10,15 @@ import {
   registerSchema,
   loginSchema,
   refreshTokenSchema,
+  logoutSchema,
 } from "./auth.validation.js";
 import {
   registerCandidate,
   verifyEmail,
   loginUser,
   refreshAccessToken,
+  logoutUser,
+  logoutAllSessions,
 } from "./auth.controller.js";
 
 const router = express.Router();
@@ -33,5 +36,9 @@ router.get("/me", authenticate, (req, res) => {
     .status(200)
     .json(new ApiResponse(200, "Current user fetched successfully", req.user));
 });
+
+router.post("/logout", authenticate, validate(logoutSchema), logoutUser);
+
+router.post("/logout-all", authenticate, logoutAllSessions);
 
 export default router;

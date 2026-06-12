@@ -15,6 +15,33 @@ const VERIFICATION_TOKEN_EXPIRY_HOURS =
 
 const REFRESH_TOKEN_EXPIRY_DAYS = Number(process.env.REFRESH_TOKEN_EXPIRY) || 7;
 
+const logoutAllSessions = async (userId) => {
+  await RefreshToken.deleteMany({
+    userId,
+  });
+
+  return {
+    message: "Logged out from all devices successfully",
+  };
+};
+
+const logoutUser = async (userId, refreshToken) => {
+  const tokenHash = hashToken(refreshToken);
+
+  const deletedToken = await RefreshToken.findOneAndDelete({
+    userId,
+    tokenHash,
+  });
+
+  if (!deletedToken) {
+    throw new ApiError(404, "Session not found");
+  }
+
+  return {
+    message: "Logged out successfully",
+  };
+};
+
 const createRefreshToken = async (user) => {
   const payload = {
     sub: user._id.toString(),
@@ -209,4 +236,11 @@ const registerCandidate = async ({ username, email, password }) => {
   };
 };
 
-export { registerCandidate, verifyEmail, loginUser, refreshAccessToken };
+export {
+  registerCandidate,
+  verifyEmail,
+  loginUser,
+  refreshAccessToken,
+  logoutUser,
+  logoutAllSessions,
+};
