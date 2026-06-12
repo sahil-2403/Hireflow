@@ -3,6 +3,18 @@ import ApiResponse from "../../shared/responses/ApiResponse.js";
 
 import * as authService from "./auth.service.js";
 
+const loginUser = asyncHandler(async (req, res) => {
+  const result = await authService.loginUser(req.body);
+
+  return res.status(200).json(
+    new ApiResponse(200, result.message, {
+      user: result.user,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    }),
+  );
+});
+
 const verifyEmail = asyncHandler(async (req, res) => {
   const result = await authService.verifyEmail(req.params.token);
 
@@ -21,4 +33,15 @@ const registerCandidate = asyncHandler(async (req, res) => {
   );
 });
 
-export { registerCandidate, verifyEmail };
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const result = await authService.refreshAccessToken(req.body.refreshToken);
+
+  return res.status(200).json(
+    new ApiResponse(200, result.message, {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    }),
+  );
+});
+
+export { registerCandidate, verifyEmail, loginUser, refreshAccessToken };

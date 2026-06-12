@@ -3,6 +3,113 @@ import EmailVerificationToken from "./emailVerificationToken.model.js";
 import ApiError from "../../shared/errors/ApiError.js";
 import { ROLES } from "../../config/constants.js";
 import { generateRandomToken, hashToken } from "../../shared/utils/token.js";
+import RefreshToken from "./refreshToken.model.js";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from "../../shared/utils/jwt.js";
+
+const VERIFICATION_TOKEN_EXPIRY_HOURS =
+  Number(process.env.EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS) || 24;
+
+const REFRESH_TOKEN_EXPIRY_DAYS = Number(process.env.REFRESH_TOKEN_EXPIRY) || 7;
+
+const createRefreshToken = async (user) => {
+  const payload = {
+    sub: user._id.toString(),
+    role: user.role,
+  };
+
+  const refreshToken = generateRefreshToken(payload);
+
+  await RefreshToken.create({
+    userId: user._id,
+    tokenHash: hashToken(refreshToken),
+    expiresAt: new Date(
+      Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+    ),
+  });
+
+  return refreshToken;
+};
+
+const refreshAccessToken = async (refreshToken) => {
+  const decoded = verifyRefreshToken(refreshToken);
+
+  const user = await User.findById(decoded.sub);
+
+  if (!user) {
+    throw new ApiError(401, "Invalid refresh token");
+  }
+
+  const tokenHash = hashToken(refreshToken);
+
+  const storedToken = await RefreshToken.findOne({
+    userId: user._id,
+    tokenHash,
+    expiresAt: { $gt: new Date() },
+  });
+
+  if (!storedToken) {
+    throw new ApiError(401, "Invalid or expired refresh token");
+  }
+
+  await RefreshToken.deleteOne({
+    _id: storedToken._id,
+  });
+
+  const accessToken = generateAccessToken({
+    sub: user._id.toString(),
+    role: user.role,
+  });
+
+  const newRefreshToken = await createRefreshToken(user);
+
+  return {
+    accessToken,
+    refreshToken: newRefreshToken,
+    message: "Token refreshed successfully",
+  };
+};
+
+const loginUser = async ({ email, password }) => {
+  const user = await User.findOne({ email }).select("+password");
+
+  if (!user) {
+    throw new ApiError(401, "Invalid email or password");
+  }
+
+  if (!user.isEmailVerified) {
+    throw new ApiError(403, "Please verify your email before logging in");
+  }
+
+  const isPasswordValid = await user.comparePassword(password);
+
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid email or password");
+  }
+
+  const payload = {
+    sub: user._id.toString(),
+    role: user.role,
+  };
+
+  const accessToken = generateAccessToken(payload);
+  const refreshToken = await createRefreshToken(user);
+
+  return {
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    },
+    accessToken,
+    refreshToken,
+    message: "Login successful",
+  };
+};
 
 const verifyEmail = async (token) => {
   const tokenHash = hashToken(token);
@@ -39,9 +146,6 @@ const verifyEmail = async (token) => {
     message: "Email verified successfully",
   };
 };
-
-const VERIFICATION_TOKEN_EXPIRY_HOURS =
-  Number(process.env.EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS) || 24;
 
 const createEmailVerificationToken = async (userId) => {
   await EmailVerificationToken.deleteMany({ userId });
@@ -105,4 +209,4 @@ const registerCandidate = async ({ username, email, password }) => {
   };
 };
 
-export { registerCandidate, verifyEmail };
+export { registerCandidate, verifyEmail, loginUser, refreshAccessToken };
