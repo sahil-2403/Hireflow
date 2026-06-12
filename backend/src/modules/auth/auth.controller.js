@@ -1,0 +1,24 @@
+import asyncHandler from "../../shared/utils/asyncHandler.js";
+import ApiResponse from "../../shared/responses/ApiResponse.js";
+
+import * as authService from "./auth.service.js";
+
+const verifyEmail = asyncHandler(async (req, res) => {
+  const result = await authService.verifyEmail(req.params.token);
+
+  return res.status(200).json(new ApiResponse(200, result.message));
+});
+
+const registerCandidate = asyncHandler(async (req, res) => {
+  const result = await authService.registerCandidate(req.body);
+
+  return res.status(201).json(
+    new ApiResponse(201, result.message, {
+      userId: result.userId,
+      email: result.email,
+      verificationUrl: result.verificationUrl,
+    }),
+  );
+});
+
+export { registerCandidate, verifyEmail };

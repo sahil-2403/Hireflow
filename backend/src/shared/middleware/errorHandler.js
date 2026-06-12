@@ -6,10 +6,10 @@ const errorHandler = (err, req, res, next) => {
       success: false,
       statusCode: err.statusCode,
       message: err.message,
+      errors: err.errors,
     });
   }
 
-  // Unexpected errors — don't leak details in production
   console.error("Unexpected error:", err);
 
   return res.status(500).json({

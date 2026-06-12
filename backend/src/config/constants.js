@@ -1,39 +1,39 @@
-export const ROLES = {
-  COMPANY_OWNER: "COMPANY_OWNER",
-  RECRUITER: "RECRUITER",
-  CANDIDATE: "CANDIDATE",
-};
+export const ROLES = Object.freeze({
+  OWNER: "owner",
+  RECRUITER: "recruiter",
+  CANDIDATE: "candidate",
+});
 
-export const APPLICATION_STATUS = {
-  APPLIED: "APPLIED",
-  SCREENING: "SCREENING",
-  INTERVIEW: "INTERVIEW",
-  OFFER: "OFFER",
-  HIRED: "HIRED",
-  REJECTED: "REJECTED",
-};
+export const APPLICATION_STATUS = Object.freeze({
+  APPLIED: "applied",
+  SCREENING: "screening",
+  INTERVIEW: "interview",
+  OFFER: "offer",
+  HIRED: "hired",
+  REJECTED: "rejected",
+});
 
-export const JOB_STATUS = {
-  OPEN: "OPEN",
-  CLOSED: "CLOSED",
-};
+export const JOB_STATUS = Object.freeze({
+  OPEN: "open",
+  CLOSED: "closed",
+});
 
-export const EMPLOYMENT_TYPE = {
-  FULL_TIME: "FULL_TIME",
-  PART_TIME: "PART_TIME",
-  CONTRACT: "CONTRACT",
-  INTERNSHIP: "INTERNSHIP",
-};
+export const EMPLOYMENT_TYPE = Object.freeze({
+  FULL_TIME: "full-time",
+  PART_TIME: "part-time",
+  CONTRACT: "contract",
+  INTERNSHIP: "internship",
+});
 
-export const WORKPLACE_TYPE = {
-  ONSITE: "ONSITE",
-  REMOTE: "REMOTE",
-  HYBRID: "HYBRID",
-};
+export const WORKPLACE_TYPE = Object.freeze({
+  ONSITE: "onsite",
+  REMOTE: "remote",
+  HYBRID: "hybrid",
+});
 
-export const EXPERIENCE_LEVEL = {
-  ENTRY: "ENTRY",
-  MID: "MID",
-  SENIOR: "SENIOR",
-  LEAD: "LEAD",
-};
+export const EXPERIENCE_LEVEL = Object.freeze({
+  ENTRY: "entry",
+  MID: "mid",
+  SENIOR: "senior",
+  LEAD: "lead",
+});
