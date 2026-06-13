@@ -16,6 +16,10 @@ const authenticate = asyncHandler(async (req, res, next) => {
 
   const user = await User.findById(decoded.sub);
 
+  if (!user.isActive) {
+    throw new ApiError(403, "This account has been deactivated");
+  }
+
   if (!user) {
     throw new ApiError(401, "User no longer exists");
   }

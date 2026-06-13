@@ -183,6 +183,10 @@ const loginUser = async ({ email, password }) => {
     throw new ApiError(401, "Invalid email or password");
   }
 
+  if (!user.isActive) {
+    throw new ApiError(403, "This account has been deactivated");
+  }
+
   if (!user.isEmailVerified) {
     throw new ApiError(403, "Please verify your email before logging in");
   }
