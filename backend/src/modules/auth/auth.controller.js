@@ -28,7 +28,6 @@ const registerCandidate = asyncHandler(async (req, res) => {
     new ApiResponse(201, result.message, {
       userId: result.userId,
       email: result.email,
-      verificationUrl: result.verificationUrl,
     }),
   );
 });
@@ -59,6 +58,27 @@ const logoutAllSessions = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, result.message));
 });
 
+const forgotPassword = asyncHandler(async (req, res) => {
+  const result = await authService.forgotPassword(req.body.email);
+
+  return res.status(200).json(new ApiResponse(200, result.message));
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const result = await authService.resetPassword(
+    req.params.token,
+    req.body.password,
+  );
+
+  return res.status(200).json(new ApiResponse(200, result.message));
+});
+
+const resendVerificationEmail = asyncHandler(async (req, res) => {
+  const result = await authService.resendVerificationEmail(req.body.email);
+
+  return res.status(200).json(new ApiResponse(200, result.message));
+});
+
 export {
   registerCandidate,
   verifyEmail,
@@ -66,4 +86,7 @@ export {
   refreshAccessToken,
   logoutUser,
   logoutAllSessions,
+  forgotPassword,
+  resetPassword,
+  resendVerificationEmail,
 };
