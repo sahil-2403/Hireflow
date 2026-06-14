@@ -6,6 +6,7 @@ import errorHandler from "./shared/middleware/errorHandler.js";
 
 import authRouter from "./modules/auth/auth.routes.js";
 import companyRouter from "./modules/company/company.routes.js";
+import jobRouter from "./modules/job/job.routes.js";
 
 const app = express();
 
@@ -21,7 +22,7 @@ app.get("/", (req, res) => {
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/company", companyRouter);
 // app.use("/api/v1/candidates", candidateRouter);
-// app.use("/api/v1/jobs", jobRouter);
+app.use("/api/v1/jobs", jobRouter);
 // app.use("/api/v1/applications", applicationRouter);
 
 app.use(errorHandler);
