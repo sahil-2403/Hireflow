@@ -72,6 +72,12 @@ const candidateSchema = new mongoose.Schema(
       trim: true,
     },
 
+    resumePublicId: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
     linkedinUrl: {
       type: String,
       default: null,

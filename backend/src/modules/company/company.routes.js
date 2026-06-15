@@ -3,6 +3,7 @@ import express from "express";
 import authenticate from "../../shared/middleware/authenticate.js";
 import authorize from "../../shared/middleware/authorize.js";
 import validate from "../../shared/middleware/validate.js";
+import { uploadCompanyLogo as uploadCompanyLogoFile } from "../../shared/middleware/upload.js";
 
 import { ROLES } from "../../config/constants.js";
 
@@ -20,6 +21,7 @@ import {
   createRecruiter,
   listRecruiters,
   updateRecruiterStatus,
+  uploadCompanyLogo,
 } from "./company.controller.js";
 
 const router = express.Router();
@@ -58,6 +60,14 @@ router.patch(
   authorize(ROLES.OWNER),
   validate(updateRecruiterStatusSchema),
   updateRecruiterStatus,
+);
+
+router.patch(
+  "/logo",
+  authenticate,
+  authorize(ROLES.OWNER),
+  uploadCompanyLogoFile,
+  uploadCompanyLogo,
 );
 
 export default router;

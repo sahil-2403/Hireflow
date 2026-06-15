@@ -35,8 +35,20 @@ const updateCandidateProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, result.message, result.profile));
 });
 
+const uploadCandidateResume = asyncHandler(async (req, res) => {
+  const result = await candidateService.uploadCandidateResume(
+    req.user.id,
+    req.file,
+  );
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, result.message, result.profile));
+});
+
 export {
   createCandidateProfile,
   getMyCandidateProfile,
   updateCandidateProfile,
+  uploadCandidateResume,
 };

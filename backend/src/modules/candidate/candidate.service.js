@@ -2,6 +2,11 @@ import Candidate from "./candidate.model.js";
 
 import ApiError from "../../shared/errors/ApiError.js";
 
+import {
+  uploadResumeFile,
+  deleteAsset,
+} from "../../shared/services/media.service.js";
+
 const createCandidateProfile = async (userId, profileData) => {
   const existingProfile = await Candidate.findOne({
     userId,
@@ -63,8 +68,43 @@ const updateCandidateProfile = async (userId, profileData) => {
   };
 };
 
+const uploadCandidateResume = async (userId, file) => {
+  if (!file) {
+    throw new ApiError(400, "Resume file is required");
+  }
+
+  const profile = await Candidate.findOne({
+    userId,
+  });
+
+  if (!profile) {
+    throw new ApiError(404, "Candidate profile not found");
+  }
+
+  const oldPublicId = profile.resumePublicId;
+
+  const uploadedAsset = await uploadResumeFile(file.buffer);
+
+  try {
+    profile.resumeUrl = uploadedAsset.url;
+    profile.resumePublicId = uploadedAsset.publicId;
+
+    await profile.save();
+  } catch (error) {
+    await deleteAsset(uploadedAsset.publicId, "raw");
+
+    throw error;
+  }
+
+  return {
+    profile,
+    message: "Resume uploaded successfully",
+  };
+};
+
 export {
   createCandidateProfile,
   getMyCandidateProfile,
   updateCandidateProfile,
+  uploadCandidateResume,
 };

@@ -5,6 +5,11 @@ import User from "../auth/auth.model.js";
 import ApiError from "../../shared/errors/ApiError.js";
 import { ROLES } from "../../config/constants.js";
 
+import {
+  uploadLogoFile,
+  deleteAsset,
+} from "../../shared/services/media.service.js";
+
 const getOwnerCompany = async (ownerId) => {
   const company = await Company.findOne({
     ownerId,
@@ -200,6 +205,36 @@ const updateRecruiterStatus = async (ownerId, recruiterId, isActive) => {
   };
 };
 
+const uploadCompanyLogo = async (ownerId, file) => {
+  if (!file) {
+    throw new ApiError(400, "Company logo file is required");
+  }
+
+  const company = await getOwnerCompany(ownerId);
+
+  const oldPublicId = company.logoPublicId;
+
+  const uploadedAsset = await uploadLogoFile(file.buffer);
+
+  try {
+    company.logoUrl = uploadedAsset.url;
+    company.logoPublicId = uploadedAsset.publicId;
+
+    await company.save();
+  } catch (error) {
+    await deleteAsset(uploadedAsset.publicId, "image");
+
+    throw error;
+  }
+
+  await deleteAsset(oldPublicId, "image");
+
+  return {
+    company,
+    message: "Company logo uploaded successfully",
+  };
+};
+
 export {
   createCompany,
   updateCompany,
@@ -207,4 +242,5 @@ export {
   createRecruiter,
   listRecruiters,
   updateRecruiterStatus,
+  uploadCompanyLogo,
 };

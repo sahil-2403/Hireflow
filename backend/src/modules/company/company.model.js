@@ -26,6 +26,12 @@ const companySchema = new mongoose.Schema(
       trim: true,
     },
 
+    logoPublicId: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
     industry: {
       type: String,
       required: true,

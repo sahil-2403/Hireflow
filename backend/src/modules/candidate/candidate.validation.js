@@ -34,7 +34,6 @@ const candidateFields = {
 
   location: z.string().trim().min(2, "Location is required").max(200),
 
-  resumeUrl: optionalUrl,
   linkedinUrl: optionalUrl,
   githubUrl: optionalUrl,
   portfolioUrl: optionalUrl,

@@ -14,8 +14,6 @@ export const createCompanySchema = z.object({
     .min(2, "Company name must contain at least 2 characters")
     .max(100, "Company name cannot exceed 100 characters"),
 
-  logoUrl: optionalUrl,
-
   industry: z.string().trim().min(2, "Industry is required").max(100),
 
   companySize: z.enum(Object.values(COMPANY_SIZE)),

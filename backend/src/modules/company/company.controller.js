@@ -57,6 +57,14 @@ const updateRecruiterStatus = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, result.message, result.recruiter));
 });
 
+const uploadCompanyLogo = asyncHandler(async (req, res) => {
+  const result = await companyService.uploadCompanyLogo(req.user.id, req.file);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, result.message, result.company));
+});
+
 export {
   createCompany,
   updateCompany,
@@ -64,4 +72,5 @@ export {
   createRecruiter,
   listRecruiters,
   updateRecruiterStatus,
+  uploadCompanyLogo,
 };
