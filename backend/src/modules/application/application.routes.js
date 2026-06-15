@@ -20,6 +20,42 @@ import {
 
 const router = express.Router();
 
+/**
+ * @openapi
+ * /api/v1/applications/jobs/{jobId}/apply:
+ *   post:
+ *     tags:
+ *       - Applications
+ *     summary: Apply to an open job
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               coverLetter:
+ *                 type: string
+ *                 nullable: true
+ *     responses:
+ *       201:
+ *         description: Application submitted
+ *       400:
+ *         description: Profile or resume is incomplete
+ *       403:
+ *         description: Candidate role required
+ *       404:
+ *         description: Open job not found
+ *       409:
+ *         description: Candidate already applied
+ */
 router.post(
   "/jobs/:jobId/apply",
   authenticate,
@@ -28,8 +64,77 @@ router.post(
   applyToJob,
 );
 
+/**
+ * @openapi
+ * /api/v1/applications/me:
+ *   get:
+ *     tags:
+ *       - Applications
+ *     summary: List the authenticated candidate's applications
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Candidate applications returned
+ *       403:
+ *         description: Candidate role required
+ */
 router.get("/me", authenticate, authorize(ROLES.CANDIDATE), listMyApplications);
 
+/**
+ * @openapi
+ * /api/v1/applications/manage:
+ *   get:
+ *     tags:
+ *       - Applications
+ *     summary: List company applications for owners and recruiters
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: jobId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - asc
+ *             - desc
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Company applications returned
+ *       400:
+ *         description: Invalid filter
+ *       403:
+ *         description: Owner or recruiter role required
+ */
 router.get(
   "/manage",
   authenticate,
@@ -37,6 +142,49 @@ router.get(
   listManagedApplications,
 );
 
+/**
+ * @openapi
+ * /api/v1/applications/{applicationId}/status:
+ *   patch:
+ *     tags:
+ *       - Applications
+ *     summary: Move an application through the hiring workflow
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: applicationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum:
+ *                   - applied
+ *                   - screening
+ *                   - interview
+ *                   - offer
+ *                   - hired
+ *                   - rejected
+ *     responses:
+ *       200:
+ *         description: Application status updated
+ *       400:
+ *         description: Invalid status transition
+ *       403:
+ *         description: Owner or recruiter role required
+ *       404:
+ *         description: Application not found
+ */
 router.patch(
   "/:applicationId/status",
   authenticate,

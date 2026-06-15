@@ -1,8 +1,8 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import morgan from "morgan";
-
-import errorHandler from "./shared/middleware/errorHandler.js";
+import swaggerUi from "swagger-ui-express";
 
 import authRouter from "./modules/auth/auth.routes.js";
 import companyRouter from "./modules/company/company.routes.js";
@@ -10,23 +10,96 @@ import jobRouter from "./modules/job/job.routes.js";
 import candidateRouter from "./modules/candidate/candidate.routes.js";
 import applicationRouter from "./modules/application/application.routes.js";
 
+import swaggerSpec from "./config/swagger.js";
+
+import { globalLimiter } from "./shared/middleware/rateLimiters.js";
+
+import notFound from "./shared/middleware/notFound.js";
+import errorHandler from "./shared/middleware/errorHandler.js";
+
 const app = express();
 
-// Core middleware
-app.use(express.json());
-app.use(cors());
-app.use(morgan("dev"));
+app.disable("x-powered-by");
 
-app.get("/", (req, res) => {
-  res.json({ message: "HireFlow API is running" });
+app.use(
+  helmet({
+    contentSecurityPolicy:
+      process.env.NODE_ENV === "production" ? undefined : false,
+  }),
+);
+
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+
+app.use(
+  express.json({
+    limit: "1mb",
+  }),
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "1mb",
+  }),
+);
+
+app.use(
+  process.env.NODE_ENV === "production" ? morgan("combined") : morgan("dev"),
+);
+
+app.use(globalLimiter);
+
+/**
+ * @openapi
+ * /api/v1/health:
+ *   get:
+ *     tags:
+ *       - Health
+ *     summary: Check API health
+ *     responses:
+ *       200:
+ *         description: API is operational
+ */
+app.get("/api/v1/health", (req, res) => {
+  res.status(200).json({
+    statusCode: 200,
+    success: true,
+    message: "HireFlow API is healthy",
+    data: {
+      environment: process.env.NODE_ENV,
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+    },
+  });
+});
+
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customSiteTitle: "HireFlow API Documentation",
+  }),
+);
+
+app.get("/api-docs.json", (req, res) => {
+  res.status(200).json(swaggerSpec);
 });
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/company", companyRouter);
-app.use("/api/v1/candidates", candidateRouter);
 app.use("/api/v1/jobs", jobRouter);
+app.use("/api/v1/candidates", candidateRouter);
 app.use("/api/v1/applications", applicationRouter);
 
+app.use(notFound);
 app.use(errorHandler);
 
 export default app;
