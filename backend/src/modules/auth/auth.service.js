@@ -12,6 +12,8 @@ import {
   verifyRefreshToken,
 } from "../../shared/utils/jwt.js";
 
+import crypto from "node:crypto";
+
 const EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS =
   Number(process.env.EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS) || 24;
 
@@ -122,6 +124,7 @@ const createRefreshToken = async (user) => {
   const payload = {
     sub: user._id.toString(),
     role: user.role,
+    jti: crypto.randomUUID(),
   };
 
   const refreshToken = generateRefreshToken(payload);
