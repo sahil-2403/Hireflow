@@ -25,6 +25,7 @@ const swaggerDefinition = {
     { name: "Candidates" },
     { name: "Applications" },
     { name: "Uploads" },
+    { name: "Analytics" },
   ],
 
   components: {
