@@ -323,7 +323,7 @@ const registerCandidate = async ({ username, email, password }) => {
 };
 
 const sendVerificationEmail = async (user, rawToken) => {
-  const verificationUrl = `${process.env.API_BASE_URL}/api/v1/auth/verify-email/${rawToken}`;
+  const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${rawToken}`;
 
   await sendEmail({
     to: user.email,

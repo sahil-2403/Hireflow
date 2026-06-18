@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { forgotPassword } from "../../api/auth.api";
+import { resendVerificationEmail } from "../../api/auth.api";
 
 import { emailSchema } from "../../features/auth/auth.schemas";
 
@@ -11,7 +11,7 @@ import getApiError from "../../utils/getApiError";
 
 import FieldError from "../../components/common/FieldError";
 
-const ForgotPasswordPage = () => {
+const ResendVerificationPage = () => {
   const [apiError, setApiError] = useState("");
 
   const [successMessage, setSuccessMessage] = useState("");
@@ -33,7 +33,7 @@ const ForgotPasswordPage = () => {
     setSuccessMessage("");
 
     try {
-      const result = await forgotPassword(formData);
+      const result = await resendVerificationEmail(formData);
 
       setSuccessMessage(result.message);
     } catch (error) {
@@ -48,15 +48,15 @@ const ForgotPasswordPage = () => {
       <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="mb-8">
           <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
-            Account recovery
+            Email verification
           </p>
 
           <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-            Forgot your password?
+            Resend verification email
           </h1>
 
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Enter your email and we will send a password reset link.
+            Enter your account email and we will send another verification link.
           </p>
         </div>
 
@@ -114,12 +114,12 @@ const ForgotPasswordPage = () => {
             disabled={isSubmitting}
             className="flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
           >
-            {isSubmitting ? "Sending..." : "Send reset link"}
+            {isSubmitting ? "Sending..." : "Send verification email"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">
-          Remembered your password?{" "}
+          Already verified?{" "}
           <Link
             to="/login"
             className="font-semibold text-blue-600 hover:text-blue-700"
@@ -132,4 +132,4 @@ const ForgotPasswordPage = () => {
   );
 };
 
-export default ForgotPasswordPage;
+export default ResendVerificationPage;

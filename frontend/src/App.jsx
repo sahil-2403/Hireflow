@@ -12,6 +12,7 @@ import RegisterPage from "./pages/auth/RegisterPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
+import ResendVerificationPage from "./pages/auth/ResendVerificationPage";
 
 import CandidateDashboardPage from "./pages/candidate/CandidateDashboardPage";
 import CompanyDashboardPage from "./pages/company/CompanyDashboardPage";
@@ -37,6 +38,11 @@ const App = () => {
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
         <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+
+        <Route
+          path="/resend-verification"
+          element={<ResendVerificationPage />}
+        />
       </Route>
 
       <Route element={<DashboardLayout />}>
