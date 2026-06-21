@@ -39,6 +39,27 @@ const verifyEmail = async (token) => {
   return response.data;
 };
 
+const refreshSession = async (refreshToken) => {
+  const response = await apiClient.post(
+    "/auth/refresh-token",
+    {
+      refreshToken,
+    },
+    {
+      _skipAuth: true,
+      _skipAuthRefresh: true,
+    },
+  );
+
+  return response.data;
+};
+
+const getCurrentUser = async () => {
+  const response = await apiClient.get("/auth/me");
+
+  return response.data;
+};
+
 const logout = async ({ refreshToken, accessToken }) => {
   const response = await apiClient.post(
     "/auth/logout",
@@ -46,9 +67,12 @@ const logout = async ({ refreshToken, accessToken }) => {
       refreshToken,
     },
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      _skipAuthRefresh: true,
+      headers: accessToken
+        ? {
+            Authorization: `Bearer ${accessToken}`,
+          }
+        : undefined,
     },
   );
 
@@ -62,5 +86,7 @@ export {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  refreshSession,
+  getCurrentUser,
   logout,
 };
