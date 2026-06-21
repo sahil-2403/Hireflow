@@ -6,6 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { login } from "../../api/auth.api";
 import { loginSchema } from "../../features/auth/auth.schemas";
 import getApiError from "../../utils/getApiError";
+import useAuth from "../../hooks/useAuth";
+import { ROLES } from "../../features/auth/auth.constants";
 
 import FieldError from "../../components/common/FieldError";
 import PasswordField from "../../components/common/PasswordField";
@@ -17,6 +19,8 @@ const LoginPage = () => {
   const [apiError, setApiError] = useState("");
 
   const [successMessage, setSuccessMessage] = useState("");
+
+  const { signIn } = useAuth();
 
   const {
     register,
@@ -53,9 +57,27 @@ const LoginPage = () => {
     try {
       const result = await login(formData);
 
-      setSuccessMessage(result.message);
+      signIn(result.data);
 
-      console.log("Login response:", result.data);
+      const role = result.data.user.role;
+
+      if (role === ROLES.CANDIDATE) {
+        navigate("/candidate/dashboard", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      if (role === ROLES.RECRUITER || role === ROLES.OWNER) {
+        navigate("/company/dashboard", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      setApiError("Your account role is not supported.");
     } catch (error) {
       const normalizedError = getApiError(error);
 

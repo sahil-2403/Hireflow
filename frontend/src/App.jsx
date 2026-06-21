@@ -1,7 +1,13 @@
 import { Route, Routes } from "react-router-dom";
 
+import { ROLES } from "./features/auth/auth.constants";
+
 import PublicLayout from "./layouts/PublicLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
+
+import ProtectedRoute from "./routes/ProtectedRoute";
+import RoleRoute from "./routes/RoleRoute";
+import GuestRoute from "./routes/GuestRoute";
 
 import HomePage from "./pages/public/HomePage";
 import JobsPage from "./pages/public/JobsPage";
@@ -29,29 +35,44 @@ const App = () => {
 
         <Route path="/jobs/:jobId" element={<JobDetailsPage />} />
 
-        <Route path="/login" element={<LoginPage />} />
+        <Route element={<GuestRoute />}>
+          <Route path="/login" element={<LoginPage />} />
 
-        <Route path="/register" element={<RegisterPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+          <Route
+            path="/resend-verification"
+            element={<ResendVerificationPage />}
+          />
+        </Route>
 
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
         <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
-
-        <Route
-          path="/resend-verification"
-          element={<ResendVerificationPage />}
-        />
       </Route>
 
-      <Route element={<DashboardLayout />}>
-        <Route
-          path="/candidate/dashboard"
-          element={<CandidateDashboardPage />}
-        />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<DashboardLayout />}>
+          <Route element={<RoleRoute allowedRoles={[ROLES.CANDIDATE]} />}>
+            <Route
+              path="/candidate/dashboard"
+              element={<CandidateDashboardPage />}
+            />
+          </Route>
 
-        <Route path="/company/dashboard" element={<CompanyDashboardPage />} />
+          <Route
+            element={
+              <RoleRoute allowedRoles={[ROLES.OWNER, ROLES.RECRUITER]} />
+            }
+          >
+            <Route
+              path="/company/dashboard"
+              element={<CompanyDashboardPage />}
+            />
+          </Route>
+        </Route>
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
