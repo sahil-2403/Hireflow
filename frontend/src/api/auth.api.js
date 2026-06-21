@@ -39,6 +39,22 @@ const verifyEmail = async (token) => {
   return response.data;
 };
 
+const logout = async ({ refreshToken, accessToken }) => {
+  const response = await apiClient.post(
+    "/auth/logout",
+    {
+      refreshToken,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+
+  return response.data;
+};
+
 export {
   login,
   registerCandidate,
@@ -46,4 +62,5 @@ export {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  logout,
 };

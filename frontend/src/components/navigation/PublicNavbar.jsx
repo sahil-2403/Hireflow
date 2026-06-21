@@ -1,6 +1,15 @@
 import { NavLink } from "react-router-dom";
 
+import useAuth from "../../hooks/useAuth";
+import useLogout from "../../hooks/useLogout";
+
+import { getDashboardPathForRole } from "../../features/auth/auth.utils";
+
 const PublicNavbar = () => {
+  const { isAuthenticated, user } = useAuth();
+
+  const { logoutUser } = useLogout();
+
   const getNavLinkClass = ({ isActive }) => {
     return [
       "text-sm font-medium transition-colors",
@@ -26,22 +35,49 @@ const PublicNavbar = () => {
           <NavLink to="/jobs" className={getNavLinkClass}>
             Jobs
           </NavLink>
+
+          {isAuthenticated && (
+            <NavLink
+              to={getDashboardPathForRole(user?.role)}
+              className={getNavLinkClass}
+            >
+              Dashboard
+            </NavLink>
+          )}
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
-          <NavLink
-            to="/login"
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50"
-          >
-            Login
-          </NavLink>
+          {isAuthenticated ? (
+            <>
+              <span className="hidden text-sm font-medium text-slate-600 sm:inline">
+                {user?.username || user?.email}
+              </span>
 
-          <NavLink
-            to="/register"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Register
-          </NavLink>
+              <button
+                type="button"
+                onClick={logoutUser}
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink
+                to="/login"
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50"
+              >
+                Login
+              </NavLink>
+
+              <NavLink
+                to="/register"
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Register
+              </NavLink>
+            </>
+          )}
         </div>
       </div>
     </header>
