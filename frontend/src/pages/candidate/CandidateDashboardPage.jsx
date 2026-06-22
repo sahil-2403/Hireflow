@@ -123,12 +123,21 @@ const CandidateDashboardPage = () => {
           </p>
         </div>
 
-        <Link
-          to="/jobs"
-          className="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-        >
-          Browse jobs
-        </Link>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link
+            to="/candidate/profile"
+            className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Edit profile
+          </Link>
+
+          <Link
+            to="/jobs"
+            className="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Browse jobs
+          </Link>
+        </div>
       </section>
 
       <CandidateProfileSummaryCard
