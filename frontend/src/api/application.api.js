@@ -8,4 +8,13 @@ const listMyApplications = async (params = {}) => {
   return response.data;
 };
 
-export { listMyApplications };
+const applyToJob = async (jobId, applicationData) => {
+  const response = await apiClient.post(
+    `/applications/jobs/${jobId}/apply`,
+    applicationData,
+  );
+
+  return response.data;
+};
+
+export { listMyApplications, applyToJob };
