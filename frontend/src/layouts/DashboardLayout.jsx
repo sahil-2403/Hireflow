@@ -37,12 +37,32 @@ const DashboardLayout = () => {
 
           <nav className="grid gap-2">
             {isCandidate && (
-              <NavLink
-                to="/candidate/dashboard"
-                className={getSidebarLinkClass}
-              >
-                Candidate Dashboard
-              </NavLink>
+              <>
+                <NavLink
+                  to="/candidate/dashboard"
+                  className={getSidebarLinkClass}
+                >
+                  Candidate Dashboard
+                </NavLink>
+
+                <NavLink
+                  to="/candidate/profile"
+                  className={getSidebarLinkClass}
+                >
+                  Profile
+                </NavLink>
+
+                <NavLink to="/candidate/resume" className={getSidebarLinkClass}>
+                  Resume
+                </NavLink>
+
+                <NavLink
+                  to="/candidate/applications"
+                  className={getSidebarLinkClass}
+                >
+                  Applications
+                </NavLink>
+              </>
             )}
 
             {isCompanyUser && (

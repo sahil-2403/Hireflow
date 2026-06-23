@@ -23,6 +23,7 @@ import ResendVerificationPage from "./pages/auth/ResendVerificationPage";
 import CandidateDashboardPage from "./pages/candidate/CandidateDashboardPage";
 import CandidateProfilePage from "./pages/candidate/CandidateProfilePage";
 import CandidateResumePage from "./pages/candidate/CandidateResumePage";
+import CandidateApplicationsPage from "./pages/candidate/CandidateApplicationsPage";
 
 import CompanyDashboardPage from "./pages/company/CompanyDashboardPage";
 
@@ -70,6 +71,11 @@ const App = () => {
             />
 
             <Route path="/candidate/resume" element={<CandidateResumePage />} />
+
+            <Route
+              path="/candidate/applications"
+              element={<CandidateApplicationsPage />}
+            />
           </Route>
 
           <Route

@@ -139,6 +139,13 @@ const CandidateDashboardPage = () => {
           </Link>
 
           <Link
+            to="/candidate/applications"
+            className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            View applications
+          </Link>
+
+          <Link
             to="/jobs"
             className="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
           >
