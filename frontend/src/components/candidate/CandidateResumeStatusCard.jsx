@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 const CandidateResumeStatusCard = ({ status, profile }) => {
   const hasResume = Boolean(profile?.resumeUrl);
 
@@ -45,14 +47,12 @@ const CandidateResumeStatusCard = ({ status, profile }) => {
           </p>
 
           {hasResume && (
-            <a
-              href={profile.resumeUrl}
-              target="_blank"
-              rel="noreferrer"
+            <Link
+              to="/candidate/resume"
               className="mt-4 inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               View resume
-            </a>
+            </Link>
           )}
         </>
       )}

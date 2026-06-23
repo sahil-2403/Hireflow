@@ -17,11 +17,14 @@ import {
   getMyCandidateProfile,
   updateCandidateProfile,
   uploadCandidateResume,
+  viewCandidateResume,
 } from "./candidate.controller.js";
 
 const router = express.Router();
 
 router.use(authenticate, authorize(ROLES.CANDIDATE));
+
+router.get("/profile/resume/view", viewCandidateResume);
 
 /**
  * @openapi

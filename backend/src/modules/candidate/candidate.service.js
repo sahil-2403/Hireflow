@@ -102,9 +102,33 @@ const uploadCandidateResume = async (userId, file) => {
   };
 };
 
+const getMyCandidateResume = async (userId) => {
+  const profile = await Candidate.findOne({
+    userId,
+  }).lean();
+
+  if (!profile) {
+    throw new ApiError(404, "Candidate profile not found");
+  }
+
+  if (!profile.resumeUrl) {
+    throw new ApiError(404, "Resume not found");
+  }
+
+  const firstName = profile.firstName || "candidate";
+
+  const lastName = profile.lastName || "resume";
+
+  return {
+    resumeUrl: profile.resumeUrl,
+    fileName: `${firstName}-${lastName}-resume.pdf`,
+  };
+};
+
 export {
   createCandidateProfile,
   getMyCandidateProfile,
   updateCandidateProfile,
   uploadCandidateResume,
+  getMyCandidateResume,
 };

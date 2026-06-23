@@ -26,12 +26,15 @@ const uploadCandidateResume = async (resumeFile) => {
   const response = await apiClient.patch(
     "/candidates/profile/resume",
     formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    },
   );
+
+  return response.data;
+};
+
+const viewCandidateResume = async () => {
+  const response = await apiClient.get("/candidates/profile/resume/view", {
+    responseType: "blob",
+  });
 
   return response.data;
 };
@@ -41,4 +44,5 @@ export {
   createCandidateProfile,
   updateCandidateProfile,
   uploadCandidateResume,
+  viewCandidateResume,
 };
