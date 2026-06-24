@@ -66,9 +66,18 @@ const DashboardLayout = () => {
             )}
 
             {isCompanyUser && (
-              <NavLink to="/company/dashboard" className={getSidebarLinkClass}>
-                Company Dashboard
-              </NavLink>
+              <>
+                <NavLink
+                  to="/company/dashboard"
+                  className={getSidebarLinkClass}
+                >
+                  Company Dashboard
+                </NavLink>
+
+                <NavLink to="/company/jobs" className={getSidebarLinkClass}>
+                  Jobs
+                </NavLink>
+              </>
             )}
 
             <NavLink to="/jobs" className={getSidebarLinkClass}>

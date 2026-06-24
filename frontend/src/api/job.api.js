@@ -14,4 +14,28 @@ const getPublicJobById = async (jobId) => {
   return response.data;
 };
 
-export { listPublicJobs, getPublicJobById };
+const listManagedJobs = async (params = {}) => {
+  const response = await apiClient.get("/jobs/manage", {
+    params,
+  });
+
+  return response.data;
+};
+
+const updateManagedJobStatus = async (jobId, status) => {
+  const response = await apiClient.patch(
+    `/jobs/${jobId}/status`,
+    {
+      status,
+    }
+  );
+
+  return response.data;
+};
+
+export {
+  listPublicJobs,
+  getPublicJobById,
+  listManagedJobs,
+  updateManagedJobStatus,
+};
