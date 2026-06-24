@@ -77,6 +77,13 @@ const DashboardLayout = () => {
                 <NavLink to="/company/jobs" className={getSidebarLinkClass}>
                   Jobs
                 </NavLink>
+
+                <NavLink
+                  to="/company/applications"
+                  className={getSidebarLinkClass}
+                >
+                  Applications
+                </NavLink>
               </>
             )}
 

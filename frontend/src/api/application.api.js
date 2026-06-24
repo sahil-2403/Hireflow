@@ -17,4 +17,28 @@ const applyToJob = async (jobId, applicationData) => {
   return response.data;
 };
 
-export { listMyApplications, applyToJob };
+const listManagedApplications = async (params = {}) => {
+  const response = await apiClient.get("/applications/manage", {
+    params,
+  });
+
+  return response.data;
+};
+
+const updateManagedApplicationStatus = async (applicationId, status) => {
+  const response = await apiClient.patch(
+    `/applications/${applicationId}/status`,
+    {
+      status,
+    },
+  );
+
+  return response.data;
+};
+
+export {
+  listMyApplications,
+  applyToJob,
+  listManagedApplications,
+  updateManagedApplicationStatus,
+};
