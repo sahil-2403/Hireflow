@@ -36,9 +36,21 @@ const updateManagedApplicationStatus = async (applicationId, status) => {
   return response.data;
 };
 
+const viewManagedApplicationResume = async (applicationId) => {
+  const response = await apiClient.get(
+    `/applications/manage/${applicationId}/resume/view`,
+    {
+      responseType: "blob",
+    },
+  );
+
+  return response.data;
+};
+
 export {
   listMyApplications,
   applyToJob,
   listManagedApplications,
   updateManagedApplicationStatus,
+  viewManagedApplicationResume,
 };

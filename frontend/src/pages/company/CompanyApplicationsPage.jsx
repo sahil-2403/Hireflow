@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import {
   listManagedApplications,
   updateManagedApplicationStatus,
+  viewManagedApplicationResume,
 } from "../../api/application.api";
 
 import getApiError from "../../utils/getApiError";
+import openPdfBlob from "../../utils/openPdfBlob";
 
 import ApplicationStatusBadge from "../../components/application/ApplicationStatusBadge";
 
@@ -62,6 +64,9 @@ const CompanyApplicationsPage = () => {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [updatingApplicationId, setUpdatingApplicationId] = useState(null);
+
+  const [openingResumeApplicationId, setOpeningResumeApplicationId] =
+    useState(null);
 
   useEffect(() => {
     let shouldIgnore = false;
@@ -146,6 +151,23 @@ const CompanyApplicationsPage = () => {
       setErrorMessage(normalizedError.message);
     } finally {
       setUpdatingApplicationId(null);
+    }
+  };
+
+  const handleViewResume = async (application) => {
+    try {
+      setErrorMessage("");
+      setOpeningResumeApplicationId(application._id);
+
+      const resumeBlob = await viewManagedApplicationResume(application._id);
+
+      openPdfBlob(resumeBlob);
+    } catch (error) {
+      const normalizedError = getApiError(error);
+
+      setErrorMessage(normalizedError.message);
+    } finally {
+      setOpeningResumeApplicationId(null);
     }
   };
 
@@ -315,14 +337,18 @@ const CompanyApplicationsPage = () => {
                     )}
 
                     {candidate?.resumeUrl && (
-                      <a
-                        href={candidate.resumeUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-4 inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      <button
+                        type="button"
+                        onClick={() => handleViewResume(application)}
+                        disabled={
+                          openingResumeApplicationId === application._id
+                        }
+                        className="mt-4 inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
                       >
-                        View resume
-                      </a>
+                        {openingResumeApplicationId === application._id
+                          ? "Opening resume..."
+                          : "View resume"}
+                      </button>
                     )}
                   </div>
 

@@ -332,9 +332,45 @@ const updateApplicationStatus = async (
   };
 };
 
+const getManagedApplicationResume = async (userId, role, applicationId) => {
+  if (!mongoose.isValidObjectId(applicationId)) {
+    throw new ApiError(400, "Invalid application ID");
+  }
+
+  const company = await getStaffCompany(userId, role);
+
+  const application = await Application.findOne({
+    _id: applicationId,
+    companyId: company._id,
+  })
+    .populate({
+      path: "candidateId",
+      select: "firstName lastName resumeUrl",
+    })
+    .lean();
+
+  if (!application) {
+    throw new ApiError(404, "Application not found");
+  }
+
+  if (!application.candidateId?.resumeUrl) {
+    throw new ApiError(404, "Resume not found");
+  }
+
+  const firstName = application.candidateId.firstName || "candidate";
+
+  const lastName = application.candidateId.lastName || "resume";
+
+  return {
+    resumeUrl: application.candidateId.resumeUrl,
+    fileName: `${firstName}-${lastName}-resume.pdf`,
+  };
+};
+
 export {
   applyToJob,
   listMyApplications,
   listManagedApplications,
   updateApplicationStatus,
+  getManagedApplicationResume,
 };

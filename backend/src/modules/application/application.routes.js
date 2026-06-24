@@ -16,6 +16,7 @@ import {
   listMyApplications,
   listManagedApplications,
   updateApplicationStatus,
+  viewManagedApplicationResume,
 } from "./application.controller.js";
 
 const router = express.Router();
@@ -140,6 +141,13 @@ router.get(
   authenticate,
   authorize(ROLES.OWNER, ROLES.RECRUITER),
   listManagedApplications,
+);
+
+router.get(
+  "/manage/:applicationId/resume/view",
+  authenticate,
+  authorize(ROLES.OWNER, ROLES.RECRUITER),
+  viewManagedApplicationResume,
 );
 
 /**
