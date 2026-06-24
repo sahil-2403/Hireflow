@@ -63,6 +63,18 @@ const listManagedJobs = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Managed jobs fetched successfully", result));
 });
 
+const getManagedJobById = asyncHandler(async (req, res) => {
+  const job = await jobService.getManagedJobById(
+    req.user.id,
+    req.user.role,
+    req.params.jobId,
+  );
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Managed job fetched successfully", job));
+});
+
 export {
   createJob,
   updateJob,
@@ -70,4 +82,5 @@ export {
   listPublicJobs,
   getPublicJobById,
   listManagedJobs,
+  getManagedJobById,
 };

@@ -326,23 +326,32 @@ const CompanyJobsPage = () => {
                   {formatDate(job.createdAt)}
                 </p>
 
-                <button
-                  type="button"
-                  disabled={updatingJobId === job._id}
-                  onClick={() => handleToggleJobStatus(job)}
-                  className={[
-                    "rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70",
-                    job.status === "open"
-                      ? "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                      : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
-                  ].join(" ")}
-                >
-                  {updatingJobId === job._id
-                    ? "Updating..."
-                    : job.status === "open"
-                      ? "Close"
-                      : "Open"}
-                </button>
+                <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
+                  <Link
+                    to={`/company/jobs/${job._id}/edit`}
+                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Edit
+                  </Link>
+
+                  <button
+                    type="button"
+                    disabled={updatingJobId === job._id}
+                    onClick={() => handleToggleJobStatus(job)}
+                    className={[
+                      "rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70",
+                      job.status === "open"
+                        ? "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                        : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+                    ].join(" ")}
+                  >
+                    {updatingJobId === job._id
+                      ? "Updating..."
+                      : job.status === "open"
+                        ? "Close"
+                        : "Open"}
+                  </button>
+                </div>
               </article>
             ))}
           </div>

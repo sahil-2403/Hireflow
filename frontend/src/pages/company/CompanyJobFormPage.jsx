@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { createManagedJob } from "../../api/job.api";
+import {
+  createManagedJob,
+  getManagedJobById,
+  updateManagedJob,
+} from "../../api/job.api";
 
 import { createJobSchema } from "../../features/jobs/job.schemas";
 
@@ -57,6 +61,43 @@ const splitCommaList = (value) => {
     .filter(Boolean);
 };
 
+const getDefaultValuesFromJob = (job) => {
+  if (!job) {
+    return defaultValues;
+  }
+
+  return {
+    title: job.title ?? "",
+    description: job.description ?? "",
+
+    responsibilitiesText: Array.isArray(job.responsibilities)
+      ? job.responsibilities.join("\n")
+      : "",
+
+    requirementsText: Array.isArray(job.requirements)
+      ? job.requirements.join("\n")
+      : "",
+
+    skillsText: Array.isArray(job.skills) ? job.skills.join(", ") : "",
+
+    location: job.location ?? "",
+    employmentType: job.employmentType ?? "",
+    workplaceType: job.workplaceType ?? "",
+    experienceLevel: job.experienceLevel ?? "",
+    salaryMin:
+      job.salaryMin === null || job.salaryMin === undefined
+        ? ""
+        : String(job.salaryMin),
+
+    salaryMax:
+      job.salaryMax === null || job.salaryMax === undefined
+        ? ""
+        : String(job.salaryMax),
+    salaryCurrency: job.salaryCurrency ?? "INR",
+    isSalaryVisible: Boolean(job.isSalaryVisible),
+  };
+};
+
 const convertFormDataToPayload = (formData) => {
   return {
     title: formData.title,
@@ -81,18 +122,68 @@ const convertFormDataToPayload = (formData) => {
 };
 
 const CompanyJobFormPage = () => {
+  const { jobId } = useParams();
+
   const navigate = useNavigate();
+
+  const isEditMode = Boolean(jobId);
+
+  const [pageStatus, setPageStatus] = useState(
+    isEditMode ? "loading" : "ready",
+  );
 
   const [apiError, setApiError] = useState("");
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(createJobSchema),
     defaultValues,
   });
+
+  useEffect(() => {
+    if (!isEditMode) {
+      return;
+    }
+
+    let shouldIgnore = false;
+
+    const loadJob = async () => {
+      try {
+        setPageStatus("loading");
+        setApiError("");
+
+        const result = await getManagedJobById(jobId);
+
+        if (shouldIgnore) {
+          return;
+        }
+
+        reset(getDefaultValuesFromJob(result.data));
+
+        setPageStatus("ready");
+      } catch (error) {
+        if (shouldIgnore) {
+          return;
+        }
+
+        const normalizedError = getApiError(error);
+
+        setApiError(normalizedError.message);
+
+        setPageStatus("error");
+      }
+    };
+
+    loadJob();
+
+    return () => {
+      shouldIgnore = true;
+    };
+  }, [isEditMode, jobId, reset]);
 
   const onSubmit = async (formData) => {
     setApiError("");
@@ -100,7 +191,11 @@ const CompanyJobFormPage = () => {
     const payload = convertFormDataToPayload(formData);
 
     try {
-      await createManagedJob(payload);
+      if (isEditMode) {
+        await updateManagedJob(jobId, payload);
+      } else {
+        await createManagedJob(payload);
+      }
 
       navigate("/company/jobs", {
         replace: true,
@@ -112,6 +207,31 @@ const CompanyJobFormPage = () => {
     }
   };
 
+  if (pageStatus === "loading") {
+    return (
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-sm text-slate-600">Loading job details...</p>
+      </section>
+    );
+  }
+
+  if (pageStatus === "error") {
+    return (
+      <section className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
+        <p className="font-semibold text-red-700">Could not load job</p>
+
+        <p className="mt-2 text-sm text-red-700">{apiError}</p>
+
+        <Link
+          to="/company/jobs"
+          className="mt-5 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+        >
+          Back to jobs
+        </Link>
+      </section>
+    );
+  }
+
   return (
     <div className="grid gap-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -120,11 +240,13 @@ const CompanyJobFormPage = () => {
         </p>
 
         <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-          Create job
+          {isEditMode ? "Edit job" : "Create job"}
         </h1>
 
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-          Create a new job posting for candidates to discover and apply.
+          {isEditMode
+            ? "Update this job posting and keep the public listing accurate."
+            : "Create a new job posting for candidates to discover and apply."}
         </p>
       </section>
 
@@ -295,8 +417,6 @@ const CompanyJobFormPage = () => {
             <p className="mt-1 text-xs text-slate-500">
               Separate skills with commas.
             </p>
-
-            <FieldError message={errors.skillsText?.message} />
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2">
@@ -319,8 +439,6 @@ const CompanyJobFormPage = () => {
               <p className="mt-1 text-xs text-slate-500">
                 Write one responsibility per line.
               </p>
-
-              <FieldError message={errors.responsibilitiesText?.message} />
             </div>
 
             <div>
@@ -342,8 +460,6 @@ const CompanyJobFormPage = () => {
               <p className="mt-1 text-xs text-slate-500">
                 Write one requirement per line.
               </p>
-
-              <FieldError message={errors.requirementsText?.message} />
             </div>
           </div>
 
@@ -434,7 +550,13 @@ const CompanyJobFormPage = () => {
             disabled={isSubmitting}
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSubmitting ? "Creating..." : "Create job"}
+            {isSubmitting
+              ? isEditMode
+                ? "Updating..."
+                : "Creating..."
+              : isEditMode
+                ? "Update job"
+                : "Create job"}
           </button>
         </div>
       </form>

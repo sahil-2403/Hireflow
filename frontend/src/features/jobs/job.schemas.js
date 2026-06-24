@@ -1,24 +1,20 @@
 import { z } from "zod";
 
-const optionalSalaryString = z
-  .string()
-  .trim()
-  .optional()
-  .transform((value) => {
-    if (!value) {
+const optionalSalaryValue = z.preprocess(
+  (value) => {
+    if (value === "" || value === null || value === undefined) {
       return null;
     }
 
     return Number(value);
-  })
-  .refine(
-    (value) => {
-      return value === null || (!Number.isNaN(value) && value >= 0);
-    },
-    {
-      message: "Salary must be a positive number",
-    },
-  );
+  },
+  z
+    .number({
+      message: "Salary must be a number",
+    })
+    .nonnegative("Salary must be a positive number")
+    .nullable(),
+);
 
 const createJobSchema = z
   .object({
@@ -61,8 +57,8 @@ const createJobSchema = z
       message: "Select an experience level",
     }),
 
-    salaryMin: optionalSalaryString,
-    salaryMax: optionalSalaryString,
+    salaryMin: optionalSalaryValue,
+    salaryMax: optionalSalaryValue,
 
     salaryCurrency: z
       .string()

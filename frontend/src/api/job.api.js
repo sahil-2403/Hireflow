@@ -36,10 +36,24 @@ const updateManagedJobStatus = async (jobId, status) => {
   return response.data;
 };
 
+const getManagedJobById = async (jobId) => {
+  const response = await apiClient.get(`/jobs/manage/${jobId}`);
+
+  return response.data;
+};
+
+const updateManagedJob = async (jobId, jobData) => {
+  const response = await apiClient.patch(`/jobs/${jobId}`, jobData);
+
+  return response.data;
+};
+
 export {
   listPublicJobs,
   getPublicJobById,
   listManagedJobs,
   createManagedJob,
   updateManagedJobStatus,
+  getManagedJobById,
+  updateManagedJob,
 };

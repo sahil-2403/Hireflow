@@ -19,6 +19,7 @@ import {
   listPublicJobs,
   getPublicJobById,
   listManagedJobs,
+  getManagedJobById,
 } from "./job.controller.js";
 
 const router = express.Router();
@@ -125,6 +126,13 @@ router.get(
   authenticate,
   authorize(ROLES.OWNER, ROLES.RECRUITER),
   listManagedJobs,
+);
+
+router.get(
+  "/manage/:jobId",
+  authenticate,
+  authorize(ROLES.OWNER, ROLES.RECRUITER),
+  getManagedJobById,
 );
 
 /**

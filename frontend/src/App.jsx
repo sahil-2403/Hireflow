@@ -93,6 +93,11 @@ const App = () => {
             <Route path="/company/jobs" element={<CompanyJobsPage />} />
 
             <Route path="/company/jobs/new" element={<CompanyJobFormPage />} />
+
+            <Route
+              path="/company/jobs/:jobId/edit"
+              element={<CompanyJobFormPage />}
+            />
           </Route>
         </Route>
       </Route>

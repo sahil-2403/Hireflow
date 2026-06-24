@@ -354,6 +354,30 @@ const listManagedJobs = async (userId, role, query) => {
   };
 };
 
+const getManagedJobById = async (userId, role, jobId) => {
+  if (!mongoose.isValidObjectId(jobId)) {
+    throw new ApiError(400, "Invalid job ID");
+  }
+
+  const company = await getStaffCompany(userId, role);
+
+  const job = await Job.findOne({
+    _id: jobId,
+    companyId: company._id,
+  })
+    .populate({
+      path: "createdBy",
+      select: "username email role",
+    })
+    .lean();
+
+  if (!job) {
+    throw new ApiError(404, "Job not found");
+  }
+
+  return job;
+};
+
 export {
   createJob,
   updateJob,
@@ -361,4 +385,5 @@ export {
   listPublicJobs,
   getPublicJobById,
   listManagedJobs,
+  getManagedJobById,
 };
