@@ -27,6 +27,7 @@ import CandidateApplicationsPage from "./pages/candidate/CandidateApplicationsPa
 
 import CompanyDashboardPage from "./pages/company/CompanyDashboardPage";
 import CompanyJobsPage from "./pages/company/CompanyJobsPage";
+import CompanyJobFormPage from "./pages/company/CompanyJobFormPage";
 
 import NotFoundPage from "./pages/shared/NotFoundPage";
 
@@ -90,6 +91,8 @@ const App = () => {
             />
 
             <Route path="/company/jobs" element={<CompanyJobsPage />} />
+
+            <Route path="/company/jobs/new" element={<CompanyJobFormPage />} />
           </Route>
         </Route>
       </Route>

@@ -22,13 +22,16 @@ const listManagedJobs = async (params = {}) => {
   return response.data;
 };
 
+const createManagedJob = async (jobData) => {
+  const response = await apiClient.post("/jobs", jobData);
+
+  return response.data;
+};
+
 const updateManagedJobStatus = async (jobId, status) => {
-  const response = await apiClient.patch(
-    `/jobs/${jobId}/status`,
-    {
-      status,
-    }
-  );
+  const response = await apiClient.patch(`/jobs/${jobId}/status`, {
+    status,
+  });
 
   return response.data;
 };
@@ -37,5 +40,6 @@ export {
   listPublicJobs,
   getPublicJobById,
   listManagedJobs,
+  createManagedJob,
   updateManagedJobStatus,
 };
