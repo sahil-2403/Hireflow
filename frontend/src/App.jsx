@@ -30,6 +30,7 @@ import CompanyJobsPage from "./pages/company/CompanyJobsPage";
 import CompanyJobFormPage from "./pages/company/CompanyJobFormPage";
 import CompanyApplicationsPage from "./pages/company/CompanyApplicationsPage";
 import CompanyProfilePage from "./pages/company/CompanyProfilePage";
+import CompanyRecruitersPage from "./pages/company/CompanyRecruitersPage";
 
 import NotFoundPage from "./pages/shared/NotFoundPage";
 
@@ -108,6 +109,11 @@ const App = () => {
 
             <Route element={<RoleRoute allowedRoles={[ROLES.OWNER]} />}>
               <Route path="/company/profile" element={<CompanyProfilePage />} />
+
+              <Route
+                path="/company/recruiters"
+                element={<CompanyRecruitersPage />}
+              />
             </Route>
           </Route>
         </Route>

@@ -28,9 +28,35 @@ const uploadCompanyLogo = async (logoFile) => {
   return response.data;
 };
 
+const createRecruiter = async (recruiterData) => {
+  const response = await apiClient.post("/company/recruiters", recruiterData);
+
+  return response.data;
+};
+
+const listRecruiters = async () => {
+  const response = await apiClient.get("/company/recruiters");
+
+  return response.data;
+};
+
+const updateRecruiterStatus = async (recruiterId, isActive) => {
+  const response = await apiClient.patch(
+    `/company/recruiters/${recruiterId}/status`,
+    {
+      isActive,
+    },
+  );
+
+  return response.data;
+};
+
 export {
   getPublicCompany,
   createCompanyProfile,
   updateCompanyProfile,
   uploadCompanyLogo,
+  createRecruiter,
+  listRecruiters,
+  updateRecruiterStatus,
 };
