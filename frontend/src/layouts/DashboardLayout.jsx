@@ -84,6 +84,15 @@ const DashboardLayout = () => {
                 >
                   Applications
                 </NavLink>
+
+                {user?.role === ROLES.OWNER && (
+                  <NavLink
+                    to="/company/profile"
+                    className={getSidebarLinkClass}
+                  >
+                    Company Profile
+                  </NavLink>
+                )}
               </>
             )}
 
