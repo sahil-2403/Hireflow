@@ -28,6 +28,29 @@ const SORT_OPTIONS = [
   },
 ];
 
+const formatDateTime = (value) => {
+  if (!value) {
+    return "Not available";
+  }
+
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+};
+
+const getChangedByLabel = (changedBy) => {
+  if (!changedBy) {
+    return "System";
+  }
+
+  if (typeof changedBy === "string") {
+    return "User";
+  }
+
+  return changedBy.username || changedBy.email || "User";
+};
+
 const formatDate = (value) => {
   if (!value) {
     return "Not available";
@@ -132,6 +155,16 @@ const CompanyApplicationsPage = () => {
   };
 
   const handleChangeApplicationStatus = async (application, nextStatus) => {
+    const confirmed = window.confirm(
+      `Move this application from ${getApplicationStatusLabel(
+        application.status,
+      )} to ${getApplicationStatusLabel(nextStatus)}?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     try {
       setUpdatingApplicationId(application._id);
       setErrorMessage("");
@@ -425,6 +458,61 @@ const CompanyApplicationsPage = () => {
                     ))}
                   </div>
                 )}
+
+                <div className="mt-5 grid gap-4 border-t border-slate-100 pt-5 lg:grid-cols-2">
+                  <section className="rounded-xl bg-slate-50 p-4">
+                    <h3 className="text-sm font-bold text-slate-950">
+                      Cover letter
+                    </h3>
+
+                    {application.coverLetter ? (
+                      <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">
+                        {application.coverLetter}
+                      </p>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-500">
+                        No cover letter submitted.
+                      </p>
+                    )}
+                  </section>
+
+                  <section className="rounded-xl bg-slate-50 p-4">
+                    <h3 className="text-sm font-bold text-slate-950">
+                      Status history
+                    </h3>
+
+                    {application.statusHistory?.length > 0 ? (
+                      <div className="mt-3 space-y-3">
+                        {application.statusHistory.map((historyItem, index) => (
+                          <div
+                            key={`${historyItem.status}-${index}`}
+                            className="rounded-lg border border-slate-200 bg-white p-3"
+                          >
+                            <div className="flex flex-wrap items-center gap-2">
+                              <ApplicationStatusBadge
+                                status={historyItem.status}
+                              />
+
+                              <span className="text-xs text-slate-500">
+                                by {getChangedByLabel(historyItem.changedBy)}
+                              </span>
+                            </div>
+
+                            <p className="mt-2 text-xs text-slate-500">
+                              {formatDateTime(
+                                historyItem.changedAt || historyItem.createdAt,
+                              )}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-500">
+                        No status history available.
+                      </p>
+                    )}
+                  </section>
+                </div>
               </article>
             );
           })}

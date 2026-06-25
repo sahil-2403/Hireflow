@@ -259,6 +259,10 @@ const listManagedApplications = async (userId, role, query) => {
         path: "reviewedBy",
         select: "username email role",
       })
+      .populate({
+        path: "statusHistory.changedBy",
+        select: "username email role",
+      })
       .sort({
         appliedAt: sortOrder,
       })
