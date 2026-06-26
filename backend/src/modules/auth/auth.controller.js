@@ -1,16 +1,25 @@
 import asyncHandler from "../../shared/utils/asyncHandler.js";
 import ApiResponse from "../../shared/responses/ApiResponse.js";
 
+import {
+  setAuthCookies,
+  clearAuthCookies,
+  getRefreshTokenCookieName,
+} from "./auth.cookie.js";
+
 import * as authService from "./auth.service.js";
 
 const loginUser = asyncHandler(async (req, res) => {
   const result = await authService.loginUser(req.body);
 
+  setAuthCookies(res, {
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+  });
+
   return res.status(200).json(
     new ApiResponse(200, result.message, {
       user: result.user,
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
     }),
   );
 });
@@ -33,27 +42,32 @@ const registerCandidate = asyncHandler(async (req, res) => {
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const result = await authService.refreshAccessToken(req.body.refreshToken);
+  const refreshToken = req.cookies?.[getRefreshTokenCookieName()];
 
-  return res.status(200).json(
-    new ApiResponse(200, result.message, {
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-    }),
-  );
+  const result = await authService.refreshAccessToken(refreshToken);
+
+  setAuthCookies(res, {
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+  });
+
+  return res.status(200).json(new ApiResponse(200, result.message));
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
-  const result = await authService.logoutUser(
-    req.user.id,
-    req.body.refreshToken,
-  );
+  const refreshToken = req.cookies?.[getRefreshTokenCookieName()];
+
+  const result = await authService.logoutUser(req.user.id, refreshToken);
+
+  clearAuthCookies(res);
 
   return res.status(200).json(new ApiResponse(200, result.message));
 });
 
 const logoutAllSessions = asyncHandler(async (req, res) => {
   const result = await authService.logoutAllSessions(req.user.id);
+
+  clearAuthCookies(res);
 
   return res.status(200).json(new ApiResponse(200, result.message));
 });

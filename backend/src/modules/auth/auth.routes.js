@@ -10,12 +10,11 @@ import { authLimiter } from "../../shared/middleware/rateLimiters.js";
 import {
   registerSchema,
   loginSchema,
-  refreshTokenSchema,
-  logoutSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
   resendVerificationSchema,
 } from "./auth.validation.js";
+
 import {
   registerCandidate,
   verifyEmail,
@@ -185,7 +184,7 @@ router.post("/login", authLimiter, validate(loginSchema), loginUser);
  *       401:
  *         description: Invalid or expired refresh token
  */
-router.post("/refresh-token", validate(refreshTokenSchema), refreshAccessToken);
+router.post("/refresh-token", refreshAccessToken);
 
 /**
  * @openapi
@@ -215,7 +214,7 @@ router.post("/refresh-token", validate(refreshTokenSchema), refreshAccessToken);
  *       404:
  *         description: Session not found
  */
-router.post("/logout", authenticate, validate(logoutSchema), logoutUser);
+router.post("/logout", authenticate, logoutUser);
 
 /**
  * @openapi

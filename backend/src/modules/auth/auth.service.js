@@ -104,6 +104,10 @@ const logoutAllSessions = async (userId) => {
 };
 
 const logoutUser = async (userId, refreshToken) => {
+  if (!refreshToken) {
+    throw new ApiError(401, "Refresh token missing");
+  }
+
   const tokenHash = hashToken(refreshToken);
 
   const deletedToken = await RefreshToken.findOneAndDelete({
@@ -141,6 +145,10 @@ const createRefreshToken = async (user) => {
 };
 
 const refreshAccessToken = async (refreshToken) => {
+  if (!refreshToken) {
+    throw new ApiError(401, "Refresh token missing");
+  }
+
   const decoded = verifyRefreshToken(refreshToken);
 
   const user = await User.findById(decoded.sub);
