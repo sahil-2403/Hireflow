@@ -1,4 +1,5 @@
 import express from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -50,6 +51,8 @@ app.use(
     limit: "1mb",
   }),
 );
+
+app.use(cookieParser());
 
 app.use(
   process.env.NODE_ENV === "production" ? morgan("combined") : morgan("dev"),
