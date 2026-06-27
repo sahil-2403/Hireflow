@@ -2,12 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    <link rel="stylesheet" href="/boot-loader.css" />
+
+    <title>HireFlow</title>
   </head>
+
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="app-boot-loader">
+        <div class="app-boot-card">
+          <div class="app-boot-spinner"></div>
+
+          <div class="app-boot-text">
+            <p class="app-boot-title">Loading HireFlow...</p>
+            <p class="app-boot-subtitle">Please wait a moment</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -1,5 +1,7 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
+import PageLoader from "../components/common/PageLoader";
+
 import useAuth from "../hooks/useAuth";
 
 const ProtectedRoute = () => {
@@ -8,7 +10,7 @@ const ProtectedRoute = () => {
   const location = useLocation();
 
   if (isInitializing) {
-    return <div>Loading...</div>;
+    return <PageLoader message="Checking your session..." />;
   }
 
   if (!isAuthenticated) {
