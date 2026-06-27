@@ -214,7 +214,7 @@ router.post("/refresh-token", refreshAccessToken);
  *       404:
  *         description: Session not found
  */
-router.post("/logout", authenticate, logoutUser);
+router.post("/logout", logoutUser);
 
 /**
  * @openapi

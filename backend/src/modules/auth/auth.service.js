@@ -103,21 +103,18 @@ const logoutAllSessions = async (userId) => {
   };
 };
 
-const logoutUser = async (userId, refreshToken) => {
+const logoutUser = async (refreshToken) => {
   if (!refreshToken) {
-    throw new ApiError(401, "Refresh token missing");
+    return {
+      message: "Logged out successfully",
+    };
   }
 
   const tokenHash = hashToken(refreshToken);
 
-  const deletedToken = await RefreshToken.findOneAndDelete({
-    userId,
+  await RefreshToken.findOneAndDelete({
     tokenHash,
   });
-
-  if (!deletedToken) {
-    throw new ApiError(404, "Session not found");
-  }
 
   return {
     message: "Logged out successfully",
