@@ -25,9 +25,12 @@ import {
   forgotPassword,
   resetPassword,
   resendVerificationEmail,
+  getCsrfToken,
 } from "./auth.controller.js";
 
 const router = express.Router();
+
+router.get("/csrf-token", getCsrfToken);
 
 /**
  * @openapi

@@ -7,6 +7,11 @@ import {
   getRefreshTokenCookieName,
 } from "./auth.cookie.js";
 
+import {
+  generateCsrfToken,
+  setCsrfCookie,
+} from "../../shared/security/csrf.js";
+
 import * as authService from "./auth.service.js";
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -93,6 +98,18 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, result.message));
 });
 
+const getCsrfToken = asyncHandler(async (req, res) => {
+  const csrfToken = generateCsrfToken();
+
+  setCsrfCookie(res, csrfToken);
+
+  return res.status(200).json(
+    new ApiResponse(200, "CSRF token generated successfully", {
+      csrfToken,
+    }),
+  );
+});
+
 export {
   registerCandidate,
   verifyEmail,
@@ -103,4 +120,5 @@ export {
   forgotPassword,
   resetPassword,
   resendVerificationEmail,
+  getCsrfToken,
 };

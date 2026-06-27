@@ -15,6 +15,7 @@ import analyticsRouter from "./modules/analytics/analytics.routes.js";
 import swaggerSpec from "./config/swagger.js";
 
 import { globalLimiter } from "./shared/middleware/rateLimiters.js";
+import { csrfProtection } from "./shared/security/csrf.js";
 
 import notFound from "./shared/middleware/notFound.js";
 import errorHandler from "./shared/middleware/errorHandler.js";
@@ -35,7 +36,7 @@ app.use(
     origin: process.env.CLIENT_URL,
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token"],
   }),
 );
 
@@ -53,6 +54,8 @@ app.use(
 );
 
 app.use(cookieParser());
+
+app.use(csrfProtection);
 
 app.use(
   process.env.NODE_ENV === "production" ? morgan("combined") : morgan("dev"),
