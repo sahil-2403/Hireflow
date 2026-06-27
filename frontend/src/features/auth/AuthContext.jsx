@@ -1,76 +1,84 @@
 import {
   createContext,
+  useCallback,
+  useEffect,
   useMemo,
   useState,
 } from "react";
 
-import {
-  getStoredSession,
-  removeStoredSession,
-  storeSession,
-} from "./auth.storage";
+import { getCurrentUser, refreshSession } from "../../api/auth.api";
 
 const AuthContext = createContext(null);
 
 const AuthProvider = ({ children }) => {
-  const [session, setSession] = useState(
-    () => getStoredSession()
-  );
+  const [user, setUser] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
-  const signIn = (sessionData) => {
-    const newSession = {
-      user: sessionData.user,
-      accessToken:
-        sessionData.accessToken,
-      refreshToken:
-        sessionData.refreshToken,
-    };
+  const isAuthenticated = Boolean(user);
 
-    storeSession(newSession);
-    setSession(newSession);
-  };
+  const restoreSession = useCallback(async () => {
+    try {
+      const result = await getCurrentUser();
 
-  const updateSession = (sessionData) => {
-    storeSession(sessionData);
-    setSession(sessionData);
-  };
+      setUser(result.data);
+    } catch {
+      try {
+        await refreshSession();
 
-  const signOut = () => {
-    removeStoredSession();
-    setSession(null);
-  };
+        const result = await getCurrentUser();
+
+        setUser(result.data);
+      } catch {
+        setUser(null);
+      }
+    } finally {
+      setIsInitializing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
+
+  const signIn = useCallback((userData) => {
+    setUser(userData);
+  }, []);
+
+  const signOut = useCallback(() => {
+    setUser(null);
+  }, []);
+
+  const updateUser = useCallback((userData) => {
+    setUser((currentUser) => ({
+      ...currentUser,
+      ...userData,
+    }));
+  }, []);
 
   const contextValue = useMemo(
     () => ({
-      session,
-      user: session?.user ?? null,
-      accessToken:
-        session?.accessToken ?? null,
-      refreshToken:
-        session?.refreshToken ?? null,
-
-      isAuthenticated: Boolean(
-        session?.user &&
-          session?.accessToken
-      ),
-
+      user,
+      isAuthenticated,
+      isInitializing,
       signIn,
-      updateSession,
       signOut,
+      updateUser,
+      restoreSession,
     }),
-    [session]
+    [
+      user,
+      isAuthenticated,
+      isInitializing,
+      signIn,
+      signOut,
+      updateUser,
+      restoreSession,
+    ],
   );
 
   return (
-    <AuthContext.Provider
-      value={contextValue}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 };
 
-export {
-  AuthContext,
-  AuthProvider,
-};
+export { AuthContext, AuthProvider };

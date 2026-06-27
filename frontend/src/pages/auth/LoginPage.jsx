@@ -57,7 +57,7 @@ const LoginPage = () => {
     try {
       const result = await login(formData);
 
-      signIn(result.data);
+      signIn(result.data.user);
 
       const role = result.data.user.role;
 

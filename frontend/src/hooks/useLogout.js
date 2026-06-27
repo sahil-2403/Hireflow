@@ -6,16 +6,11 @@ import useAuth from "./useAuth";
 const useLogout = () => {
   const navigate = useNavigate();
 
-  const { accessToken, refreshToken, signOut } = useAuth();
+  const { signOut } = useAuth();
 
   const logoutUser = async () => {
     try {
-      if (accessToken && refreshToken) {
-        await logout({
-          accessToken,
-          refreshToken,
-        });
-      }
+      await logout();
     } catch (error) {
       console.error("Logout request failed:", error);
     } finally {

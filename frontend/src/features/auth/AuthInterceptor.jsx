@@ -2,100 +2,55 @@ import { useEffect } from "react";
 
 import apiClient from "../../api/apiClient";
 import { refreshSession } from "../../api/auth.api";
-
 import useAuth from "../../hooks/useAuth";
 
-let refreshPromise = null;
-
-const AuthInterceptor = () => {
-  const { session, accessToken, refreshToken, updateSession, signOut } =
-    useAuth();
+const AuthInterceptor = ({ children }) => {
+  const { signOut } = useAuth();
 
   useEffect(() => {
-    const requestInterceptorId = apiClient.interceptors.request.use(
-      (config) => {
-        if (config._skipAuth || !accessToken) {
-          return config;
-        }
-
-        config.headers = config.headers ?? {};
-
-        if (!config.headers.Authorization) {
-          config.headers.Authorization = `Bearer ${accessToken}`;
-        }
-
-        return config;
-      },
-    );
-
-    const responseInterceptorId = apiClient.interceptors.response.use(
+    const responseInterceptor = apiClient.interceptors.response.use(
       (response) => response,
-
       async (error) => {
         const originalRequest = error.config;
 
-        const statusCode = error.response?.status;
+        const status = error.response?.status;
+        const requestUrl = originalRequest?.url;
 
-        const shouldTryRefresh =
-          statusCode === 401 &&
-          originalRequest &&
-          !originalRequest._retry &&
-          !originalRequest._skipAuthRefresh &&
-          refreshToken &&
-          session?.user;
+        const isAuthRefreshRequest = requestUrl?.includes(
+          "/auth/refresh-token",
+        );
 
-        if (!shouldTryRefresh) {
-          return Promise.reject(error);
+        const isAuthLoginRequest = requestUrl?.includes("/auth/login");
+
+        if (
+          status === 401 &&
+          !originalRequest?._retry &&
+          !isAuthRefreshRequest &&
+          !isAuthLoginRequest
+        ) {
+          originalRequest._retry = true;
+
+          try {
+            await refreshSession();
+
+            return apiClient(originalRequest);
+          } catch (refreshError) {
+            signOut();
+
+            return Promise.reject(refreshError);
+          }
         }
 
-        originalRequest._retry = true;
-
-        try {
-          if (!refreshPromise) {
-            refreshPromise = refreshSession(refreshToken).finally(() => {
-              refreshPromise = null;
-            });
-          }
-
-          const result = await refreshPromise;
-
-          const newAccessToken = result.data?.accessToken;
-
-          const newRefreshToken = result.data?.refreshToken;
-
-          if (!newAccessToken || !newRefreshToken) {
-            throw new Error("Refresh response did not include new tokens.");
-          }
-
-          const updatedSession = {
-            user: session.user,
-            accessToken: newAccessToken,
-            refreshToken: newRefreshToken,
-          };
-
-          updateSession(updatedSession);
-
-          originalRequest.headers = originalRequest.headers ?? {};
-
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
-          return apiClient(originalRequest);
-        } catch (refreshError) {
-          signOut();
-
-          return Promise.reject(refreshError);
-        }
+        return Promise.reject(error);
       },
     );
 
     return () => {
-      apiClient.interceptors.request.eject(requestInterceptorId);
-
-      apiClient.interceptors.response.eject(responseInterceptorId);
+      apiClient.interceptors.response.eject(responseInterceptor);
     };
-  }, [accessToken, refreshToken, session, updateSession, signOut]);
+  }, [signOut]);
 
-  return null;
+  return children;
 };
 
 export default AuthInterceptor;

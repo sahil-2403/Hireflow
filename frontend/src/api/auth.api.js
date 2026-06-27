@@ -1,54 +1,68 @@
 import apiClient from "./apiClient";
 
 const login = async (credentials) => {
-  const response = await apiClient.post("/auth/login", credentials);
+  const response = await apiClient.post(
+    "/auth/login",
+    credentials
+  );
 
   return response.data;
 };
 
 const registerCandidate = async (candidateData) => {
-  const response = await apiClient.post("/auth/register", candidateData);
+  const response = await apiClient.post(
+    "/auth/register",
+    candidateData
+  );
 
   return response.data;
 };
 
-const resendVerificationEmail = async (emailData) => {
-  const response = await apiClient.post("/auth/resend-verification", emailData);
+const resendVerificationEmail = async (email) => {
+  const response = await apiClient.post(
+    "/auth/resend-verification",
+    {
+      email,
+    }
+  );
 
   return response.data;
 };
 
-const forgotPassword = async (emailData) => {
-  const response = await apiClient.post("/auth/forgot-password", emailData);
+const forgotPassword = async (email) => {
+  const response = await apiClient.post(
+    "/auth/forgot-password",
+    {
+      email,
+    }
+  );
 
   return response.data;
 };
 
-const resetPassword = async (token, passwordData) => {
+const resetPassword = async (
+  token,
+  passwordData
+) => {
   const response = await apiClient.post(
     `/auth/reset-password/${token}`,
-    passwordData,
+    passwordData
   );
 
   return response.data;
 };
 
 const verifyEmail = async (token) => {
-  const response = await apiClient.get(`/auth/verify-email/${token}`);
+  const response = await apiClient.get(
+    `/auth/verify-email/${token}`
+  );
 
   return response.data;
 };
 
-const refreshSession = async (refreshToken) => {
+const refreshSession = async () => {
   const response = await apiClient.post(
-    "/auth/refresh-token",
-    {
-      refreshToken,
-    },
-    {
-      _skipAuth: true,
-      _skipAuthRefresh: true,
-    },
+    "/auth/refresh-token"
   );
 
   return response.data;
@@ -60,20 +74,9 @@ const getCurrentUser = async () => {
   return response.data;
 };
 
-const logout = async ({ refreshToken, accessToken }) => {
+const logout = async () => {
   const response = await apiClient.post(
-    "/auth/logout",
-    {
-      refreshToken,
-    },
-    {
-      _skipAuthRefresh: true,
-      headers: accessToken
-        ? {
-            Authorization: `Bearer ${accessToken}`,
-          }
-        : undefined,
-    },
+    "/auth/logout"
   );
 
   return response.data;
