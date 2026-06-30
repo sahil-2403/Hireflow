@@ -33,7 +33,7 @@ const ForgotPasswordPage = () => {
     setSuccessMessage("");
 
     try {
-      const result = await forgotPassword(formData);
+      const result = await forgotPassword(formData.email);
 
       setSuccessMessage(result.message);
     } catch (error) {

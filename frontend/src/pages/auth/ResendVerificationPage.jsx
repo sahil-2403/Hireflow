@@ -33,7 +33,7 @@ const ResendVerificationPage = () => {
     setSuccessMessage("");
 
     try {
-      const result = await resendVerificationEmail(formData);
+      const result = await resendVerificationEmail(formData.email);
 
       setSuccessMessage(result.message);
     } catch (error) {
