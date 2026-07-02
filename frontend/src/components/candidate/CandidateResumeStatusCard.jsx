@@ -4,58 +4,68 @@ const CandidateResumeStatusCard = ({ status, profile }) => {
   const hasResume = Boolean(profile?.resumeUrl);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
-        Resume
-      </p>
+    <section className="flex min-h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-emerald-50 text-xl">
+          📄
+        </div>
 
-      <h2 className="text-xl font-bold text-slate-950">Resume status</h2>
-
-      {status === "loading" && (
-        <p className="mt-4 text-sm text-slate-600">Checking resume...</p>
-      )}
-
-      {status === "missing" && (
-        <p className="mt-4 text-sm leading-6 text-amber-700">
-          Create your candidate profile before uploading a resume.
+        <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
+          Resume status
         </p>
-      )}
 
-      {status === "error" && (
-        <p className="mt-4 text-sm leading-6 text-red-700">
-          Resume status could not be loaded.
-        </p>
-      )}
+        <h2 className="mt-2 text-xl font-black text-slate-950">
+          {hasResume ? "Uploaded" : "Not uploaded"}
+        </h2>
 
-      {status === "success" && (
-        <>
-          <div
-            className={[
-              "mt-4 rounded-lg border px-4 py-3 text-sm font-medium",
-              hasResume
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-amber-200 bg-amber-50 text-amber-700",
-            ].join(" ")}
-          >
-            {hasResume ? "Resume uploaded" : "Resume not uploaded"}
-          </div>
-
+        {status === "loading" && (
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            {hasResume
-              ? "Your resume is ready for job applications."
-              : "You need to upload a resume before applying to jobs."}
+            Checking resume...
           </p>
+        )}
 
-          {hasResume && (
-            <Link
-              to="/candidate/resume"
-              className="mt-4 inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        {status === "missing" && (
+          <p className="mt-3 text-sm leading-6 text-amber-700">
+            Create your candidate profile before uploading a resume.
+          </p>
+        )}
+
+        {status === "error" && (
+          <p className="mt-3 text-sm leading-6 text-red-700">
+            Resume status could not be loaded.
+          </p>
+        )}
+
+        {status === "success" && (
+          <>
+            <div
+              className={[
+                "mt-4 rounded-xl border px-4 py-3 text-sm font-bold",
+                hasResume
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-amber-200 bg-amber-50 text-amber-700",
+              ].join(" ")}
             >
-              View resume
-            </Link>
-          )}
-        </>
-      )}
+              {hasResume ? "Your resume is ready" : "Resume required"}
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              {hasResume
+                ? "Use your uploaded resume while applying to relevant jobs."
+                : "Upload a resume to complete your application readiness."}
+            </p>
+          </>
+        )}
+      </div>
+
+      <div className="border-t border-slate-100 bg-slate-50/80 p-4">
+        <Link
+          to="/candidate/resume"
+          className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+        >
+          {hasResume ? "View resume" : "Upload resume"}
+        </Link>
+      </div>
     </section>
   );
 };
