@@ -347,9 +347,7 @@ const DashboardLayout = () => {
               </NavLink>
             )}
 
-            {/* <span className={getRoleBadgeClass(user?.role)}>{user?.role}</span> */}
-
-            <div className="hidden items-center gap-3 rounded-2xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 shadow-sm lg:flex">
+            <div className="hidden items-center gap-3 py-1.5 pl-1.5 pr-3 lg:flex">
               <div className="grid h-8 w-8 place-items-center rounded-full bg-slate-900 text-xs font-bold text-white">
                 {getInitials(user)}
               </div>
