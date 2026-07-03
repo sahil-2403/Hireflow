@@ -134,22 +134,7 @@ const getInitials = (user) => {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
   }
 
-  return displayName.slice(0, 2).toUpperCase();
-};
-
-const getRoleBadgeClass = (role) => {
-  const baseClass =
-    "hidden rounded-xl border px-3 py-1.5 text-xs font-bold capitalize sm:inline-flex";
-
-  if (role === ROLES.OWNER) {
-    return `${baseClass} border-violet-200 bg-violet-50 text-violet-700`;
-  }
-
-  if (role === ROLES.RECRUITER) {
-    return `${baseClass} border-blue-200 bg-blue-50 text-blue-700`;
-  }
-
-  return `${baseClass} border-blue-200 bg-blue-50 text-blue-700`;
+  return displayName[0].toUpperCase();
 };
 
 const getNavLinksByRole = (role) => {
@@ -362,7 +347,7 @@ const DashboardLayout = () => {
               </NavLink>
             )}
 
-            <span className={getRoleBadgeClass(user?.role)}>{user?.role}</span>
+            {/* <span className={getRoleBadgeClass(user?.role)}>{user?.role}</span> */}
 
             <div className="hidden items-center gap-3 rounded-2xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 shadow-sm lg:flex">
               <div className="grid h-8 w-8 place-items-center rounded-full bg-slate-900 text-xs font-bold text-white">
@@ -370,7 +355,7 @@ const DashboardLayout = () => {
               </div>
 
               <div className="min-w-0">
-                <p className="max-w-[140px] truncate text-sm font-bold text-slate-900">
+                <p className="max-w-35 truncate text-sm font-bold text-slate-900">
                   {getDisplayName(user)}
                 </p>
 
