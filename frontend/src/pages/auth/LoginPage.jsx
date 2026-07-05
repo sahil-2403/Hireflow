@@ -1,16 +1,34 @@
 import { useEffect, useState } from "react";
+
 import { Link, useLocation, useNavigate } from "react-router-dom";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { login } from "../../api/auth.api";
+
 import { loginSchema } from "../../features/auth/auth.schemas";
-import getApiError from "../../utils/getApiError";
-import useAuth from "../../hooks/useAuth";
 import { ROLES } from "../../features/auth/auth.constants";
 
-import FieldError from "../../components/common/FieldError";
+import getApiError from "../../utils/getApiError";
+
+import useAuth from "../../hooks/useAuth";
+
 import PasswordField from "../../components/common/PasswordField";
+
+import Button from "../../components/ui/Button";
+import { Card, CardBody } from "../../components/ui/Card";
+import FormField from "../../components/ui/FormField";
+
+const getInputClassName = (hasError) => {
+  return [
+    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
+    "placeholder:text-slate-400 focus:ring-4",
+    hasError
+      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
+      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
+  ].join(" ");
+};
 
 const LoginPage = () => {
   const location = useLocation();
@@ -86,125 +104,129 @@ const LoginPage = () => {
   };
 
   return (
-    <main className="flex min-h-[calc(100vh-73px)] items-center justify-center px-4 py-12 sm:px-6">
-      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="mb-8">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
+    <main className="min-h-[calc(100vh-4rem)] bg-linear-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
+      <section className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_460px] lg:items-center">
+        <div className="hidden lg:block">
+          <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
             Welcome back
           </p>
 
-          <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-            Login to HireFlow
+          <h1 className="mt-3 max-w-2xl text-5xl font-black tracking-tight text-slate-950">
+            Continue your hiring or job search journey.
           </h1>
 
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Access your candidate, recruiter, or company dashboard.
+          <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
+            Access your candidate dashboard, manage applications, review jobs,
+            or continue hiring from your company workspace.
           </p>
         </div>
 
-        {apiError && (
-          <div
-            className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            role="alert"
-          >
-            {apiError}
-          </div>
-        )}
+        <Card className="w-full">
+          <CardBody className="p-6 sm:p-8">
+            <div className="mb-8">
+              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                Login
+              </p>
 
-        {successMessage && (
-          <div
-            className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-            role="status"
-          >
-            {successMessage}
-          </div>
-        )}
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
+                Login to HireFlow
+              </h1>
 
-        <form
-          className="space-y-5"
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-        >
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Email address
-            </label>
-
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              className={[
-                "w-full rounded-lg border bg-white px-3 py-2.5 text-slate-900 outline-none transition",
-                "placeholder:text-slate-400 focus:ring-2",
-                errors.email
-                  ? "border-red-400 focus:border-red-500 focus:ring-red-100"
-                  : "border-slate-300 focus:border-blue-500 focus:ring-blue-100",
-              ].join(" ")}
-              {...register("email")}
-            />
-
-            <FieldError message={errors.email?.message} />
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between gap-4">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-slate-700"
-              >
-                Password
-              </label>
-
-              <Link
-                to="/forgot-password"
-                className="text-sm font-medium text-blue-600 hover:text-blue-700"
-              >
-                Forgot password?
-              </Link>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Access your candidate, recruiter, or company dashboard.
+              </p>
             </div>
 
-            <PasswordField
-              id="password"
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              registration={register("password")}
-              error={errors.password?.message}
-            />
-          </div>
+            {apiError && (
+              <div
+                className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                role="alert"
+              >
+                {apiError}
+              </div>
+            )}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400"
-          >
-            {isSubmitting ? "Logging in..." : "Login"}
-          </button>
-        </form>
+            {successMessage && (
+              <div
+                className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+                role="status"
+              >
+                {successMessage}
+              </div>
+            )}
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Don&apos;t have a candidate account?{" "}
-          <Link
-            to="/register"
-            className="font-semibold text-blue-600 hover:text-blue-700"
-          >
-            Register
-          </Link>
-        </p>
+            <form
+              className="space-y-5"
+              onSubmit={handleSubmit(onSubmit)}
+              noValidate
+            >
+              <FormField
+                label="Email address"
+                htmlFor="email"
+                error={errors.email?.message}
+              >
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  className={getInputClassName(Boolean(errors.email))}
+                  {...register("email")}
+                />
+              </FormField>
 
-        <p className="mt-3 text-center text-sm text-slate-600">
-          Didn&apos;t receive the verification email?{" "}
-          <Link
-            to="/resend-verification"
-            className="font-semibold text-blue-600 hover:text-blue-700"
-          >
-            Resend it
-          </Link>
-        </p>
+              <div>
+                <div className="mb-2 flex items-center justify-between gap-4">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-bold text-slate-700"
+                  >
+                    Password
+                  </label>
+
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm font-bold text-blue-600 hover:text-blue-700"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+
+                <PasswordField
+                  id="password"
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  registration={register("password")}
+                  error={errors.password?.message}
+                />
+              </div>
+
+              <Button type="submit" disabled={isSubmitting} fullWidth size="lg">
+                {isSubmitting ? "Logging in..." : "Login"}
+              </Button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-slate-600">
+              Don&apos;t have a candidate account?{" "}
+              <Link
+                to="/register"
+                className="font-bold text-blue-600 hover:text-blue-700"
+              >
+                Register
+              </Link>
+            </p>
+
+            <p className="mt-3 text-center text-sm text-slate-600">
+              Didn&apos;t receive the verification email?{" "}
+              <Link
+                to="/resend-verification"
+                className="font-bold text-blue-600 hover:text-blue-700"
+              >
+                Resend it
+              </Link>
+            </p>
+          </CardBody>
+        </Card>
       </section>
     </main>
   );
