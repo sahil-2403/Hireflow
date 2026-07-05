@@ -1,10 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Link } from "react-router-dom";
 
 import { listManagedJobs, updateManagedJobStatus } from "../../api/job.api";
 
 import getApiError from "../../utils/getApiError";
+
+import Button from "../../components/ui/Button";
+import { Card, CardBody } from "../../components/ui/Card";
+import EmptyState from "../../components/ui/EmptyState";
+import FormField from "../../components/ui/FormField";
+import PageHero from "../../components/ui/PageHero";
 
 import JobStatusBadge from "../../components/company/JobStatusBadge";
 
@@ -23,6 +29,13 @@ const JOB_STATUS_OPTIONS = [
   },
 ];
 
+const getInputClassName = () => {
+  return [
+    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
+    "placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50",
+  ].join(" ");
+};
+
 const formatDate = (value) => {
   if (!value) {
     return "Not available";
@@ -31,6 +44,30 @@ const formatDate = (value) => {
   return new Intl.DateTimeFormat("en-IN", {
     dateStyle: "medium",
   }).format(new Date(value));
+};
+
+const getStatusLabel = (status) => {
+  return JOB_STATUS_OPTIONS.find((option) => option.value === status)?.label;
+};
+
+const getActiveFilterChips = ({ search, selectedStatus }) => {
+  const chips = [];
+
+  if (search) {
+    chips.push({
+      key: "search",
+      label: `Search: ${search}`,
+    });
+  }
+
+  if (selectedStatus) {
+    chips.push({
+      key: "status",
+      label: getStatusLabel(selectedStatus) || selectedStatus,
+    });
+  }
+
+  return chips;
 };
 
 const CompanyJobsPage = () => {
@@ -123,6 +160,20 @@ const CompanyJobsPage = () => {
     setPage(1);
   };
 
+  const handleRemoveFilter = (filterKey) => {
+    if (filterKey === "search") {
+      setSearchInput("");
+      setSearch("");
+      setPage(1);
+      return;
+    }
+
+    if (filterKey === "status") {
+      setSelectedStatus("");
+      setPage(1);
+    }
+  };
+
   const handleToggleJobStatus = async (job) => {
     const nextStatus = job.status === "open" ? "closed" : "open";
 
@@ -149,98 +200,106 @@ const CompanyJobsPage = () => {
 
   const pagination = jobsData?.pagination;
 
+  const activeFilterChips = useMemo(() => {
+    return getActiveFilterChips({
+      search,
+      selectedStatus,
+    });
+  }, [search, selectedStatus]);
+
   return (
     <div className="grid gap-6">
-      <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
-            Company jobs
-          </p>
+      <PageHero
+        eyebrow="Company jobs"
+        title="Manage jobs"
+        description="View your company jobs, search postings, filter by status, and open or close job listings."
+        actions={
+          <Button as={Link} to="/company/jobs/new">
+            Create job
+          </Button>
+        }
+      />
 
-          <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-            Manage jobs
-          </h1>
+      <Card>
+        <CardBody>
+          <form
+            onSubmit={handleSearchSubmit}
+            className="grid gap-4 lg:grid-cols-[1.4fr_260px_auto]"
+          >
+            <FormField label="Search jobs" htmlFor="search">
+              <input
+                id="search"
+                type="search"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Search by title, description, or skills"
+                className={getInputClassName()}
+              />
+            </FormField>
 
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            View your company jobs, filter them, and open or close job postings.
-          </p>
-        </div>
+            <FormField label="Status" htmlFor="status">
+              <select
+                id="status"
+                value={selectedStatus}
+                onChange={handleStatusFilterChange}
+                className={getInputClassName()}
+              >
+                {JOB_STATUS_OPTIONS.map((option) => (
+                  <option key={option.label} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </FormField>
 
-        <Link
-          to="/company/jobs/new"
-          className="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-        >
-          Create job
-        </Link>
-      </section>
+            <div className="flex items-end gap-3">
+              <Button type="submit" className="shrink-0">
+                Search
+              </Button>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <form
-          onSubmit={handleSearchSubmit}
-          className="grid gap-4 lg:grid-cols-[1.5fr_1fr_auto]"
-        >
-          <div>
-            <label
-              htmlFor="search"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Search jobs
-            </label>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleClearFilters}
+                className="shrink-0"
+              >
+                Clear
+              </Button>
+            </div>
+          </form>
 
-            <input
-              id="search"
-              type="search"
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search by title, description, or skills"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
+          {activeFilterChips.length > 0 && (
+            <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-5">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Active filters:
+              </span>
 
-          <div>
-            <label
-              htmlFor="status"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Status
-            </label>
-
-            <select
-              id="status"
-              value={selectedStatus}
-              onChange={handleStatusFilterChange}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              {JOB_STATUS_OPTIONS.map((option) => (
-                <option key={option.label} value={option.value}>
-                  {option.label}
-                </option>
+              {activeFilterChips.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  onClick={() => handleRemoveFilter(chip.key)}
+                  className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
+                >
+                  {chip.label} ×
+                </button>
               ))}
-            </select>
-          </div>
 
-          <div className="flex items-end gap-3">
-            <button
-              type="submit"
-              className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-            >
-              Search
-            </button>
-
-            <button
-              type="button"
-              onClick={handleClearFilters}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Clear
-            </button>
-          </div>
-        </form>
-      </section>
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+        </CardBody>
+      </Card>
 
       {successMessage && (
         <div
-          className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
           role="status"
         >
           {successMessage}
@@ -249,7 +308,7 @@ const CompanyJobsPage = () => {
 
       {errorMessage && requestStatus !== "error" && (
         <div
-          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
           role="alert"
         >
           {errorMessage}
@@ -257,59 +316,88 @@ const CompanyJobsPage = () => {
       )}
 
       {requestStatus === "loading" && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm text-slate-600">Loading company jobs...</p>
-        </section>
+        <Card>
+          <CardBody>
+            <p className="text-sm text-slate-600">Loading company jobs...</p>
+          </CardBody>
+        </Card>
       )}
 
       {requestStatus === "error" && (
-        <section className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
-          <p className="font-semibold text-red-700">Could not load jobs</p>
+        <Card className="border-red-200 bg-red-50">
+          <CardBody>
+            <p className="font-bold text-red-700">Could not load jobs</p>
 
-          <p className="mt-2 text-sm text-red-700">{errorMessage}</p>
-        </section>
+            <p className="mt-2 text-sm leading-6 text-red-700">
+              {errorMessage}
+            </p>
+          </CardBody>
+        </Card>
       )}
 
       {requestStatus === "success" && jobs.length === 0 && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <h2 className="text-xl font-bold text-slate-950">No jobs found</h2>
+        <EmptyState
+          icon="💼"
+          title="No jobs found"
+          description="Create your first job or try changing your filters."
+          action={
+            <div className="flex flex-col justify-center gap-3 sm:flex-row">
+              <Button as={Link} to="/company/jobs/new">
+                Create job
+              </Button>
 
-          <p className="mt-2 text-sm text-slate-600">
-            Create your first job or try changing your filters.
-          </p>
-        </section>
+              {activeFilterChips.length > 0 && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleClearFilters}
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          }
+        />
       )}
 
       {requestStatus === "success" && jobs.length > 0 && (
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="hidden grid-cols-[1.5fr_1fr_1fr_1fr_auto] gap-4 border-b border-slate-200 bg-slate-50 px-6 py-3 text-sm font-semibold text-slate-600 lg:grid">
+        <Card className="overflow-hidden">
+          <div className="hidden grid-cols-[1.5fr_1fr_1fr_1fr_auto] gap-4 border-b border-slate-100 bg-slate-50 px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500 lg:grid">
             <p>Job</p>
             <p>Type</p>
             <p>Status</p>
             <p>Created</p>
-            <p>Action</p>
+            <p className="text-right">Actions</p>
           </div>
 
-          <div className="divide-y divide-slate-200">
+          <div className="divide-y divide-slate-100">
             {jobs.map((job) => (
               <article
                 key={job._id}
-                className="grid gap-4 px-6 py-5 lg:grid-cols-[1.5fr_1fr_1fr_1fr_auto] lg:items-center"
+                className="grid gap-4 px-5 py-5 lg:grid-cols-[1.5fr_1fr_1fr_1fr_auto] lg:items-center lg:px-6"
               >
                 <div>
-                  <p className="font-semibold text-slate-950">{job.title}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-black text-slate-950">{job.title}</p>
 
-                  <p className="mt-1 text-sm text-slate-500">{job.location}</p>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold capitalize text-slate-600 lg:hidden">
+                      {job.status}
+                    </span>
+                  </div>
+
+                  <p className="mt-1 text-sm font-semibold text-slate-600">
+                    📍 {job.location || "Location unavailable"}
+                  </p>
 
                   {job.createdBy && (
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 text-xs font-medium text-slate-400">
                       Created by {job.createdBy.username || job.createdBy.email}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <p className="text-sm capitalize text-slate-700">
+                  <p className="text-sm font-bold capitalize text-slate-800">
                     {job.employmentType}
                   </p>
 
@@ -318,73 +406,78 @@ const CompanyJobsPage = () => {
                   </p>
                 </div>
 
-                <div>
+                <div className="hidden lg:block">
                   <JobStatusBadge status={job.status} />
                 </div>
 
-                <p className="text-sm text-slate-600">
+                <p className="text-sm font-semibold text-slate-600">
                   {formatDate(job.createdAt)}
                 </p>
 
-                <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
-                  <Link
+                <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
+                  <Button
+                    as={Link}
                     to={`/company/jobs/${job._id}/edit`}
-                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    variant="secondary"
+                    size="sm"
                   >
                     Edit
-                  </Link>
+                  </Button>
 
-                  <button
+                  <Button
                     type="button"
                     disabled={updatingJobId === job._id}
                     onClick={() => handleToggleJobStatus(job)}
-                    className={[
-                      "rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70",
-                      job.status === "open"
-                        ? "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                        : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
-                    ].join(" ")}
+                    variant={job.status === "open" ? "danger" : "secondary"}
+                    size="sm"
+                    className={
+                      job.status === "closed"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                        : ""
+                    }
                   >
                     {updatingJobId === job._id
                       ? "Updating..."
                       : job.status === "open"
                         ? "Close"
                         : "Open"}
-                  </button>
+                  </Button>
                 </div>
               </article>
             ))}
           </div>
-        </section>
+        </Card>
       )}
 
       {requestStatus === "success" && pagination && (
-        <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-600">
-            Page {pagination.page} of {pagination.totalPages || 1} ·{" "}
-            {pagination.total} jobs
-          </p>
+        <Card>
+          <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-600">
+              Page {pagination.page} of {pagination.totalPages || 1} ·{" "}
+              {pagination.total} jobs
+            </p>
 
-          <div className="flex gap-3">
-            <button
-              type="button"
-              disabled={!pagination.hasPreviousPage}
-              onClick={() => setPage((currentPage) => currentPage - 1)}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Previous
-            </button>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!pagination.hasPreviousPage}
+                onClick={() => setPage((currentPage) => currentPage - 1)}
+              >
+                Previous
+              </Button>
 
-            <button
-              type="button"
-              disabled={!pagination.hasNextPage}
-              onClick={() => setPage((currentPage) => currentPage + 1)}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Next
-            </button>
-          </div>
-        </section>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!pagination.hasNextPage}
+                onClick={() => setPage((currentPage) => currentPage + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
       )}
     </div>
   );
