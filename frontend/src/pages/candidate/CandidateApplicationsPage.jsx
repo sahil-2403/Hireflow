@@ -8,6 +8,11 @@ import getApiError from "../../utils/getApiError";
 
 import ApplicationStatusBadge from "../../components/application/ApplicationStatusBadge";
 
+import Button from "../../components/ui/Button";
+import { Card, CardBody, CardHeader } from "../../components/ui/Card";
+import EmptyState from "../../components/ui/EmptyState";
+import PageHero from "../../components/ui/PageHero";
+
 const APPLICATION_STATUS_OPTIONS = [
   {
     label: "All",
@@ -103,50 +108,75 @@ const StatCard = ({ icon, label, value, description, tone = "blue" }) => {
   const classes = getStatCardClasses(tone);
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div
-          className={`grid h-11 w-11 place-items-center rounded-2xl text-xl ${classes.icon}`}
-        >
-          {icon}
+    <Card as="article">
+      <CardBody>
+        <div className="flex items-start justify-between gap-4">
+          <div
+            className={`grid h-11 w-11 place-items-center rounded-2xl text-xl ${classes.icon}`}
+          >
+            {icon}
+          </div>
+
+          <p className={`text-3xl font-black ${classes.value}`}>{value}</p>
         </div>
 
-        <p className={`text-3xl font-black ${classes.value}`}>{value}</p>
-      </div>
+        <h2 className="mt-4 text-sm font-bold uppercase tracking-wider text-slate-500">
+          {label}
+        </h2>
 
-      <h2 className="mt-4 text-sm font-bold uppercase tracking-wider text-slate-500">
-        {label}
-      </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+      </CardBody>
+    </Card>
+  );
+};
 
-      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
-    </article>
+const AlertMessage = ({ children }) => {
+  return (
+    <div
+      className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+      role="alert"
+    >
+      {children}
+    </div>
+  );
+};
+
+const StatusFilterButton = ({ option, selectedStatus, onClick }) => {
+  const isActive = selectedStatus === option.value;
+
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant={isActive ? "primary" : "ghost"}
+      onClick={() => onClick(option.value)}
+      className={
+        isActive
+          ? "rounded-full px-4 shadow-sm shadow-blue-200"
+          : "rounded-full bg-slate-100 px-4 text-slate-700 hover:bg-slate-200"
+      }
+    >
+      {option.label}
+    </Button>
   );
 };
 
 const EmptyApplicationsState = ({ selectedStatus }) => {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
-      <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-2xl">
-        📄
-      </div>
-
-      <h3 className="mt-4 text-xl font-black text-slate-950">
-        No applications found
-      </h3>
-
-      <p className="mt-2 text-sm leading-6 text-slate-600">
-        {selectedStatus
+    <EmptyState
+      icon="📄"
+      title="No applications found"
+      description={
+        selectedStatus
           ? "No applications match this status yet."
-          : "Once you apply to jobs, your applications will appear here."}
-      </p>
-
-      <Link
-        to="/jobs"
-        className="mt-5 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700"
-      >
-        Browse jobs
-      </Link>
-    </div>
+          : "Once you apply to jobs, your applications will appear here."
+      }
+      action={
+        <Button as={Link} to="/jobs">
+          Browse jobs
+        </Button>
+      }
+    />
   );
 };
 
@@ -198,8 +228,8 @@ const ApplicationActivityCard = ({ applications }) => {
   const recentApplications = applications.slice(0, 5);
 
   return (
-    <aside className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 p-5">
+    <Card as="aside">
+      <CardHeader>
         <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
           Activity
         </p>
@@ -211,46 +241,81 @@ const ApplicationActivityCard = ({ applications }) => {
         <p className="mt-1 text-sm text-slate-600">
           Your latest application updates from this page.
         </p>
-      </div>
+      </CardHeader>
 
-      {recentApplications.length === 0 ? (
-        <div className="p-5">
+      <CardBody className={recentApplications.length > 0 ? "p-0" : ""}>
+        {recentApplications.length === 0 ? (
           <p className="text-sm leading-6 text-slate-600">
             No activity to show yet.
           </p>
-        </div>
-      ) : (
-        <div className="divide-y divide-slate-100">
-          {recentApplications.map((application) => (
-            <div key={getApplicationId(application)} className="p-5">
-              <div className="flex gap-3">
-                <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-blue-50 text-sm">
-                  📬
-                </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {recentApplications.map((application) => (
+              <div key={getApplicationId(application)} className="p-5">
+                <div className="flex gap-3">
+                  <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-blue-50 text-sm">
+                    📬
+                  </div>
 
-                <div>
-                  <p className="text-sm font-black text-slate-950">
-                    {application.jobId?.title || "Job title unavailable"}
-                  </p>
+                  <div>
+                    <p className="text-sm font-black text-slate-950">
+                      {application.jobId?.title || "Job title unavailable"}
+                    </p>
 
-                  <p className="mt-1 text-sm text-slate-600">
-                    {application.companyId?.name || "Company unavailable"}
-                  </p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {application.companyId?.name || "Company unavailable"}
+                    </p>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <ApplicationStatusBadge status={application.status} />
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <ApplicationStatusBadge status={application.status} />
 
-                    <span className="text-xs font-medium text-slate-400">
-                      {formatDate(getAppliedDate(application))}
-                    </span>
+                      <span className="text-xs font-medium text-slate-400">
+                        {formatDate(getAppliedDate(application))}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </aside>
+            ))}
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+};
+
+const PaginationControls = ({ pagination, onPreviousPage, onNextPage }) => {
+  if (!pagination) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-3 border-t border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-600">
+        Page {pagination.page} of {pagination.totalPages || 1} ·{" "}
+        {pagination.total} total
+      </p>
+
+      <div className="flex gap-3">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={!pagination.hasPreviousPage}
+          onClick={onPreviousPage}
+        >
+          Previous
+        </Button>
+
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={!pagination.hasNextPage}
+          onClick={onNextPage}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
   );
 };
 
@@ -304,7 +369,6 @@ const CandidateApplicationsPage = () => {
         const normalizedError = getApiError(error);
 
         setErrorMessage(normalizedError.message);
-
         setApplicationsData(null);
         setStatus("error");
       }
@@ -380,31 +444,16 @@ const CandidateApplicationsPage = () => {
 
   return (
     <div className="grid gap-6">
-      <section className="overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-slate-50 shadow-sm">
-        <div className="flex flex-col gap-5 p-6 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-              Candidate applications
-            </p>
-
-            <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-              My applications
-            </h1>
-
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-              Track the jobs you applied to and follow your application status.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Candidate applications"
+        title="My applications"
+        description="Track the jobs you applied to and follow your application status."
+      />
 
       {summaryStatus === "error" && (
-        <div
-          className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-          role="alert"
-        >
+        <AlertMessage>
           Application summary could not be loaded: {summaryErrorMessage}
-        </div>
+        </AlertMessage>
       )}
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -442,8 +491,8 @@ const CandidateApplicationsPage = () => {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 p-5">
+        <Card>
+          <CardHeader>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
@@ -461,45 +510,38 @@ const CandidateApplicationsPage = () => {
 
               <div className="flex flex-wrap gap-2">
                 {APPLICATION_STATUS_OPTIONS.map((option) => (
-                  <button
+                  <StatusFilterButton
                     key={option.label}
-                    type="button"
-                    onClick={() => handleStatusChange(option.value)}
-                    className={[
-                      "rounded-full px-3 py-1.5 text-xs font-bold transition",
-                      selectedStatus === option.value
-                        ? "bg-blue-600 text-white shadow-sm shadow-blue-200"
-                        : "bg-slate-100 text-slate-700 hover:bg-slate-200",
-                    ].join(" ")}
-                  >
-                    {option.label}
-                  </button>
+                    option={option}
+                    selectedStatus={selectedStatus}
+                    onClick={handleStatusChange}
+                  />
                 ))}
               </div>
             </div>
-          </div>
+          </CardHeader>
 
           {status === "loading" && (
-            <div className="p-5">
+            <CardBody>
               <p className="text-sm text-slate-600">Loading applications...</p>
-            </div>
+            </CardBody>
           )}
 
           {status === "error" && (
-            <div className="p-5">
+            <CardBody>
               <div
                 className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
                 role="alert"
               >
                 {errorMessage}
               </div>
-            </div>
+            </CardBody>
           )}
 
           {status === "success" && applications.length === 0 && (
-            <div className="p-5">
+            <CardBody>
               <EmptyApplicationsState selectedStatus={selectedStatus} />
-            </div>
+            </CardBody>
           )}
 
           {status === "success" && applications.length > 0 && (
@@ -520,37 +562,16 @@ const CandidateApplicationsPage = () => {
                 ))}
               </div>
 
-              {pagination && (
-                <div className="flex flex-col gap-3 border-t border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-slate-600">
-                    Page {pagination.page} of {pagination.totalPages || 1} ·{" "}
-                    {pagination.total} total
-                  </p>
-
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      disabled={!pagination.hasPreviousPage}
-                      onClick={() => setPage((currentPage) => currentPage - 1)}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Previous
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={!pagination.hasNextPage}
-                      onClick={() => setPage((currentPage) => currentPage + 1)}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
+              <PaginationControls
+                pagination={pagination}
+                onPreviousPage={() =>
+                  setPage((currentPage) => Math.max(currentPage - 1, 1))
+                }
+                onNextPage={() => setPage((currentPage) => currentPage + 1)}
+              />
             </>
           )}
-        </section>
+        </Card>
 
         <ApplicationActivityCard applications={applications} />
       </div>

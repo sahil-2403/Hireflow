@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
 
+import Button from "../ui/Button";
+import { Card, CardBody, CardFooter } from "../ui/Card";
+
 const CandidateApplicationsSummaryCard = ({
   status,
   applicationsData,
@@ -14,8 +17,8 @@ const CandidateApplicationsSummaryCard = ({
   const latestApplication = applications[0];
 
   return (
-    <section className="flex min-h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-1 flex-col p-5">
+    <Card className="flex min-h-full flex-col">
+      <CardBody className="flex flex-1 flex-col">
         <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-violet-50 text-xl">
           📬
         </div>
@@ -61,17 +64,19 @@ const CandidateApplicationsSummaryCard = ({
             You have not applied to any jobs yet.
           </p>
         )}
-      </div>
+      </CardBody>
 
-      <div className="border-t border-slate-100 bg-slate-50/80 p-4">
-        <Link
+      <CardFooter>
+        <Button
+          as={Link}
           to="/candidate/applications"
-          className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+          variant="secondary"
+          fullWidth
         >
           View applications
-        </Link>
-      </div>
-    </section>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 

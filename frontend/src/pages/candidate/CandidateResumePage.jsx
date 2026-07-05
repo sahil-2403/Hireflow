@@ -11,6 +11,12 @@ import {
 import getApiError from "../../utils/getApiError";
 import openPdfBlob from "../../utils/openPdfBlob";
 
+import Button from "../../components/ui/Button";
+import { Card, CardBody, CardHeader } from "../../components/ui/Card";
+import EmptyState from "../../components/ui/EmptyState";
+import FormField from "../../components/ui/FormField";
+import PageHero from "../../components/ui/PageHero";
+
 const MAX_RESUME_SIZE = 5 * 1024 * 1024;
 
 const formatFileSize = (bytes) => {
@@ -52,6 +58,14 @@ const getReadinessItems = (profile, hasResume) => {
   ];
 };
 
+const getFileInputClassName = () => {
+  return [
+    "block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition",
+    "file:mr-4 file:rounded-xl file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-blue-700",
+    "hover:file:bg-blue-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50",
+  ].join(" ");
+};
+
 const StatusPill = ({ hasResume }) => {
   return (
     <span
@@ -64,6 +78,254 @@ const StatusPill = ({ hasResume }) => {
     >
       {hasResume ? "Uploaded" : "Not uploaded"}
     </span>
+  );
+};
+
+const AlertMessage = ({ type = "error", children }) => {
+  const className =
+    type === "success"
+      ? "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+      : "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700";
+
+  return (
+    <div className={className} role={type === "success" ? "status" : "alert"}>
+      {children}
+    </div>
+  );
+};
+
+const ResumeStatusPanel = ({ hasResume, onViewResume, isOpeningResume }) => {
+  return (
+    <div
+      className={[
+        "rounded-2xl border p-5",
+        hasResume
+          ? "border-emerald-200 bg-emerald-50/70"
+          : "border-amber-200 bg-amber-50/70",
+      ].join(" ")}
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex gap-4">
+          <div
+            className={[
+              "grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-2xl",
+              hasResume ? "bg-emerald-100" : "bg-amber-100",
+            ].join(" ")}
+          >
+            📄
+          </div>
+
+          <div>
+            <StatusPill hasResume={hasResume} />
+
+            <h3 className="mt-3 text-lg font-black text-slate-950">
+              {hasResume
+                ? "Resume uploaded successfully"
+                : "No resume uploaded yet"}
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              {hasResume
+                ? "Your resume is ready and can be used while applying to jobs."
+                : "Upload your resume before applying to jobs from your candidate account."}
+            </p>
+          </div>
+        </div>
+
+        {hasResume && (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onViewResume}
+            disabled={isOpeningResume}
+          >
+            {isOpeningResume ? "Opening..." : "View resume"}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const UploadResumeForm = ({
+  hasResume,
+  selectedFile,
+  fileInputRef,
+  onFileChange,
+  onSubmit,
+  isUploading,
+}) => {
+  return (
+    <form onSubmit={onSubmit} className="rounded-2xl bg-slate-50 p-5">
+      <h3 className="text-lg font-black text-slate-950">
+        {hasResume ? "Replace resume" : "Upload resume"}
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        Select a PDF file from your device. Your old resume will be replaced
+        after successful upload.
+      </p>
+
+      <div className="mt-5">
+        <FormField
+          label="Resume PDF"
+          htmlFor="resume"
+          hint="PDF only. Maximum size: 5 MB."
+        >
+          <input
+            ref={fileInputRef}
+            id="resume"
+            type="file"
+            accept="application/pdf"
+            onChange={onFileChange}
+            className={getFileInputClassName()}
+          />
+        </FormField>
+      </div>
+
+      {selectedFile && (
+        <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+            Selected file
+          </p>
+
+          <p className="mt-2 font-bold text-slate-950">{selectedFile.name}</p>
+
+          <p className="mt-1 text-sm text-slate-600">
+            {formatFileSize(selectedFile.size)} · PDF
+          </p>
+        </div>
+      )}
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+        <Button as={Link} to="/candidate/dashboard" variant="secondary">
+          Back to dashboard
+        </Button>
+
+        <Button type="submit" disabled={isUploading || !selectedFile}>
+          {isUploading
+            ? "Uploading..."
+            : hasResume
+              ? "Replace resume"
+              : "Upload resume"}
+        </Button>
+      </div>
+    </form>
+  );
+};
+
+const ReadinessCard = ({ readinessItems, readinessPercentage }) => {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
+              Readiness
+            </p>
+
+            <h2 className="mt-2 text-xl font-black text-slate-950">
+              Application readiness
+            </h2>
+          </div>
+
+          <div
+            className="grid h-20 w-20 place-items-center rounded-full text-sm font-black text-blue-700"
+            style={{
+              background: `conic-gradient(#2563eb ${
+                readinessPercentage * 3.6
+              }deg, #e2e8f0 0deg)`,
+            }}
+          >
+            <div className="grid h-14 w-14 place-items-center rounded-full bg-white">
+              {readinessPercentage}%
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardBody>
+        <div className="grid gap-3">
+          {readinessItems.map((item) => (
+            <div
+              key={item.label}
+              className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+            >
+              <div className="flex items-start gap-3">
+                <span
+                  className={[
+                    "grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-black",
+                    item.isComplete
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-slate-200 text-slate-500",
+                  ].join(" ")}
+                >
+                  {item.isComplete ? "✓" : "!"}
+                </span>
+
+                <div>
+                  <p className="text-sm font-black text-slate-950">
+                    {item.label}
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-slate-600">
+                    {item.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardBody>
+    </Card>
+  );
+};
+
+const ResumeTipsCard = () => {
+  return (
+    <Card>
+      <CardHeader>
+        <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
+          Resume tips
+        </p>
+
+        <h2 className="mt-2 text-xl font-black text-slate-950">
+          Keep it recruiter-friendly
+        </h2>
+      </CardHeader>
+
+      <CardBody>
+        <div className="grid gap-3">
+          <div className="rounded-xl bg-slate-50 p-3">
+            <p className="text-sm font-bold text-slate-900">Use a clear file</p>
+
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              Upload a clean PDF resume with readable formatting.
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-slate-50 p-3">
+            <p className="text-sm font-bold text-slate-900">
+              Add project impact
+            </p>
+
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              Mention what you built, the stack used, and the result.
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-slate-50 p-3">
+            <p className="text-sm font-bold text-slate-900">
+              Match job keywords
+            </p>
+
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              Keep important skills visible and easy to scan.
+            </p>
+          </div>
+        </div>
+      </CardBody>
+    </Card>
   );
 };
 
@@ -198,46 +460,41 @@ const CandidateResumePage = () => {
 
   if (pageStatus === "loading") {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading resume details...</p>
-      </section>
+      <Card>
+        <CardBody>
+          <p className="text-sm text-slate-600">Loading resume details...</p>
+        </CardBody>
+      </Card>
     );
   }
 
   if (pageStatus === "missing-profile") {
     return (
-      <section className="overflow-hidden rounded-3xl border border-amber-200 bg-amber-50 shadow-sm">
-        <div className="p-6 sm:p-8">
-          <p className="text-sm font-semibold uppercase tracking-wider text-amber-700">
-            Profile required
-          </p>
-
-          <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
-            Create your candidate profile first
-          </h1>
-
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-amber-800">
-            You need to create your candidate profile before uploading a resume.
-          </p>
-
-          <Link
-            to="/candidate/profile"
-            className="mt-6 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700"
-          >
+      <EmptyState
+        icon="👤"
+        title="Create your candidate profile first"
+        description="You need to create your candidate profile before uploading a resume."
+        action={
+          <Button as={Link} to="/candidate/profile">
             Create profile
-          </Link>
-        </div>
-      </section>
+          </Button>
+        }
+      />
     );
   }
 
   if (pageStatus === "error") {
     return (
-      <section className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
-        <p className="font-semibold text-red-700">Could not load resume page</p>
-
-        <p className="mt-2 text-sm text-red-700">{apiError}</p>
-      </section>
+      <EmptyState
+        icon="⚠️"
+        title="Could not load resume page"
+        description={apiError}
+        action={
+          <Button as={Link} to="/candidate/dashboard">
+            Back to dashboard
+          </Button>
+        }
+      />
     );
   }
 
@@ -255,45 +512,22 @@ const CandidateResumePage = () => {
 
   return (
     <div className="grid gap-6">
-      <section className="overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-slate-50 shadow-sm">
-        <div className="flex flex-col gap-5 p-6 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-              Candidate resume
-            </p>
+      <PageHero
+        eyebrow="Candidate resume"
+        title="Manage your resume"
+        description="Upload a PDF resume and keep it ready for job applications."
+        meta={<StatusPill hasResume={hasResume} />}
+      />
 
-            <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-              Manage your resume
-            </h1>
-
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-              Upload a PDF resume and keep it ready for job applications.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {apiError && (
-        <div
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          role="alert"
-        >
-          {apiError}
-        </div>
-      )}
+      {apiError && <AlertMessage>{apiError}</AlertMessage>}
 
       {successMessage && (
-        <div
-          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-          role="status"
-        >
-          {successMessage}
-        </div>
+        <AlertMessage type="success">{successMessage}</AlertMessage>
       )}
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 p-5">
+        <Card>
+          <CardHeader>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
               Resume file
             </p>
@@ -305,232 +539,33 @@ const CandidateResumePage = () => {
             <p className="mt-1 text-sm leading-6 text-slate-600">
               HireFlow currently accepts PDF resumes up to 5 MB.
             </p>
-          </div>
+          </CardHeader>
 
-          <div className="grid gap-5 p-5">
-            <div
-              className={[
-                "rounded-2xl border p-5",
-                hasResume
-                  ? "border-emerald-200 bg-emerald-50/70"
-                  : "border-amber-200 bg-amber-50/70",
-              ].join(" ")}
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex gap-4">
-                  <div
-                    className={[
-                      "grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-2xl",
-                      hasResume ? "bg-emerald-100" : "bg-amber-100",
-                    ].join(" ")}
-                  >
-                    📄
-                  </div>
+          <CardBody className="grid gap-5">
+            <ResumeStatusPanel
+              hasResume={hasResume}
+              onViewResume={handleViewResume}
+              isOpeningResume={isOpeningResume}
+            />
 
-                  <div>
-                    <StatusPill hasResume={hasResume} />
-
-                    <h3 className="mt-3 text-lg font-black text-slate-950">
-                      {hasResume
-                        ? "Resume uploaded successfully"
-                        : "No resume uploaded yet"}
-                    </h3>
-
-                    <p className="mt-2 text-sm leading-6 text-slate-600">
-                      {hasResume
-                        ? "Your resume is ready and can be used while applying to jobs."
-                        : "Upload your resume before applying to jobs from your candidate account."}
-                    </p>
-                  </div>
-                </div>
-
-                {hasResume && (
-                  <button
-                    type="button"
-                    onClick={handleViewResume}
-                    disabled={isOpeningResume}
-                    className="inline-flex justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {isOpeningResume ? "Opening..." : "View resume"}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <form
+            <UploadResumeForm
+              hasResume={hasResume}
+              selectedFile={selectedFile}
+              fileInputRef={fileInputRef}
+              onFileChange={handleFileChange}
               onSubmit={handleSubmit}
-              className="rounded-2xl bg-slate-50 p-5"
-            >
-              <h3 className="text-lg font-black text-slate-950">
-                {hasResume ? "Replace resume" : "Upload resume"}
-              </h3>
-
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Select a PDF file from your device. Your old resume will be
-                replaced after successful upload.
-              </p>
-
-              <div className="mt-5">
-                <label
-                  htmlFor="resume"
-                  className="mb-2 block text-sm font-bold text-slate-700"
-                >
-                  Resume PDF
-                </label>
-
-                <input
-                  ref={fileInputRef}
-                  id="resume"
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handleFileChange}
-                  className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-blue-700 hover:file:bg-blue-100"
-                />
-
-                <p className="mt-2 text-xs text-slate-500">
-                  PDF only. Maximum size: 5 MB.
-                </p>
-              </div>
-
-              {selectedFile && (
-                <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
-                    Selected file
-                  </p>
-
-                  <p className="mt-2 font-bold text-slate-950">
-                    {selectedFile.name}
-                  </p>
-
-                  <p className="mt-1 text-sm text-slate-600">
-                    {formatFileSize(selectedFile.size)} · PDF
-                  </p>
-                </div>
-              )}
-
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                <Link
-                  to="/candidate/dashboard"
-                  className="inline-flex justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Back to dashboard
-                </Link>
-
-                <button
-                  type="submit"
-                  disabled={isUploading || !selectedFile}
-                  className="inline-flex justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isUploading
-                    ? "Uploading..."
-                    : hasResume
-                      ? "Replace resume"
-                      : "Upload resume"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </section>
+              isUploading={isUploading}
+            />
+          </CardBody>
+        </Card>
 
         <aside className="grid gap-6">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-                  Readiness
-                </p>
+          <ReadinessCard
+            readinessItems={readinessItems}
+            readinessPercentage={readinessPercentage}
+          />
 
-                <h2 className="mt-2 text-xl font-black text-slate-950">
-                  Application readiness
-                </h2>
-              </div>
-
-              <div
-                className="grid h-20 w-20 place-items-center rounded-full text-sm font-black text-blue-700"
-                style={{
-                  background: `conic-gradient(#2563eb ${readinessPercentage * 3.6}deg, #e2e8f0 0deg)`,
-                }}
-              >
-                <div className="grid h-14 w-14 place-items-center rounded-full bg-white">
-                  {readinessPercentage}%
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3">
-              {readinessItems.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
-                >
-                  <div className="flex items-start gap-3">
-                    <span
-                      className={[
-                        "grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-black",
-                        item.isComplete
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-slate-200 text-slate-500",
-                      ].join(" ")}
-                    >
-                      {item.isComplete ? "✓" : "!"}
-                    </span>
-
-                    <div>
-                      <p className="text-sm font-black text-slate-950">
-                        {item.label}
-                      </p>
-
-                      <p className="mt-1 text-xs leading-5 text-slate-600">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
-              Resume tips
-            </p>
-
-            <h2 className="mt-2 text-xl font-black text-slate-950">
-              Keep it recruiter-friendly
-            </h2>
-
-            <div className="mt-4 grid gap-3">
-              <div className="rounded-xl bg-slate-50 p-3">
-                <p className="text-sm font-bold text-slate-900">
-                  Use a clear file
-                </p>
-
-                <p className="mt-1 text-xs leading-5 text-slate-600">
-                  Upload a clean PDF resume with readable formatting.
-                </p>
-              </div>
-
-              <div className="rounded-xl bg-slate-50 p-3">
-                <p className="text-sm font-bold text-slate-900">
-                  Add project impact
-                </p>
-
-                <p className="mt-1 text-xs leading-5 text-slate-600">
-                  Mention what you built, the stack used, and the result.
-                </p>
-              </div>
-
-              <div className="rounded-xl bg-slate-50 p-3">
-                <p className="text-sm font-bold text-slate-900">
-                  Match job keywords
-                </p>
-
-                <p className="mt-1 text-xs leading-5 text-slate-600">
-                  Keep important skills visible and easy to scan.
-                </p>
-              </div>
-            </div>
-          </section>
+          <ResumeTipsCard />
         </aside>
       </div>
     </div>

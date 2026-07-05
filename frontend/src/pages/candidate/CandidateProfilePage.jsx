@@ -17,7 +17,16 @@ import { EXPERIENCE_LEVELS } from "../../features/candidates/candidate.constants
 
 import getApiError from "../../utils/getApiError";
 
-import FieldError from "../../components/common/FieldError";
+import Button from "../../components/ui/Button";
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  CardHeader,
+} from "../../components/ui/Card";
+import EmptyState from "../../components/ui/EmptyState";
+import FormField from "../../components/ui/FormField";
+import PageHero from "../../components/ui/PageHero";
 
 const getDefaultValues = (profile = null) => {
   return {
@@ -90,28 +99,24 @@ const getSkillTags = (skillsText) => {
     .slice(0, 10);
 };
 
-const inputClassName =
-  "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50";
+const getInputClassName = (hasError = false) => {
+  return [
+    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
+    "placeholder:text-slate-400 focus:ring-4",
+    hasError
+      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
+      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
+  ].join(" ");
+};
 
-const textareaClassName =
-  "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50";
-
-const labelClassName = "mb-2 block text-sm font-bold text-slate-700";
-
-const FormSectionHeader = ({ eyebrow, title, description }) => {
-  return (
-    <div className="border-b border-slate-100 p-5">
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
-        {eyebrow}
-      </p>
-
-      <h2 className="mt-2 text-xl font-black text-slate-950">{title}</h2>
-
-      {description && (
-        <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
-      )}
-    </div>
-  );
+const getTextareaClassName = (hasError = false) => {
+  return [
+    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm leading-6 text-slate-900 outline-none transition",
+    "placeholder:text-slate-400 focus:ring-4",
+    hasError
+      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
+      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
+  ].join(" ");
 };
 
 const ProfilePreviewCard = ({ values, completion }) => {
@@ -123,17 +128,19 @@ const ProfilePreviewCard = ({ values, completion }) => {
 
   return (
     <aside className="grid gap-6">
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="p-5">
+      <Card>
+        <CardBody>
           <div className="flex items-start justify-between gap-4">
             <div className="grid h-14 w-14 place-items-center rounded-2xl bg-slate-900 text-lg font-black text-white">
-              {fullName[0].toUpperCase()}
+              {fullName.slice(0, 1).toUpperCase()}
             </div>
 
             <div
               className="grid h-20 w-20 place-items-center rounded-full text-sm font-black text-blue-700"
               style={{
-                background: `conic-gradient(#2563eb ${completion.percentage * 3.6}deg, #e2e8f0 0deg)`,
+                background: `conic-gradient(#2563eb ${
+                  completion.percentage * 3.6
+                }deg, #e2e8f0 0deg)`,
               }}
             >
               <div className="grid h-14 w-14 place-items-center rounded-full bg-white">
@@ -170,86 +177,97 @@ const ProfilePreviewCard = ({ values, completion }) => {
           <p className="mt-2 text-xs font-medium text-slate-500">
             {completion.completed} of {completion.total} key sections completed
           </p>
-        </div>
+        </CardBody>
 
-        <div className="border-t border-slate-100 bg-slate-50/80 p-4">
-          <Link
+        <CardFooter>
+          <Button
+            as={Link}
             to="/candidate/dashboard"
-            className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+            variant="secondary"
+            fullWidth
           >
             Back to dashboard
-          </Link>
-        </div>
-      </section>
+          </Button>
+        </CardFooter>
+      </Card>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-          Skills
-        </p>
-
-        <h2 className="mt-2 text-xl font-black text-slate-950">
-          Recruiter keywords
-        </h2>
-
-        {skills.length > 0 ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {skills.map((skill) => (
-              <span
-                key={skill}
-                className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100"
-              >
-                {skill}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            Add comma-separated skills like React, Node.js, MongoDB.
+      <Card>
+        <CardHeader>
+          <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
+            Skills
           </p>
-        )}
-      </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
-          Profile tips
-        </p>
+          <h2 className="mt-2 text-xl font-black text-slate-950">
+            Recruiter keywords
+          </h2>
+        </CardHeader>
 
-        <h2 className="mt-2 text-xl font-black text-slate-950">
-          Improve visibility
-        </h2>
-
-        <div className="mt-4 grid gap-3">
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-bold text-slate-900">
-              Add a clear headline
+        <CardBody>
+          {skills.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {skills.map((skill) => (
+                <span
+                  key={skill}
+                  className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm leading-6 text-slate-600">
+              Add comma-separated skills like React, Node.js, MongoDB.
             </p>
+          )}
+        </CardBody>
+      </Card>
 
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              Example: MERN Stack Developer with React and Node.js experience.
-            </p>
+      <Card>
+        <CardHeader>
+          <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
+            Profile tips
+          </p>
+
+          <h2 className="mt-2 text-xl font-black text-slate-950">
+            Improve visibility
+          </h2>
+        </CardHeader>
+
+        <CardBody>
+          <div className="grid gap-3">
+            <div className="rounded-xl bg-slate-50 p-3">
+              <p className="text-sm font-bold text-slate-900">
+                Add a clear headline
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Example: MERN Stack Developer with React and Node.js experience.
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-slate-50 p-3">
+              <p className="text-sm font-bold text-slate-900">
+                Keep skills searchable
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Use simple keywords recruiters can filter by.
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-slate-50 p-3">
+              <p className="text-sm font-bold text-slate-900">
+                Add portfolio links
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                GitHub, LinkedIn, and portfolio links make your profile
+                stronger.
+              </p>
+            </div>
           </div>
-
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-bold text-slate-900">
-              Keep skills searchable
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              Use simple keywords recruiters can filter by.
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-bold text-slate-900">
-              Add portfolio links
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              GitHub, LinkedIn, and portfolio links make your profile stronger.
-            </p>
-          </div>
-        </div>
-      </section>
+        </CardBody>
+      </Card>
     </aside>
   );
 };
@@ -262,8 +280,6 @@ const CandidateProfilePage = () => {
   const [mode, setMode] = useState("create");
 
   const [apiError, setApiError] = useState("");
-
-  const [successMessage, setSuccessMessage] = useState("");
 
   const {
     register,
@@ -324,7 +340,6 @@ const CandidateProfilePage = () => {
 
   const onSubmit = async (formData) => {
     setApiError("");
-    setSuccessMessage("");
 
     const payload = convertFormDataToPayload(formData);
 
@@ -335,8 +350,6 @@ const CandidateProfilePage = () => {
           : await createCandidateProfile(payload);
 
       setMode("edit");
-      setSuccessMessage(result.message);
-
       reset(getDefaultValues(result.data));
 
       navigate("/candidate/dashboard", {
@@ -351,52 +364,36 @@ const CandidateProfilePage = () => {
 
   if (pageStatus === "loading") {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading candidate profile...</p>
-      </div>
+      <Card>
+        <CardBody>
+          <p className="text-sm text-slate-600">Loading candidate profile...</p>
+        </CardBody>
+      </Card>
     );
   }
 
   if (pageStatus === "error") {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
-        <p className="font-semibold text-red-700">Could not load profile</p>
-
-        <p className="mt-2 text-sm text-red-700">{apiError}</p>
-      </div>
+      <EmptyState
+        icon="⚠️"
+        title="Could not load profile"
+        description={apiError}
+        action={
+          <Button as={Link} to="/candidate/dashboard">
+            Back to dashboard
+          </Button>
+        }
+      />
     );
   }
 
   return (
     <div className="grid gap-6">
-      <section className="overflow-hidden rounded-3xl border border-blue-100 bg-linear-to-br from-blue-50 via-white to-slate-50 shadow-sm">
-        <div className="flex flex-col gap-5 p-6 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-              Candidate profile
-            </p>
-
-            <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-              {mode === "edit" ? "Edit your profile" : "Create your profile"}
-            </h1>
-
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-              Complete your profile so recruiters can understand your skills,
-              experience, and links.
-            </p>
-          </div>
-
-          {/* <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Experience level
-            </p>
-
-            <p className="mt-1 text-sm font-black text-slate-950">
-              {getExperienceLabel(watchedValues.experienceLevel)}
-            </p>
-          </div> */}
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Candidate profile"
+        title={mode === "edit" ? "Edit your profile" : "Create your profile"}
+        description="Complete your profile so recruiters can understand your skills, experience, location, and links."
+      />
 
       <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
         <ProfilePreviewCard values={watchedValues} completion={completion} />
@@ -411,257 +408,261 @@ const CandidateProfilePage = () => {
             </div>
           )}
 
-          {successMessage && (
-            <div
-              className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-              role="status"
-            >
-              {successMessage}
-            </div>
-          )}
+          <Card>
+            <CardHeader>
+              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                Basic information
+              </p>
 
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <FormSectionHeader
-              eyebrow="Basic information"
-              title="Personal details"
-              description="These details help companies identify and contact you."
-            />
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                Personal details
+              </h2>
 
-            <div className="grid gap-5 p-5 sm:grid-cols-2">
-              <div>
-                <label htmlFor="firstName" className={labelClassName}>
-                  First name
-                </label>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                These details help companies identify and contact you.
+              </p>
+            </CardHeader>
 
-                <input
-                  id="firstName"
-                  type="text"
-                  className={inputClassName}
-                  {...register("firstName")}
-                />
-
-                <FieldError message={errors.firstName?.message} />
-              </div>
-
-              <div>
-                <label htmlFor="lastName" className={labelClassName}>
-                  Last name
-                </label>
-
-                <input
-                  id="lastName"
-                  type="text"
-                  className={inputClassName}
-                  {...register("lastName")}
-                />
-
-                <FieldError message={errors.lastName?.message} />
-              </div>
-
-              <div>
-                <label htmlFor="phone" className={labelClassName}>
-                  Phone
-                </label>
-
-                <input
-                  id="phone"
-                  type="text"
-                  placeholder="+91 98765 43210"
-                  className={inputClassName}
-                  {...register("phone")}
-                />
-
-                <FieldError message={errors.phone?.message} />
-              </div>
-
-              <div>
-                <label htmlFor="location" className={labelClassName}>
-                  Location
-                </label>
-
-                <input
-                  id="location"
-                  type="text"
-                  placeholder="Example: Pune, India"
-                  className={inputClassName}
-                  {...register("location")}
-                />
-
-                <FieldError message={errors.location?.message} />
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <FormSectionHeader
-              eyebrow="Professional profile"
-              title="Skills and experience"
-              description="This section is used to understand your job fit."
-            />
-
-            <div className="grid gap-5 p-5">
-              <div>
-                <label htmlFor="headline" className={labelClassName}>
-                  Headline
-                </label>
-
-                <input
-                  id="headline"
-                  type="text"
-                  placeholder="Example: MERN Stack Developer"
-                  className={inputClassName}
-                  {...register("headline")}
-                />
-
-                <FieldError message={errors.headline?.message} />
-              </div>
-
-              <div>
-                <label htmlFor="experienceLevel" className={labelClassName}>
-                  Experience level
-                </label>
-
-                <select
-                  id="experienceLevel"
-                  className={inputClassName}
-                  {...register("experienceLevel")}
+            <CardBody>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField
+                  label="First name"
+                  htmlFor="firstName"
+                  error={errors.firstName?.message}
                 >
-                  <option value="">Select experience level</option>
+                  <input
+                    id="firstName"
+                    type="text"
+                    className={getInputClassName(Boolean(errors.firstName))}
+                    {...register("firstName")}
+                  />
+                </FormField>
 
-                  {EXPERIENCE_LEVELS.map((level) => (
-                    <option key={level.value} value={level.value}>
-                      {level.label}
-                    </option>
-                  ))}
-                </select>
+                <FormField
+                  label="Last name"
+                  htmlFor="lastName"
+                  error={errors.lastName?.message}
+                >
+                  <input
+                    id="lastName"
+                    type="text"
+                    className={getInputClassName(Boolean(errors.lastName))}
+                    {...register("lastName")}
+                  />
+                </FormField>
 
-                <FieldError message={errors.experienceLevel?.message} />
+                <FormField
+                  label="Phone"
+                  htmlFor="phone"
+                  error={errors.phone?.message}
+                  hint="Optional. Example: +91 98765 43210"
+                >
+                  <input
+                    id="phone"
+                    type="text"
+                    placeholder="+91 98765 43210"
+                    className={getInputClassName(Boolean(errors.phone))}
+                    {...register("phone")}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Location"
+                  htmlFor="location"
+                  error={errors.location?.message}
+                  hint="Example: Pune, India"
+                >
+                  <input
+                    id="location"
+                    type="text"
+                    placeholder="Example: Pune, India"
+                    className={getInputClassName(Boolean(errors.location))}
+                    {...register("location")}
+                  />
+                </FormField>
               </div>
+            </CardBody>
+          </Card>
 
-              <div>
-                <label htmlFor="skillsText" className={labelClassName}>
-                  Skills
-                </label>
+          <Card>
+            <CardHeader>
+              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                Professional profile
+              </p>
 
-                <input
-                  id="skillsText"
-                  type="text"
-                  placeholder="React, Node.js, MongoDB"
-                  className={inputClassName}
-                  {...register("skillsText")}
-                />
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                Skills and experience
+              </h2>
 
-                <p className="mt-1 text-xs text-slate-500">
-                  Separate skills with commas.
-                </p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                This section is used to understand your job fit.
+              </p>
+            </CardHeader>
 
-                <FieldError message={errors.skillsText?.message} />
+            <CardBody>
+              <div className="grid gap-5">
+                <FormField
+                  label="Headline"
+                  htmlFor="headline"
+                  error={errors.headline?.message}
+                  hint="Example: MERN Stack Developer"
+                >
+                  <input
+                    id="headline"
+                    type="text"
+                    placeholder="Example: MERN Stack Developer"
+                    className={getInputClassName(Boolean(errors.headline))}
+                    {...register("headline")}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Experience level"
+                  htmlFor="experienceLevel"
+                  error={errors.experienceLevel?.message}
+                >
+                  <select
+                    id="experienceLevel"
+                    className={getInputClassName(
+                      Boolean(errors.experienceLevel),
+                    )}
+                    {...register("experienceLevel")}
+                  >
+                    <option value="">Select experience level</option>
+
+                    {EXPERIENCE_LEVELS.map((level) => (
+                      <option key={level.value} value={level.value}>
+                        {level.label}
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+
+                <FormField
+                  label="Skills"
+                  htmlFor="skillsText"
+                  error={errors.skillsText?.message}
+                  hint="Separate skills with commas. Example: React, Node.js, MongoDB"
+                >
+                  <input
+                    id="skillsText"
+                    type="text"
+                    placeholder="React, Node.js, MongoDB"
+                    className={getInputClassName(Boolean(errors.skillsText))}
+                    {...register("skillsText")}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Summary"
+                  htmlFor="summary"
+                  error={errors.summary?.message}
+                  hint="Optional. Keep it short, practical, and recruiter-friendly."
+                >
+                  <textarea
+                    id="summary"
+                    rows={5}
+                    placeholder="Write a short summary about your background, skills, projects, and career goals."
+                    className={getTextareaClassName(Boolean(errors.summary))}
+                    {...register("summary")}
+                  />
+                </FormField>
               </div>
+            </CardBody>
+          </Card>
 
-              <div>
-                <label htmlFor="summary" className={labelClassName}>
-                  Summary
-                </label>
+          <Card>
+            <CardHeader>
+              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                Social links
+              </p>
 
-                <textarea
-                  id="summary"
-                  rows={5}
-                  placeholder="Write a short summary about your background, skills, projects, and career goals."
-                  className={textareaClassName}
-                  {...register("summary")}
-                />
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                Portfolio and profiles
+              </h2>
 
-                <FieldError message={errors.summary?.message} />
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Add links that help recruiters verify your work.
+              </p>
+            </CardHeader>
+
+            <CardBody>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField
+                  label="LinkedIn URL"
+                  htmlFor="linkedinUrl"
+                  error={errors.linkedinUrl?.message}
+                  hint="Optional. Example: https://linkedin.com/in/username"
+                >
+                  <input
+                    id="linkedinUrl"
+                    type="url"
+                    placeholder="https://linkedin.com/in/username"
+                    className={getInputClassName(Boolean(errors.linkedinUrl))}
+                    {...register("linkedinUrl")}
+                  />
+                </FormField>
+
+                <FormField
+                  label="GitHub URL"
+                  htmlFor="githubUrl"
+                  error={errors.githubUrl?.message}
+                  hint="Optional. Example: https://github.com/username"
+                >
+                  <input
+                    id="githubUrl"
+                    type="url"
+                    placeholder="https://github.com/username"
+                    className={getInputClassName(Boolean(errors.githubUrl))}
+                    {...register("githubUrl")}
+                  />
+                </FormField>
+
+                <div className="sm:col-span-2">
+                  <FormField
+                    label="Portfolio URL"
+                    htmlFor="portfolioUrl"
+                    error={errors.portfolioUrl?.message}
+                    hint="Optional. Example: https://yourportfolio.com"
+                  >
+                    <input
+                      id="portfolioUrl"
+                      type="url"
+                      placeholder="https://yourportfolio.com"
+                      className={getInputClassName(
+                        Boolean(errors.portfolioUrl),
+                      )}
+                      {...register("portfolioUrl")}
+                    />
+                  </FormField>
+                </div>
               </div>
-            </div>
-          </section>
+            </CardBody>
+          </Card>
 
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <FormSectionHeader
-              eyebrow="Social links"
-              title="Portfolio and profiles"
-              description="Add links that help recruiters verify your work."
-            />
+          <Card className="sticky bottom-4 z-20 bg-white/95 backdrop-blur">
+            <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-slate-600">
+                {mode === "edit"
+                  ? "Save changes to update your candidate profile."
+                  : "Create your profile to start applying to jobs."}
+              </p>
 
-            <div className="grid gap-5 p-5 sm:grid-cols-2">
-              <div>
-                <label htmlFor="linkedinUrl" className={labelClassName}>
-                  LinkedIn URL
-                </label>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button as={Link} to="/candidate/dashboard" variant="secondary">
+                  Cancel
+                </Button>
 
-                <input
-                  id="linkedinUrl"
-                  type="url"
-                  placeholder="https://linkedin.com/in/username"
-                  className={inputClassName}
-                  {...register("linkedinUrl")}
-                />
-
-                <FieldError message={errors.linkedinUrl?.message} />
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting
+                    ? "Saving..."
+                    : mode === "edit"
+                      ? "Save profile"
+                      : "Create profile"}
+                </Button>
               </div>
-
-              <div>
-                <label htmlFor="githubUrl" className={labelClassName}>
-                  GitHub URL
-                </label>
-
-                <input
-                  id="githubUrl"
-                  type="url"
-                  placeholder="https://github.com/username"
-                  className={inputClassName}
-                  {...register("githubUrl")}
-                />
-
-                <FieldError message={errors.githubUrl?.message} />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label htmlFor="portfolioUrl" className={labelClassName}>
-                  Portfolio URL
-                </label>
-
-                <input
-                  id="portfolioUrl"
-                  type="url"
-                  placeholder="https://yourportfolio.com"
-                  className={inputClassName}
-                  {...register("portfolioUrl")}
-                />
-
-                <FieldError message={errors.portfolioUrl?.message} />
-              </div>
-            </div>
-          </section>
-
-          <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl shadow-slate-200/70 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-600">
-              {mode === "edit"
-                ? "Save changes to update your candidate profile."
-                : "Create your profile to start applying to jobs."}
-            </p>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link
-                to="/candidate/dashboard"
-                className="inline-flex justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-              >
-                Cancel
-              </Link>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isSubmitting
-                  ? "Saving..."
-                  : mode === "edit"
-                    ? "Save profile"
-                    : "Create profile"}
-              </button>
-            </div>
-          </div>
+            </CardBody>
+          </Card>
         </form>
       </div>
     </div>
