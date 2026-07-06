@@ -140,15 +140,15 @@ const SectionHeading = ({ eyebrow, title, description, centered = true }) => {
 const VisualMosaic = () => {
   return (
     <section className="mx-auto grid max-w-7xl gap-4 px-4 pb-16 sm:px-6 lg:grid-cols-[1.2fr_0.8fr_0.9fr] lg:px-8">
-      <div className="relative min-h-[390px] overflow-hidden rounded-[2rem] bg-blue-50 ring-1 ring-blue-100">
-        <div className="absolute inset-8 rounded-[1.5rem] bg-white shadow-sm" />
+      <div className="relative min-h-97.5 overflow-hidden rounded-4-xl bg-blue-50 ring-1 ring-blue-100">
+        <div className="absolute inset-8 rounded-3xl bg-white shadow-sm" />
 
         <div className="absolute left-14 top-14 rounded-full bg-blue-100 px-4 py-2 text-sm font-bold text-blue-700">
           Candidate workspace
         </div>
 
         <div className="absolute left-1/2 top-24 h-28 w-28 -translate-x-1/2 rounded-full bg-blue-200" />
-        <div className="absolute left-1/2 top-40 h-44 w-40 -translate-x-1/2 rounded-[2rem] bg-blue-600" />
+        <div className="absolute left-1/2 top-40 h-44 w-40 -translate-x-1/2 rounded-4xl bg-blue-600" />
 
         <div className="absolute bottom-12 left-14 right-14 rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <p className="text-sm font-black text-slate-950">
@@ -163,7 +163,7 @@ const VisualMosaic = () => {
       </div>
 
       <div className="grid gap-4">
-        <div className="rounded-[2rem] bg-gradient-to-br from-orange-100 to-blue-100 p-8 ring-1 ring-slate-200">
+        <div className="rounded-4xl bg-linear-to-br from-orange-100 to-blue-100 p-8 ring-1 ring-slate-200">
           <div className="rounded-3xl bg-white p-6 shadow-sm">
             <h3 className="text-2xl font-black text-slate-950">
               Candidate flow
@@ -185,7 +185,7 @@ const VisualMosaic = () => {
           </div>
         </div>
 
-        <div className="rounded-[2rem] bg-slate-950 p-8 text-white">
+        <div className="rounded-4xl bg-slate-950 p-8 text-white">
           <h3 className="text-3xl font-black">Clean hiring workflow</h3>
 
           <p className="mt-4 text-sm leading-7 text-slate-300">
@@ -196,7 +196,7 @@ const VisualMosaic = () => {
       </div>
 
       <div className="grid gap-4">
-        <div className="rounded-[2rem] bg-emerald-50 p-8 ring-1 ring-emerald-100">
+        <div className="rounded-xl bg-emerald-50 p-8 ring-1 ring-emerald-100">
           <div className="rounded-3xl bg-white p-6 shadow-sm">
             <h3 className="text-2xl font-black text-slate-950">
               Company workspace
@@ -212,7 +212,7 @@ const VisualMosaic = () => {
           </div>
         </div>
 
-        <div className="rounded-[2rem] bg-white p-8 ring-1 ring-slate-200">
+        <div className="rounded-4xl bg-white p-8 ring-1 ring-slate-200">
           <h3 className="text-xl font-black text-slate-950">
             Supported actions
           </h3>
@@ -233,7 +233,7 @@ const ProcessCard = ({ title, icon, accent = "blue", items }) => {
     accent === "green" ? "bg-emerald-600 text-white" : "bg-blue-600 text-white";
 
   return (
-    <article className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <article className="rounded-4xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
       <div className="flex items-center gap-4">
         <div
           className={[
@@ -321,7 +321,7 @@ const LatestJobsSection = () => {
           description="Browse public job posts added by companies. If there are no active jobs yet, candidates can still open the jobs page and check again later."
         />
 
-        <div className="mt-8 rounded-[2rem] bg-blue-50 p-8 ring-1 ring-blue-100">
+        <div className="mt-8 rounded-4xl bg-blue-50 p-8 ring-1 ring-blue-100">
           <h3 className="text-2xl font-black text-blue-700">
             Job search first
           </h3>
@@ -339,19 +339,19 @@ const LatestJobsSection = () => {
 
       <div className="grid gap-4">
         {status === "loading" && (
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-8 text-sm text-slate-600">
+          <div className="rounded-4xl border border-slate-200 bg-white p-8 text-sm text-slate-600">
             Loading latest jobs...
           </div>
         )}
 
         {status === "error" && (
-          <div className="rounded-[2rem] border border-red-200 bg-red-50 p-8 text-sm text-red-700">
+          <div className="rounded-4xl border border-red-200 bg-red-50 p-8 text-sm text-red-700">
             Could not load latest jobs right now.
           </div>
         )}
 
         {status === "success" && jobs.length === 0 && (
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <div className="rounded-4xl border border-slate-200 bg-white p-8 text-center shadow-sm">
             <h3 className="text-xl font-black text-slate-950">
               No jobs published yet
             </h3>
@@ -367,7 +367,7 @@ const LatestJobsSection = () => {
             <Link
               key={job._id}
               to={`/jobs/${job._id}`}
-              className="group rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+              className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -417,8 +417,8 @@ const HomePage = () => {
 
   return (
     <main className="bg-slate-50 px-3 py-4 sm:px-4 sm:py-6">
-      <div className="mx-auto max-w-[1500px] overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-        <section className="bg-gradient-to-br from-white via-white to-blue-50 px-4 pb-16 pt-14 sm:px-6 lg:px-8 lg:pb-20">
+      <div className="mx-auto max-w-375 overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm">
+        <section className="bg-linear-to-br from-white via-white to-blue-50 px-4 pb-16 pt-14 sm:px-6 lg:px-8 lg:pb-20">
           <div className="mx-auto max-w-7xl text-center">
             <div className="mb-8 flex justify-center">
               <ApiStatus />
@@ -503,7 +503,7 @@ const HomePage = () => {
             <SectionHeading title="Choose how you want to use HireFlow" />
 
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
-              <article className="rounded-[2rem] border border-blue-100 bg-blue-50 p-6 shadow-sm sm:p-8">
+              <article className="rounded-4xl border border-blue-100 bg-blue-50 p-6 shadow-sm sm:p-8">
                 <div className="grid gap-6 sm:grid-cols-[auto_1fr_auto] sm:items-center">
                   <div className="grid h-16 w-16 place-items-center rounded-3xl bg-white text-3xl text-blue-700 shadow-sm">
                     👤
@@ -530,7 +530,7 @@ const HomePage = () => {
                 </div>
               </article>
 
-              <article className="rounded-[2rem] border border-emerald-100 bg-emerald-50 p-6 shadow-sm sm:p-8">
+              <article className="rounded-4xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm sm:p-8">
                 <div className="grid gap-6 sm:grid-cols-[auto_1fr_auto] sm:items-center">
                   <div className="grid h-16 w-16 place-items-center rounded-3xl bg-white text-3xl text-emerald-700 shadow-sm">
                     💼
@@ -610,7 +610,7 @@ const HomePage = () => {
         </section>
 
         <section className="px-4 pb-16 sm:px-6 lg:px-8">
-          <div className="mx-auto grid max-w-6xl gap-6 rounded-[2rem] border border-blue-100 bg-blue-50 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="mx-auto grid max-w-6xl gap-6 rounded-4xl border border-blue-100 bg-blue-50 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <h2 className="text-2xl font-black text-slate-950">
                 Ready to take the next step?

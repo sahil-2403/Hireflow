@@ -91,7 +91,7 @@ const RegisterPage = () => {
   };
 
   return (
-    <main className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
+    <main className="min-h-[calc(100vh-4rem)] bg-linear-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
       <section className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_520px] lg:items-center">
         <div className="hidden lg:block">
           <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
@@ -113,7 +113,8 @@ const RegisterPage = () => {
                 Build a recruiter-ready profile
               </p>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Add your skills, experience level, location, and portfolio links.
+                Add your skills, experience level, location, and portfolio
+                links.
               </p>
             </div>
 
@@ -149,7 +150,8 @@ const RegisterPage = () => {
               </h1>
 
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Register as a candidate and start applying to open opportunities.
+                Register as a candidate and start applying to open
+                opportunities.
               </p>
             </div>
 
@@ -220,12 +222,7 @@ const RegisterPage = () => {
                 letter, one lowercase letter, and one number.
               </div>
 
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                fullWidth
-                size="lg"
-              >
+              <Button type="submit" disabled={isSubmitting} fullWidth size="lg">
                 {isSubmitting ? "Creating account..." : "Create account"}
               </Button>
             </form>

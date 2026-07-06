@@ -544,6 +544,213 @@ const SearchTipsCard = () => {
   );
 };
 
+const JobsSearchControls = ({
+  filters,
+  activeAdvancedFilterCount,
+  activeFilterChips,
+  onApplyFilters,
+  onClearFilters,
+  onRemoveFilter,
+}) => {
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+
+  const [searchInput, setSearchInput] = useState(filters.search);
+
+  const [locationInput, setLocationInput] = useState(filters.location);
+
+  const [draftFilters, setDraftFilters] = useState({
+    employmentType: filters.employmentType,
+    workplaceType: filters.workplaceType,
+    experienceLevel: filters.experienceLevel,
+    sortBy: filters.sortBy,
+    order: filters.order,
+  });
+
+  const handleDraftFilterChange = (event) => {
+    const { name, value } = event.target;
+
+    if (name === "sort") {
+      const selectedSort =
+        SORT_OPTIONS.find((option) => option.value === value) ||
+        SORT_OPTIONS[0];
+
+      setDraftFilters((currentFilters) => ({
+        ...currentFilters,
+        sortBy: selectedSort.sortBy,
+        order: selectedSort.order,
+      }));
+
+      return;
+    }
+
+    setDraftFilters((currentFilters) => ({
+      ...currentFilters,
+      [name]: value,
+    }));
+  };
+
+  const applySearchAndFilters = () => {
+    onApplyFilters({
+      search: searchInput.trim(),
+      location: locationInput.trim(),
+      employmentType: draftFilters.employmentType,
+      workplaceType: draftFilters.workplaceType,
+      experienceLevel: draftFilters.experienceLevel,
+      sortBy: draftFilters.sortBy,
+      order: draftFilters.order,
+    });
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+
+    applySearchAndFilters();
+  };
+
+  const handleApplyAdvancedFilters = () => {
+    applySearchAndFilters();
+    setIsFiltersOpen(false);
+  };
+
+  const handleClearFilters = () => {
+    onClearFilters();
+    setIsFiltersOpen(false);
+  };
+
+  return (
+    <Card>
+      <CardBody>
+        <form onSubmit={handleSearchSubmit}>
+          <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr_auto_auto] lg:items-end">
+            <FormField label="What job are you looking for?" htmlFor="search">
+              <input
+                id="search"
+                type="search"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Frontend Developer, React, Node.js"
+                className={getInputClassName()}
+              />
+            </FormField>
+
+            <FormField label="Location" htmlFor="location">
+              <input
+                id="location"
+                type="search"
+                value={locationInput}
+                onChange={(event) => setLocationInput(event.target.value)}
+                placeholder="Pune, Mumbai, Remote"
+                className={getInputClassName()}
+              />
+            </FormField>
+
+            <Button type="submit" size="lg">
+              Search
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              onClick={() => setIsFiltersOpen((currentValue) => !currentValue)}
+            >
+              Filters
+              {activeAdvancedFilterCount > 0 && (
+                <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+                  {activeAdvancedFilterCount}
+                </span>
+              )}
+            </Button>
+          </div>
+        </form>
+
+        {isFiltersOpen && (
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <FilterSelect
+                id="employmentType"
+                label="Employment"
+                name="employmentType"
+                value={draftFilters.employmentType}
+                onChange={handleDraftFilterChange}
+                options={EMPLOYMENT_TYPES}
+              />
+
+              <FilterSelect
+                id="workplaceType"
+                label="Workplace"
+                name="workplaceType"
+                value={draftFilters.workplaceType}
+                onChange={handleDraftFilterChange}
+                options={WORKPLACE_TYPES}
+              />
+
+              <FilterSelect
+                id="experienceLevel"
+                label="Experience"
+                name="experienceLevel"
+                value={draftFilters.experienceLevel}
+                onChange={handleDraftFilterChange}
+                options={EXPERIENCE_LEVELS}
+              />
+
+              <FilterSelect
+                id="sort"
+                label="Sort"
+                name="sort"
+                value={getSortOptionValue(draftFilters)}
+                onChange={handleDraftFilterChange}
+                options={SORT_OPTIONS}
+              />
+            </div>
+
+            <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleClearFilters}
+              >
+                Clear all
+              </Button>
+
+              <Button type="button" onClick={handleApplyAdvancedFilters}>
+                Apply filters
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {activeFilterChips.length > 0 && (
+          <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-5">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Active filters:
+            </span>
+
+            {activeFilterChips.map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => onRemoveFilter(chip.key)}
+                className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
+              >
+                {chip.label} ×
+              </button>
+            ))}
+
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+};
+
 const JobsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -562,33 +769,6 @@ const JobsPage = () => {
   const [jobsData, setJobsData] = useState(null);
 
   const [errorMessage, setErrorMessage] = useState("");
-
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-
-  const [searchInput, setSearchInput] = useState(filters.search);
-
-  const [locationInput, setLocationInput] = useState(filters.location);
-
-  const [draftFilters, setDraftFilters] = useState({
-    employmentType: filters.employmentType,
-    workplaceType: filters.workplaceType,
-    experienceLevel: filters.experienceLevel,
-    sortBy: filters.sortBy,
-    order: filters.order,
-  });
-
-  useEffect(() => {
-    setSearchInput(filters.search);
-    setLocationInput(filters.location);
-
-    setDraftFilters({
-      employmentType: filters.employmentType,
-      workplaceType: filters.workplaceType,
-      experienceLevel: filters.experienceLevel,
-      sortBy: filters.sortBy,
-      order: filters.order,
-    });
-  }, [filters]);
 
   useEffect(() => {
     let shouldIgnore = false;
@@ -645,55 +825,12 @@ const JobsPage = () => {
     setSearchParams(createSearchParamsFromFilters(nextFilters, nextPage));
   };
 
-  const handleDraftFilterChange = (event) => {
-    const { name, value } = event.target;
-
-    if (name === "sort") {
-      const selectedSort =
-        SORT_OPTIONS.find((option) => option.value === value) ||
-        SORT_OPTIONS[0];
-
-      setDraftFilters((currentFilters) => ({
-        ...currentFilters,
-        sortBy: selectedSort.sortBy,
-        order: selectedSort.order,
-      }));
-
-      return;
-    }
-
-    setDraftFilters((currentFilters) => ({
-      ...currentFilters,
-      [name]: value,
-    }));
-  };
-
-  const applySearchAndFilters = () => {
-    updateUrlFilters({
-      search: searchInput.trim(),
-      location: locationInput.trim(),
-      employmentType: draftFilters.employmentType,
-      workplaceType: draftFilters.workplaceType,
-      experienceLevel: draftFilters.experienceLevel,
-      sortBy: draftFilters.sortBy,
-      order: draftFilters.order,
-    });
-  };
-
-  const handleSearchSubmit = (event) => {
-    event.preventDefault();
-
-    applySearchAndFilters();
-  };
-
-  const handleApplyAdvancedFilters = () => {
-    applySearchAndFilters();
-    setIsFiltersOpen(false);
+  const handleApplyFilters = (nextFilters) => {
+    updateUrlFilters(nextFilters);
   };
 
   const handleClearFilters = () => {
     setSearchParams(new URLSearchParams());
-    setIsFiltersOpen(false);
   };
 
   const handleRemoveFilter = (filterKey) => {
@@ -734,148 +871,22 @@ const JobsPage = () => {
 
   return (
     <main className="bg-slate-50 px-3 py-4 sm:px-4 sm:py-6">
-      <div className="mx-auto grid max-w-[1500px] gap-6">
+      <div className="mx-auto grid max-w-375 gap-6">
         <PageHero
           eyebrow="Public jobs"
           title="Browse jobs"
           description="Search your preferred job by role, location, or skill."
         />
 
-        <Card>
-          <CardBody>
-            <form onSubmit={handleSearchSubmit}>
-              <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr_auto_auto] lg:items-end">
-                <FormField
-                  label="What job are you looking for?"
-                  htmlFor="search"
-                >
-                  <input
-                    id="search"
-                    type="search"
-                    value={searchInput}
-                    onChange={(event) => setSearchInput(event.target.value)}
-                    placeholder="Frontend Developer, React, Node.js"
-                    className={getInputClassName()}
-                  />
-                </FormField>
-
-                <FormField label="Location" htmlFor="location">
-                  <input
-                    id="location"
-                    type="search"
-                    value={locationInput}
-                    onChange={(event) => setLocationInput(event.target.value)}
-                    placeholder="Pune, Mumbai, Remote"
-                    className={getInputClassName()}
-                  />
-                </FormField>
-
-                <Button type="submit" size="lg">
-                  Search
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="lg"
-                  onClick={() =>
-                    setIsFiltersOpen((currentValue) => !currentValue)
-                  }
-                >
-                  Filters
-                  {activeAdvancedFilterCount > 0 && (
-                    <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
-                      {activeAdvancedFilterCount}
-                    </span>
-                  )}
-                </Button>
-              </div>
-            </form>
-
-            {isFiltersOpen && (
-              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <FilterSelect
-                    id="employmentType"
-                    label="Employment"
-                    name="employmentType"
-                    value={draftFilters.employmentType}
-                    onChange={handleDraftFilterChange}
-                    options={EMPLOYMENT_TYPES}
-                  />
-
-                  <FilterSelect
-                    id="workplaceType"
-                    label="Workplace"
-                    name="workplaceType"
-                    value={draftFilters.workplaceType}
-                    onChange={handleDraftFilterChange}
-                    options={WORKPLACE_TYPES}
-                  />
-
-                  <FilterSelect
-                    id="experienceLevel"
-                    label="Experience"
-                    name="experienceLevel"
-                    value={draftFilters.experienceLevel}
-                    onChange={handleDraftFilterChange}
-                    options={EXPERIENCE_LEVELS}
-                  />
-
-                  <FilterSelect
-                    id="sort"
-                    label="Sort"
-                    name="sort"
-                    value={getSortOptionValue(draftFilters)}
-                    onChange={handleDraftFilterChange}
-                    options={SORT_OPTIONS}
-                  />
-                </div>
-
-                <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleClearFilters}
-                  >
-                    Clear all
-                  </Button>
-
-                  <Button type="button" onClick={handleApplyAdvancedFilters}>
-                    Apply filters
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {activeFilterChips.length > 0 && (
-              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-5">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Active filters:
-                </span>
-
-                {activeFilterChips.map((chip) => (
-                  <button
-                    key={chip.key}
-                    type="button"
-                    onClick={() => handleRemoveFilter(chip.key)}
-                    className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
-                  >
-                    {chip.label} ×
-                  </button>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={handleClearFilters}
-                  className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
-                >
-                  Clear all
-                </button>
-              </div>
-            )}
-          </CardBody>
-        </Card>
+        <JobsSearchControls
+          key={searchParamsString}
+          filters={filters}
+          activeAdvancedFilterCount={activeAdvancedFilterCount}
+          activeFilterChips={activeFilterChips}
+          onApplyFilters={handleApplyFilters}
+          onClearFilters={handleClearFilters}
+          onRemoveFilter={handleRemoveFilter}
+        />
 
         <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
           <section className="grid gap-4">

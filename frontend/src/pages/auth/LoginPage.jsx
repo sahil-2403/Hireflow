@@ -36,6 +36,8 @@ const LoginPage = () => {
 
   const [apiError, setApiError] = useState("");
 
+  const navigationMessage = location.state?.message || "";
+
   const [successMessage, setSuccessMessage] = useState("");
 
   const { signIn } = useAuth();
@@ -54,19 +56,15 @@ const LoginPage = () => {
   });
 
   useEffect(() => {
-    const navigationMessage = location.state?.message;
-
     if (!navigationMessage) {
       return;
     }
-
-    setSuccessMessage(navigationMessage);
 
     navigate(location.pathname, {
       replace: true,
       state: null,
     });
-  }, [location.pathname, location.state, navigate]);
+  }, [location.pathname, navigationMessage, navigate]);
 
   const onSubmit = async (formData) => {
     setApiError("");

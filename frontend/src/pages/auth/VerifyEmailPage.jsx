@@ -62,7 +62,7 @@ const VerifyEmailPage = () => {
   }, [token, navigate]);
 
   return (
-    <main className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
+    <main className="min-h-[calc(100vh-4rem)] bg-linear-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
       <section className="mx-auto flex max-w-6xl items-center justify-center">
         <Card className="w-full max-w-md">
           <CardBody className="p-6 text-center sm:p-8">

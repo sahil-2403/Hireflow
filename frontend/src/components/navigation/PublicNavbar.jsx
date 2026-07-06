@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 import useAuth from "../../hooks/useAuth";
 import useLogout from "../../hooks/useLogout";
@@ -291,8 +291,6 @@ const PublicNavbar = ({ variant = "public" }) => {
 
   const { logoutUser } = useLogout();
 
-  const location = useLocation();
-
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const dashboardPath = getDashboardPathForRole(user?.role);
@@ -311,10 +309,6 @@ const PublicNavbar = ({ variant = "public" }) => {
     isAuthenticated,
   );
 
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [location.pathname]);
-
   const getNavLinkClass = ({ isActive }) => {
     return [
       "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition",
@@ -331,6 +325,10 @@ const PublicNavbar = ({ variant = "public" }) => {
         ? "bg-blue-50 text-blue-700"
         : "text-slate-700 hover:bg-slate-100 hover:text-slate-950",
     ].join(" ");
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
   };
 
   const handleLogout = async () => {
@@ -381,6 +379,7 @@ const PublicNavbar = ({ variant = "public" }) => {
           {mobilePrimaryAction && (
             <NavLink
               to={mobilePrimaryAction.path}
+              onClick={closeMobileMenu}
               className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700 md:hidden"
             >
               <Icon name={mobilePrimaryAction.icon} className="h-3.5 w-3.5" />
@@ -469,6 +468,7 @@ const PublicNavbar = ({ variant = "public" }) => {
                   key={link.path}
                   to={link.path}
                   end={link.end}
+                  onClick={closeMobileMenu}
                   className={getMobileNavLinkClass}
                 >
                   <Icon name={link.icon} />
@@ -480,13 +480,18 @@ const PublicNavbar = ({ variant = "public" }) => {
                 <>
                   <div className="my-1 border-t border-slate-200" />
 
-                  <NavLink to="/login" className={getMobileNavLinkClass}>
+                  <NavLink
+                    to="/login"
+                    onClick={closeMobileMenu}
+                    className={getMobileNavLinkClass}
+                  >
                     <Icon name="user" />
                     Login
                   </NavLink>
 
                   <NavLink
                     to="/register"
+                    onClick={closeMobileMenu}
                     className="flex items-center gap-3 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
                   >
                     <Icon name="user" />

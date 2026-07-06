@@ -31,12 +31,12 @@ const NotFoundPage = () => {
 
   return (
     <main className="min-h-screen bg-slate-50 px-3 py-4 text-slate-900 sm:px-4 sm:py-6">
-      <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-[1500px] items-center justify-center overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-white to-blue-50 px-4 py-16 shadow-sm sm:min-h-[calc(100vh-3rem)] sm:px-6 lg:px-8">
+      <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-375 items-center justify-center overflow-hidden rounded-4xl border border-slate-200 bg-linear-to-br from-white via-white to-blue-50 px-4 py-16 shadow-sm sm:min-h-[calc(100vh-3rem)] sm:px-6 lg:px-8">
         <div className="relative mx-auto max-w-4xl text-center">
           <div className="absolute -left-24 -top-24 h-48 w-48 rounded-full bg-blue-200/40 blur-3xl" />
           <div className="absolute -bottom-24 -right-24 h-48 w-48 rounded-full bg-violet-200/40 blur-3xl" />
 
-          <div className="relative rounded-[2rem] border border-slate-200 bg-white/90 p-6 shadow-sm backdrop-blur sm:p-10 lg:p-12">
+          <div className="relative rounded-4xl border border-slate-200 bg-white/90 p-6 shadow-sm backdrop-blur sm:p-10 lg:p-12">
             <Link
               to="/"
               className="mx-auto mb-8 inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-blue-700 transition hover:border-blue-200 hover:bg-blue-50"
@@ -47,7 +47,7 @@ const NotFoundPage = () => {
               HireFlow
             </Link>
 
-            <div className="mx-auto grid h-28 w-28 place-items-center rounded-[2rem] bg-blue-50 text-5xl font-black text-blue-700 ring-1 ring-blue-100 sm:h-32 sm:w-32 sm:text-6xl">
+            <div className="mx-auto grid h-28 w-28 place-items-center rounded-4xl bg-blue-50 text-5xl font-black text-blue-700 ring-1 ring-blue-100 sm:h-32 sm:w-32 sm:text-6xl">
               404
             </div>
 
