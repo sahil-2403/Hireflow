@@ -1,62 +1,96 @@
 import { Link } from "react-router-dom";
 
+import Button from "../ui/Button";
+import { Card, CardBody, CardFooter } from "../ui/Card";
+
+const ResumeStatusMessage = ({ status, hasResume }) => {
+  if (status === "loading") {
+    return (
+      <p className="mt-3 text-sm leading-6 text-slate-600">
+        Checking resume...
+      </p>
+    );
+  }
+
+  if (status === "missing") {
+    return (
+      <p className="mt-3 text-sm leading-6 text-amber-700">
+        Create your candidate profile before uploading a resume.
+      </p>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <p className="mt-3 text-sm leading-6 text-red-700">
+        Resume status could not be loaded.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <div
+        className={[
+          "mt-4 rounded-xl border px-4 py-3 text-sm font-bold",
+          hasResume
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            : "border-amber-200 bg-amber-50 text-amber-700",
+        ].join(" ")}
+      >
+        {hasResume ? "Your resume is ready" : "Resume required"}
+      </div>
+
+      <p className="mt-3 text-sm leading-6 text-slate-600">
+        {hasResume
+          ? "Use your uploaded resume while applying to relevant jobs."
+          : "Upload a resume to complete your application readiness."}
+      </p>
+    </>
+  );
+};
+
 const CandidateResumeStatusCard = ({ status, profile }) => {
   const hasResume = Boolean(profile?.resumeUrl);
 
+  const action = (() => {
+    if (status === "missing") {
+      return {
+        to: "/candidate/profile",
+        label: "Create profile",
+      };
+    }
+
+    return {
+      to: "/candidate/resume",
+      label: hasResume ? "View resume" : "Upload resume",
+    };
+  })();
+
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
-        Resume
-      </p>
+    <Card className="flex min-h-full flex-col">
+      <CardBody className="flex flex-1 flex-col">
+        <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-emerald-50 text-xl">
+          📄
+        </div>
 
-      <h2 className="text-xl font-bold text-slate-950">Resume status</h2>
-
-      {status === "loading" && (
-        <p className="mt-4 text-sm text-slate-600">Checking resume...</p>
-      )}
-
-      {status === "missing" && (
-        <p className="mt-4 text-sm leading-6 text-amber-700">
-          Create your candidate profile before uploading a resume.
+        <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
+          Resume status
         </p>
-      )}
 
-      {status === "error" && (
-        <p className="mt-4 text-sm leading-6 text-red-700">
-          Resume status could not be loaded.
-        </p>
-      )}
+        <h2 className="mt-2 text-xl font-black text-slate-950">
+          {hasResume ? "Uploaded" : "Not uploaded"}
+        </h2>
 
-      {status === "success" && (
-        <>
-          <div
-            className={[
-              "mt-4 rounded-lg border px-4 py-3 text-sm font-medium",
-              hasResume
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-amber-200 bg-amber-50 text-amber-700",
-            ].join(" ")}
-          >
-            {hasResume ? "Resume uploaded" : "Resume not uploaded"}
-          </div>
+        <ResumeStatusMessage status={status} hasResume={hasResume} />
+      </CardBody>
 
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            {hasResume
-              ? "Your resume is ready for job applications."
-              : "You need to upload a resume before applying to jobs."}
-          </p>
-
-          {hasResume && (
-            <Link
-              to="/candidate/resume"
-              className="mt-4 inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              View resume
-            </Link>
-          )}
-        </>
-      )}
-    </section>
+      <CardFooter>
+        <Button as={Link} to={action.to} variant="secondary" fullWidth>
+          {action.label}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 

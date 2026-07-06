@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { Link } from "react-router-dom";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
@@ -18,11 +18,35 @@ import { COMPANY_SIZES } from "../../features/companies/company.constants";
 
 import getApiError from "../../utils/getApiError";
 
-import FieldError from "../../components/common/FieldError";
+import Button from "../../components/ui/Button";
+import { Card, CardBody, CardHeader } from "../../components/ui/Card";
+import EmptyState from "../../components/ui/EmptyState";
+import FormField from "../../components/ui/FormField";
+import PageHero from "../../components/ui/PageHero";
 
 const MAX_LOGO_SIZE = 2 * 1024 * 1024;
 
 const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+const getInputClassName = (hasError = false) => {
+  return [
+    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
+    "placeholder:text-slate-400 focus:ring-4",
+    hasError
+      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
+      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
+  ].join(" ");
+};
+
+const getTextareaClassName = (hasError = false) => {
+  return [
+    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm leading-6 text-slate-900 outline-none transition",
+    "placeholder:text-slate-400 focus:ring-4",
+    hasError
+      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
+      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
+  ].join(" ");
+};
 
 const getDefaultValues = (company = null) => {
   return {
@@ -46,6 +70,93 @@ const convertFormDataToPayload = (formData) => {
   };
 };
 
+const getCompanyInitial = (company) => {
+  return (company?.name || "H").slice(0, 1).toUpperCase();
+};
+
+const CompanyPreviewCard = ({ company, mode }) => {
+  return (
+    <Card>
+      <CardHeader>
+        <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
+          Preview
+        </p>
+
+        <h2 className="mt-1 text-xl font-black text-slate-950">
+          Public company identity
+        </h2>
+
+        <p className="mt-1 text-sm leading-6 text-slate-600">
+          This is the information candidates will associate with your jobs.
+        </p>
+      </CardHeader>
+
+      <CardBody>
+        <div className="flex gap-4">
+          {company?.logoUrl ? (
+            <img
+              src={company.logoUrl}
+              alt={`${company.name} logo`}
+              className="h-16 w-16 rounded-2xl border border-slate-200 object-cover"
+            />
+          ) : (
+            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-blue-600 text-2xl font-black text-white shadow-sm shadow-blue-200">
+              {getCompanyInitial(company)}
+            </div>
+          )}
+
+          <div>
+            <p className="text-lg font-black text-slate-950">
+              {company?.name || "Company name"}
+            </p>
+
+            <p className="mt-1 text-sm text-slate-600">
+              {company?.industry || "Industry"} ·{" "}
+              {company?.companySize || "Company size"}
+            </p>
+
+            <p className="mt-1 text-sm text-slate-500">
+              {company?.headquarters || "Headquarters"}
+            </p>
+          </div>
+        </div>
+
+        {company?.description ? (
+          <p className="mt-5 text-sm leading-6 text-slate-600">
+            {company.description}
+          </p>
+        ) : (
+          <p className="mt-5 rounded-xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-500">
+            Add a company description to help candidates understand your
+            company.
+          </p>
+        )}
+
+        {company?.websiteUrl && (
+          <Button
+            as="a"
+            href={company.websiteUrl}
+            target="_blank"
+            rel="noreferrer"
+            variant="secondary"
+            fullWidth
+            className="mt-5"
+          >
+            Visit website
+          </Button>
+        )}
+
+        {mode === "create" && (
+          <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+            Create your company profile first. After that, you can upload a
+            company logo.
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+};
+
 const CompanyProfilePage = () => {
   const [pageStatus, setPageStatus] = useState("loading");
 
@@ -65,11 +176,19 @@ const CompanyProfilePage = () => {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(companyProfileSchema),
     defaultValues: getDefaultValues(),
   });
+
+  const watchedValues = useWatch({ control }) ?? getDefaultValues();
+
+  const previewCompany = {
+    ...company,
+    ...watchedValues,
+  };
 
   useEffect(() => {
     let shouldIgnore = false;
@@ -191,55 +310,42 @@ const CompanyProfilePage = () => {
 
   if (pageStatus === "loading") {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading company profile...</p>
-      </section>
+      <Card>
+        <CardBody>
+          <p className="text-sm text-slate-600">Loading company profile...</p>
+        </CardBody>
+      </Card>
     );
   }
 
   if (pageStatus === "error") {
     return (
-      <section className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
-        <p className="font-semibold text-red-700">
-          Could not load company profile
-        </p>
-
-        <p className="mt-2 text-sm text-red-700">{apiError}</p>
-      </section>
+      <EmptyState
+        icon="⚠️"
+        title="Could not load company profile"
+        description={apiError}
+      />
     );
   }
 
   return (
     <div className="grid gap-6">
-      <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
-            Company profile
-          </p>
-
-          <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-            {mode === "edit"
-              ? "Edit company profile"
-              : "Create company profile"}
-          </h1>
-
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Set up your company information so jobs, dashboards, and public
-            listings show accurate details.
-          </p>
-        </div>
-
-        <Link
-          to="/company/dashboard"
-          className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-        >
-          Back to dashboard
-        </Link>
-      </section>
+      <PageHero
+        eyebrow="Company profile"
+        title={
+          mode === "edit" ? "Edit company profile" : "Create company profile"
+        }
+        description="Set up your company information so jobs, dashboards, and public listings show accurate details."
+        actions={
+          <Button as={Link} to="/company/dashboard" variant="secondary">
+            Back to dashboard
+          </Button>
+        }
+      />
 
       {apiError && (
         <div
-          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
           role="alert"
         >
           {apiError}
@@ -248,227 +354,245 @@ const CompanyProfilePage = () => {
 
       {successMessage && (
         <div
-          className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
           role="status"
         >
           {successMessage}
         </div>
       )}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-bold text-slate-950">Company logo</h2>
+      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+        <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                Logo
+              </p>
 
-        <p className="mt-1 text-sm text-slate-600">
-          Upload a JPG, PNG, or WebP logo. Maximum size is 2 MB.
-        </p>
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                Company logo
+              </h2>
 
-        {company?.logoUrl ? (
-          <img
-            src={company.logoUrl}
-            alt={`${company.name} logo`}
-            className="mt-5 h-24 w-24 rounded-xl border border-slate-200 object-cover"
-          />
-        ) : (
-          <div className="mt-5 flex h-24 w-24 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-sm font-semibold text-slate-500">
-            No logo
-          </div>
-        )}
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Upload a JPG, PNG, or WebP logo. Maximum size is 2 MB.
+              </p>
+            </CardHeader>
 
-        {mode === "edit" ? (
-          <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-            <div>
-              <label
-                htmlFor="logo"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Logo file
-              </label>
+            <CardBody>
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                {company?.logoUrl ? (
+                  <img
+                    src={company.logoUrl}
+                    alt={`${company.name} logo`}
+                    className="h-24 w-24 rounded-2xl border border-slate-200 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-sm font-bold text-slate-500">
+                    No logo
+                  </div>
+                )}
 
-              <input
-                id="logo"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleLogoChange}
-                className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
-              />
+                <div className="flex-1">
+                  {mode === "edit" ? (
+                    <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+                      <div>
+                        <label
+                          htmlFor="logo"
+                          className="mb-2 block text-sm font-bold text-slate-700"
+                        >
+                          Logo file
+                        </label>
 
-              {selectedLogo && (
-                <p className="mt-2 text-sm text-slate-600">
-                  Selected file:{" "}
-                  <span className="font-medium text-slate-900">
-                    {selectedLogo.name}
-                  </span>
+                        <input
+                          id="logo"
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handleLogoChange}
+                          className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-blue-700 hover:file:bg-blue-100"
+                        />
+
+                        {selectedLogo && (
+                          <p className="mt-2 text-sm text-slate-600">
+                            Selected file:{" "}
+                            <span className="font-bold text-slate-900">
+                              {selectedLogo.name}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+
+                      <Button
+                        type="button"
+                        disabled={isUploadingLogo || !selectedLogo}
+                        onClick={handleLogoUpload}
+                      >
+                        {isUploadingLogo ? "Uploading..." : "Upload logo"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+                      Create the company profile first, then upload the logo.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                  Details
                 </p>
-              )}
-            </div>
 
-            <button
-              type="button"
-              disabled={isUploadingLogo || !selectedLogo}
-              onClick={handleLogoUpload}
-              className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {isUploadingLogo ? "Uploading..." : "Upload logo"}
-            </button>
-          </div>
-        ) : (
-          <p className="mt-5 text-sm text-amber-700">
-            Create the company profile first, then upload the logo.
-          </p>
-        )}
-      </section>
+                <h2 className="mt-1 text-xl font-black text-slate-950">
+                  Company information
+                </h2>
 
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-      >
-        <div className="grid gap-5">
-          <div>
-            <label
-              htmlFor="name"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Company name
-            </label>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Add the core details used across your jobs and company pages.
+                </p>
+              </CardHeader>
 
-            <input
-              id="name"
-              type="text"
-              placeholder="Example: HireFlow Technologies"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              {...register("name")}
-            />
+              <CardBody className="grid gap-5">
+                <FormField
+                  label="Company name"
+                  htmlFor="name"
+                  error={errors.name?.message}
+                >
+                  <input
+                    id="name"
+                    type="text"
+                    placeholder="Example: HireFlow Technologies"
+                    className={getInputClassName(Boolean(errors.name))}
+                    {...register("name")}
+                  />
+                </FormField>
 
-            <FieldError message={errors.name?.message} />
-          </div>
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <FormField
+                    label="Industry"
+                    htmlFor="industry"
+                    error={errors.industry?.message}
+                  >
+                    <input
+                      id="industry"
+                      type="text"
+                      placeholder="Example: Software Development"
+                      className={getInputClassName(Boolean(errors.industry))}
+                      {...register("industry")}
+                    />
+                  </FormField>
 
-          <div className="grid gap-5 lg:grid-cols-2">
-            <div>
-              <label
-                htmlFor="industry"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Industry
-              </label>
+                  <FormField
+                    label="Company size"
+                    htmlFor="companySize"
+                    error={errors.companySize?.message}
+                  >
+                    <select
+                      id="companySize"
+                      className={getInputClassName(Boolean(errors.companySize))}
+                      {...register("companySize")}
+                    >
+                      <option value="">Select company size</option>
 
-              <input
-                id="industry"
-                type="text"
-                placeholder="Example: Software Development"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                {...register("industry")}
-              />
+                      {COMPANY_SIZES.map((size) => (
+                        <option key={size.value} value={size.value}>
+                          {size.label}
+                        </option>
+                      ))}
+                    </select>
+                  </FormField>
+                </div>
 
-              <FieldError message={errors.industry?.message} />
-            </div>
+                <FormField
+                  label="Headquarters"
+                  htmlFor="headquarters"
+                  error={errors.headquarters?.message}
+                >
+                  <input
+                    id="headquarters"
+                    type="text"
+                    placeholder="Example: Pune, Maharashtra"
+                    className={getInputClassName(Boolean(errors.headquarters))}
+                    {...register("headquarters")}
+                  />
+                </FormField>
 
-            <div>
-              <label
-                htmlFor="companySize"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Company size
-              </label>
+                <FormField
+                  label="Website URL"
+                  htmlFor="websiteUrl"
+                  error={errors.websiteUrl?.message}
+                  hint="Optional. Example: https://example.com"
+                >
+                  <input
+                    id="websiteUrl"
+                    type="url"
+                    placeholder="https://example.com"
+                    className={getInputClassName(Boolean(errors.websiteUrl))}
+                    {...register("websiteUrl")}
+                  />
+                </FormField>
 
-              <select
-                id="companySize"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                {...register("companySize")}
-              >
-                <option value="">Select company size</option>
+                <FormField
+                  label="Description"
+                  htmlFor="description"
+                  error={errors.description?.message}
+                  hint="Optional. Keep it short and candidate-friendly."
+                >
+                  <textarea
+                    id="description"
+                    rows={6}
+                    placeholder="Write a short company description."
+                    className={getTextareaClassName(
+                      Boolean(errors.description),
+                    )}
+                    {...register("description")}
+                  />
+                </FormField>
+              </CardBody>
+            </Card>
 
-                {COMPANY_SIZES.map((size) => (
-                  <option key={size.value} value={size.value}>
-                    {size.label}
-                  </option>
-                ))}
-              </select>
+            <Card>
+              <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-slate-900">
+                    {mode === "edit"
+                      ? "Ready to update company profile?"
+                      : "Ready to create company profile?"}
+                  </p>
 
-              <FieldError message={errors.companySize?.message} />
-            </div>
-          </div>
+                  <p className="mt-1 text-sm text-slate-500">
+                    These details will be visible wherever company information
+                    is displayed.
+                  </p>
+                </div>
 
-          <div>
-            <label
-              htmlFor="headquarters"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Headquarters
-            </label>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button as={Link} to="/company/dashboard" variant="secondary">
+                    Cancel
+                  </Button>
 
-            <input
-              id="headquarters"
-              type="text"
-              placeholder="Example: Pune, Maharashtra"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              {...register("headquarters")}
-            />
-
-            <FieldError message={errors.headquarters?.message} />
-          </div>
-
-          <div>
-            <label
-              htmlFor="websiteUrl"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Website URL
-            </label>
-
-            <input
-              id="websiteUrl"
-              type="url"
-              placeholder="https://example.com"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              {...register("websiteUrl")}
-            />
-
-            <FieldError message={errors.websiteUrl?.message} />
-          </div>
-
-          <div>
-            <label
-              htmlFor="description"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Description
-            </label>
-
-            <textarea
-              id="description"
-              rows={6}
-              placeholder="Write a short company description."
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              {...register("description")}
-            />
-
-            <FieldError message={errors.description?.message} />
-          </div>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting
+                      ? mode === "edit"
+                        ? "Updating..."
+                        : "Creating..."
+                      : mode === "edit"
+                        ? "Update profile"
+                        : "Create profile"}
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+          </form>
         </div>
 
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <Link
-            to="/company/dashboard"
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Cancel
-          </Link>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isSubmitting
-              ? mode === "edit"
-                ? "Updating..."
-                : "Creating..."
-              : mode === "edit"
-                ? "Update profile"
-                : "Create profile"}
-          </button>
-        </div>
-      </form>
+        <aside className="self-start xl:sticky xl:top-24">
+          <CompanyPreviewCard company={previewCompany} mode={mode} />
+        </aside>
+      </div>
     </div>
   );
 };

@@ -1,3 +1,8 @@
+import { Link } from "react-router-dom";
+
+import Button from "../ui/Button";
+import { Card, CardBody, CardFooter } from "../ui/Card";
+
 const CandidateApplicationsSummaryCard = ({
   status,
   applicationsData,
@@ -12,57 +17,66 @@ const CandidateApplicationsSummaryCard = ({
   const latestApplication = applications[0];
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
-        Applications
-      </p>
+    <Card className="flex min-h-full flex-col">
+      <CardBody className="flex flex-1 flex-col">
+        <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-violet-50 text-xl">
+          📬
+        </div>
 
-      <h2 className="text-xl font-bold text-slate-950">Application summary</h2>
+        <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
+          Applications
+        </p>
 
-      {status === "loading" && (
-        <p className="mt-4 text-sm text-slate-600">Loading applications...</p>
-      )}
+        <h2 className="mt-2 text-4xl font-black text-slate-950">
+          {status === "success" ? totalApplications : "—"}
+        </h2>
 
-      {status === "error" && (
-        <p className="mt-4 text-sm text-red-700">{errorMessage}</p>
-      )}
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Total applications submitted from your candidate account.
+        </p>
 
-      {status === "success" && (
-        <>
-          <p className="mt-4 text-4xl font-bold text-slate-950">
-            {totalApplications}
-          </p>
+        {status === "loading" && (
+          <p className="mt-4 text-sm text-slate-600">Loading applications...</p>
+        )}
 
-          <p className="mt-1 text-sm text-slate-600">
-            Total applications submitted
-          </p>
+        {status === "error" && (
+          <p className="mt-4 text-sm text-red-700">{errorMessage}</p>
+        )}
 
-          {latestApplication ? (
-            <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-500">
-                Latest application
-              </p>
-
-              <p className="mt-1 font-semibold text-slate-950">
-                {latestApplication.jobId?.title || "Job title unavailable"}
-              </p>
-
-              <p className="mt-1 text-sm text-slate-600">
-                {latestApplication.companyId?.name || "Company unavailable"}
-              </p>
-
-              <span className="mt-3 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold capitalize text-blue-700">
-                {latestApplication.status}
-              </span>
-            </div>
-          ) : (
-            <p className="mt-5 text-sm leading-6 text-slate-600">
-              You have not applied to any jobs yet.
+        {status === "success" && latestApplication && (
+          <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Latest application
             </p>
-          )}
-        </>
-      )}
-    </section>
+
+            <p className="mt-1 font-bold text-slate-950">
+              {latestApplication.jobId?.title || "Job title unavailable"}
+            </p>
+
+            <p className="mt-1 text-sm text-slate-600">
+              {latestApplication.companyId?.name || "Company unavailable"}
+            </p>
+          </div>
+        )}
+
+        {status === "success" && !latestApplication && (
+          <p className="mt-5 text-sm leading-6 text-slate-600">
+            You have not applied to any jobs yet.
+          </p>
+        )}
+      </CardBody>
+
+      <CardFooter>
+        <Button
+          as={Link}
+          to="/candidate/applications"
+          variant="secondary"
+          fullWidth
+        >
+          View applications
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 

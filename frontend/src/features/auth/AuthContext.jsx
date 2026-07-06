@@ -10,35 +10,61 @@ import { getCurrentUser, refreshSession } from "../../api/auth.api";
 
 const AuthContext = createContext(null);
 
+const getSessionUser = async () => {
+  try {
+    const result = await getCurrentUser();
+
+    return result.data;
+  } catch {
+    try {
+      await refreshSession();
+
+      const result = await getCurrentUser();
+
+      return result.data;
+    } catch {
+      return null;
+    }
+  }
+};
+
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
   const isAuthenticated = Boolean(user);
 
-  const restoreSession = useCallback(async () => {
-    try {
-      const result = await getCurrentUser();
+  useEffect(() => {
+    let shouldIgnore = false;
 
-      setUser(result.data);
-    } catch {
-      try {
-        await refreshSession();
+    const initializeSession = async () => {
+      const sessionUser = await getSessionUser();
 
-        const result = await getCurrentUser();
-
-        setUser(result.data);
-      } catch {
-        setUser(null);
+      if (shouldIgnore) {
+        return;
       }
-    } finally {
+
+      setUser(sessionUser);
       setIsInitializing(false);
-    }
+    };
+
+    initializeSession();
+
+    return () => {
+      shouldIgnore = true;
+    };
   }, []);
 
-  useEffect(() => {
-    restoreSession();
-  }, [restoreSession]);
+  const restoreSession = useCallback(async () => {
+    setIsInitializing(true);
+
+    const sessionUser = await getSessionUser();
+
+    setUser(sessionUser);
+    setIsInitializing(false);
+
+    return sessionUser;
+  }, []);
 
   const signIn = useCallback((userData) => {
     setUser(userData);

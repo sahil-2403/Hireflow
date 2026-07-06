@@ -21,7 +21,11 @@ import {
 
 import getApiError from "../../utils/getApiError";
 
-import FieldError from "../../components/common/FieldError";
+import Button from "../../components/ui/Button";
+import { Card, CardBody, CardHeader } from "../../components/ui/Card";
+import EmptyState from "../../components/ui/EmptyState";
+import FormField from "../../components/ui/FormField";
+import PageHero from "../../components/ui/PageHero";
 
 const defaultValues = {
   title: "",
@@ -37,6 +41,26 @@ const defaultValues = {
   salaryMax: "",
   salaryCurrency: "INR",
   isSalaryVisible: true,
+};
+
+const getInputClassName = (hasError = false) => {
+  return [
+    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
+    "placeholder:text-slate-400 focus:ring-4",
+    hasError
+      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
+      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
+  ].join(" ");
+};
+
+const getTextareaClassName = (hasError = false) => {
+  return [
+    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm leading-6 text-slate-900 outline-none transition",
+    "placeholder:text-slate-400 focus:ring-4",
+    hasError
+      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
+      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
+  ].join(" ");
 };
 
 const splitLines = (value) => {
@@ -119,6 +143,24 @@ const convertFormDataToPayload = (formData) => {
     salaryCurrency: formData.salaryCurrency,
     isSalaryVisible: formData.isSalaryVisible,
   };
+};
+
+const FormSectionTitle = ({ eyebrow, title, description }) => {
+  return (
+    <CardHeader>
+      {eyebrow && (
+        <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+          {eyebrow}
+        </p>
+      )}
+
+      <h2 className="mt-1 text-xl font-black text-slate-950">{title}</h2>
+
+      {description && (
+        <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+      )}
+    </CardHeader>
+  );
 };
 
 const CompanyJobFormPage = () => {
@@ -209,356 +251,339 @@ const CompanyJobFormPage = () => {
 
   if (pageStatus === "loading") {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm text-slate-600">Loading job details...</p>
-      </section>
+      <Card>
+        <CardBody>
+          <p className="text-sm text-slate-600">Loading job details...</p>
+        </CardBody>
+      </Card>
     );
   }
 
   if (pageStatus === "error") {
     return (
-      <section className="rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
-        <p className="font-semibold text-red-700">Could not load job</p>
-
-        <p className="mt-2 text-sm text-red-700">{apiError}</p>
-
-        <Link
-          to="/company/jobs"
-          className="mt-5 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-        >
-          Back to jobs
-        </Link>
-      </section>
+      <EmptyState
+        icon="⚠️"
+        title="Could not load job"
+        description={apiError}
+        action={
+          <Button as={Link} to="/company/jobs">
+            Back to jobs
+          </Button>
+        }
+      />
     );
   }
 
   return (
     <div className="grid gap-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
-          Company jobs
-        </p>
+      <PageHero
+        eyebrow="Company jobs"
+        title={isEditMode ? "Edit job" : "Create job"}
+        description={
+          isEditMode
+            ? "Update this job posting and keep the public listing accurate for candidates."
+            : "Create a new job posting for candidates to discover and apply."
+        }
+        actions={
+          <Button as={Link} to="/company/jobs" variant="secondary">
+            Back to jobs
+          </Button>
+        }
+      />
 
-        <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-          {isEditMode ? "Edit job" : "Create job"}
-        </h1>
-
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-          {isEditMode
-            ? "Update this job posting and keep the public listing accurate."
-            : "Create a new job posting for candidates to discover and apply."}
-        </p>
-      </section>
-
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-      >
+      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
         {apiError && (
           <div
-            className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
             role="alert"
           >
             {apiError}
           </div>
         )}
 
-        <div className="grid gap-5">
-          <div>
-            <label
+        <Card>
+          <FormSectionTitle
+            eyebrow="Basics"
+            title="Job details"
+            description="Add the core information candidates will see first."
+          />
+
+          <CardBody className="grid gap-5">
+            <FormField
+              label="Job title"
               htmlFor="title"
-              className="mb-2 block text-sm font-medium text-slate-700"
+              error={errors.title?.message}
             >
-              Job title
-            </label>
-
-            <input
-              id="title"
-              type="text"
-              placeholder="Example: MERN Stack Developer"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              {...register("title")}
-            />
-
-            <FieldError message={errors.title?.message} />
-          </div>
-
-          <div>
-            <label
-              htmlFor="description"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Job description
-            </label>
-
-            <textarea
-              id="description"
-              rows={7}
-              placeholder="Describe the role, team, work, and expectations."
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              {...register("description")}
-            />
-
-            <FieldError message={errors.description?.message} />
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-3">
-            <div>
-              <label
-                htmlFor="employmentType"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Employment type
-              </label>
-
-              <select
-                id="employmentType"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                {...register("employmentType")}
-              >
-                <option value="">Select employment type</option>
-
-                {EMPLOYMENT_TYPES.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-
-              <FieldError message={errors.employmentType?.message} />
-            </div>
-
-            <div>
-              <label
-                htmlFor="workplaceType"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Workplace type
-              </label>
-
-              <select
-                id="workplaceType"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                {...register("workplaceType")}
-              >
-                <option value="">Select workplace type</option>
-
-                {WORKPLACE_TYPES.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-
-              <FieldError message={errors.workplaceType?.message} />
-            </div>
-
-            <div>
-              <label
-                htmlFor="experienceLevel"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Experience level
-              </label>
-
-              <select
-                id="experienceLevel"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                {...register("experienceLevel")}
-              >
-                <option value="">Select experience level</option>
-
-                {EXPERIENCE_LEVELS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-
-              <FieldError message={errors.experienceLevel?.message} />
-            </div>
-          </div>
-
-          <div>
-            <label
-              htmlFor="location"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Location
-            </label>
-
-            <input
-              id="location"
-              type="text"
-              placeholder="Example: Pune, India"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              {...register("location")}
-            />
-
-            <FieldError message={errors.location?.message} />
-          </div>
-
-          <div>
-            <label
-              htmlFor="skillsText"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Skills
-            </label>
-
-            <input
-              id="skillsText"
-              type="text"
-              placeholder="React, Node.js, MongoDB"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              {...register("skillsText")}
-            />
-
-            <p className="mt-1 text-xs text-slate-500">
-              Separate skills with commas.
-            </p>
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-2">
-            <div>
-              <label
-                htmlFor="responsibilitiesText"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Responsibilities
-              </label>
-
-              <textarea
-                id="responsibilitiesText"
-                rows={6}
-                placeholder={`Build frontend features\nIntegrate backend APIs\nWrite clean reusable code`}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                {...register("responsibilitiesText")}
-              />
-
-              <p className="mt-1 text-xs text-slate-500">
-                Write one responsibility per line.
-              </p>
-            </div>
-
-            <div>
-              <label
-                htmlFor="requirementsText"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Requirements
-              </label>
-
-              <textarea
-                id="requirementsText"
-                rows={6}
-                placeholder={`Good JavaScript knowledge\nReact project experience\nBasic REST API understanding`}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                {...register("requirementsText")}
-              />
-
-              <p className="mt-1 text-xs text-slate-500">
-                Write one requirement per line.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-[1fr_1fr_140px]">
-            <div>
-              <label
-                htmlFor="salaryMin"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Minimum salary
-              </label>
-
               <input
-                id="salaryMin"
-                type="number"
-                min="0"
-                placeholder="300000"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                {...register("salaryMin")}
-              />
-
-              <FieldError message={errors.salaryMin?.message} />
-            </div>
-
-            <div>
-              <label
-                htmlFor="salaryMax"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Maximum salary
-              </label>
-
-              <input
-                id="salaryMax"
-                type="number"
-                min="0"
-                placeholder="700000"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                {...register("salaryMax")}
-              />
-
-              <FieldError message={errors.salaryMax?.message} />
-            </div>
-
-            <div>
-              <label
-                htmlFor="salaryCurrency"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Currency
-              </label>
-
-              <input
-                id="salaryCurrency"
+                id="title"
                 type="text"
-                maxLength={3}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 uppercase outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                {...register("salaryCurrency")}
+                placeholder="Example: MERN Stack Developer"
+                className={getInputClassName(Boolean(errors.title))}
+                {...register("title")}
+              />
+            </FormField>
+
+            <FormField
+              label="Job description"
+              htmlFor="description"
+              error={errors.description?.message}
+              hint="Describe the role, team, work, expectations, and why the candidate should apply."
+            >
+              <textarea
+                id="description"
+                rows={7}
+                placeholder="Describe the role, team, work, and expectations."
+                className={getTextareaClassName(Boolean(errors.description))}
+                {...register("description")}
+              />
+            </FormField>
+
+            <div className="grid gap-5 lg:grid-cols-3">
+              <FormField
+                label="Employment type"
+                htmlFor="employmentType"
+                error={errors.employmentType?.message}
+              >
+                <select
+                  id="employmentType"
+                  className={getInputClassName(Boolean(errors.employmentType))}
+                  {...register("employmentType")}
+                >
+                  <option value="">Select employment type</option>
+
+                  {EMPLOYMENT_TYPES.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+
+              <FormField
+                label="Workplace type"
+                htmlFor="workplaceType"
+                error={errors.workplaceType?.message}
+              >
+                <select
+                  id="workplaceType"
+                  className={getInputClassName(Boolean(errors.workplaceType))}
+                  {...register("workplaceType")}
+                >
+                  <option value="">Select workplace type</option>
+
+                  {WORKPLACE_TYPES.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+
+              <FormField
+                label="Experience level"
+                htmlFor="experienceLevel"
+                error={errors.experienceLevel?.message}
+              >
+                <select
+                  id="experienceLevel"
+                  className={getInputClassName(Boolean(errors.experienceLevel))}
+                  {...register("experienceLevel")}
+                >
+                  <option value="">Select experience level</option>
+
+                  {EXPERIENCE_LEVELS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+            </div>
+
+            <FormField
+              label="Location"
+              htmlFor="location"
+              error={errors.location?.message}
+              hint="Examples: Pune, India · Remote · Mumbai, India"
+            >
+              <input
+                id="location"
+                type="text"
+                placeholder="Example: Pune, India"
+                className={getInputClassName(Boolean(errors.location))}
+                {...register("location")}
+              />
+            </FormField>
+
+            <FormField
+              label="Skills"
+              htmlFor="skillsText"
+              hint="Separate skills with commas. Example: React, Node.js, MongoDB"
+            >
+              <input
+                id="skillsText"
+                type="text"
+                placeholder="React, Node.js, MongoDB"
+                className={getInputClassName(Boolean(errors.skillsText))}
+                {...register("skillsText")}
+              />
+            </FormField>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <FormSectionTitle
+            eyebrow="Role content"
+            title="Responsibilities and requirements"
+            description="Use one line for each point so the public job page can show clean bullet lists."
+          />
+
+          <CardBody>
+            <div className="grid gap-5 lg:grid-cols-2">
+              <FormField
+                label="Responsibilities"
+                htmlFor="responsibilitiesText"
+                hint="Write one responsibility per line."
+              >
+                <textarea
+                  id="responsibilitiesText"
+                  rows={7}
+                  placeholder={`Build frontend features\nIntegrate backend APIs\nWrite clean reusable code`}
+                  className={getTextareaClassName(
+                    Boolean(errors.responsibilitiesText),
+                  )}
+                  {...register("responsibilitiesText")}
+                />
+              </FormField>
+
+              <FormField
+                label="Requirements"
+                htmlFor="requirementsText"
+                hint="Write one requirement per line."
+              >
+                <textarea
+                  id="requirementsText"
+                  rows={7}
+                  placeholder={`Good JavaScript knowledge\nReact project experience\nBasic REST API understanding`}
+                  className={getTextareaClassName(
+                    Boolean(errors.requirementsText),
+                  )}
+                  {...register("requirementsText")}
+                />
+              </FormField>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <FormSectionTitle
+            eyebrow="Compensation"
+            title="Salary information"
+            description="Salary is optional, but visible salaries usually improve candidate trust."
+          />
+
+          <CardBody className="grid gap-5">
+            <div className="grid gap-5 lg:grid-cols-[1fr_1fr_160px]">
+              <FormField
+                label="Minimum salary"
+                htmlFor="salaryMin"
+                error={errors.salaryMin?.message}
+              >
+                <input
+                  id="salaryMin"
+                  type="number"
+                  min="0"
+                  placeholder="300000"
+                  className={getInputClassName(Boolean(errors.salaryMin))}
+                  {...register("salaryMin")}
+                />
+              </FormField>
+
+              <FormField
+                label="Maximum salary"
+                htmlFor="salaryMax"
+                error={errors.salaryMax?.message}
+              >
+                <input
+                  id="salaryMax"
+                  type="number"
+                  min="0"
+                  placeholder="700000"
+                  className={getInputClassName(Boolean(errors.salaryMax))}
+                  {...register("salaryMax")}
+                />
+              </FormField>
+
+              <FormField
+                label="Currency"
+                htmlFor="salaryCurrency"
+                error={errors.salaryCurrency?.message}
+              >
+                <input
+                  id="salaryCurrency"
+                  type="text"
+                  maxLength={3}
+                  className={[
+                    getInputClassName(Boolean(errors.salaryCurrency)),
+                    "uppercase",
+                  ].join(" ")}
+                  {...register("salaryCurrency")}
+                />
+              </FormField>
+            </div>
+
+            <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                {...register("isSalaryVisible")}
               />
 
-              <FieldError message={errors.salaryCurrency?.message} />
+              <span>
+                <span className="block text-sm font-bold text-slate-800">
+                  Show salary on public job page
+                </span>
+
+                <span className="mt-1 block text-sm leading-6 text-slate-500">
+                  Turn this off if the company does not want to disclose salary
+                  publicly.
+                </span>
+              </span>
+            </label>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold text-slate-900">
+                {isEditMode ? "Ready to update this job?" : "Ready to publish?"}
+              </p>
+
+              <p className="mt-1 text-sm text-slate-500">
+                {isEditMode
+                  ? "Your changes will update the job posting."
+                  : "Candidates will be able to discover this job once created."}
+              </p>
             </div>
-          </div>
 
-          <label className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-              {...register("isSalaryVisible")}
-            />
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button as={Link} to="/company/jobs" variant="secondary">
+                Cancel
+              </Button>
 
-            <span className="text-sm font-medium text-slate-700">
-              Show salary on public job page
-            </span>
-          </label>
-        </div>
-
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <Link
-            to="/company/jobs"
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Cancel
-          </Link>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isSubmitting
-              ? isEditMode
-                ? "Updating..."
-                : "Creating..."
-              : isEditMode
-                ? "Update job"
-                : "Create job"}
-          </button>
-        </div>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting
+                  ? isEditMode
+                    ? "Updating..."
+                    : "Creating..."
+                  : isEditMode
+                    ? "Update job"
+                    : "Create job"}
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
       </form>
     </div>
   );

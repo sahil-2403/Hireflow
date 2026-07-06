@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { getMyCandidateProfile } from "../../api/candidate.api";
-
 import { listMyApplications } from "../../api/application.api";
+
+import useAuth from "../../hooks/useAuth";
 
 import getApiError from "../../utils/getApiError";
 
@@ -12,7 +13,212 @@ import CandidateProfileSummaryCard from "../../components/candidate/CandidatePro
 import CandidateResumeStatusCard from "../../components/candidate/CandidateResumeStatusCard";
 import CandidateApplicationsSummaryCard from "../../components/candidate/CandidateApplicationsSummaryCard";
 
+import Button from "../../components/ui/Button";
+import { Card, CardBody, CardHeader } from "../../components/ui/Card";
+import EmptyState from "../../components/ui/EmptyState";
+import PageHero from "../../components/ui/PageHero";
+
+const getDisplayName = (user) => {
+  return user?.firstName || user?.username || user?.email || "there";
+};
+
+const formatDate = (dateValue) => {
+  if (!dateValue) {
+    return "Date unavailable";
+  }
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(dateValue));
+};
+
+const getStatusClass = (status) => {
+  const normalizedStatus = status?.toLowerCase();
+
+  if (normalizedStatus?.includes("shortlist")) {
+    return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100";
+  }
+
+  if (normalizedStatus?.includes("interview")) {
+    return "bg-violet-50 text-violet-700 ring-1 ring-violet-100";
+  }
+
+  if (normalizedStatus?.includes("reject")) {
+    return "bg-red-50 text-red-700 ring-1 ring-red-100";
+  }
+
+  if (normalizedStatus?.includes("review")) {
+    return "bg-blue-50 text-blue-700 ring-1 ring-blue-100";
+  }
+
+  return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+};
+
+const CandidateJobSearchCard = () => {
+  return (
+    <Card className="flex min-h-full flex-col">
+      <CardBody className="flex flex-1 flex-col">
+        <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-amber-50 text-xl">
+          🔎
+        </div>
+
+        <p className="text-sm font-semibold uppercase tracking-wider text-amber-600">
+          Job search
+        </p>
+
+        <h2 className="mt-2 text-xl font-black text-slate-950">Browse jobs</h2>
+
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Explore open roles and apply when your profile and resume are ready.
+        </p>
+      </CardBody>
+
+      <div className="border-t border-slate-100 bg-slate-50/80 p-4">
+        <Button as={Link} to="/jobs" fullWidth>
+          Browse jobs
+        </Button>
+      </div>
+    </Card>
+  );
+};
+
+const AlertMessage = ({ children }) => {
+  return (
+    <div
+      className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      role="alert"
+    >
+      {children}
+    </div>
+  );
+};
+
+const ApplicationStatusPill = ({ status }) => {
+  return (
+    <span
+      className={[
+        "inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold capitalize",
+        getStatusClass(status),
+      ].join(" ")}
+    >
+      {status || "Applied"}
+    </span>
+  );
+};
+
+const RecentApplicationRow = ({ application }) => {
+  return (
+    <article className="grid gap-4 p-5 transition hover:bg-slate-50/70 lg:grid-cols-[1.4fr_1fr_auto] lg:items-center">
+      <div className="flex gap-3">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700">
+          {(application.jobId?.title || "J").slice(0, 1)}
+        </div>
+
+        <div className="min-w-0">
+          <p className="font-bold text-slate-950">
+            {application.jobId?.title || "Job title unavailable"}
+          </p>
+
+          <p className="mt-1 text-sm text-slate-500">
+            {application.companyId?.name || "Company unavailable"}
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-sm font-medium text-slate-500">Applied on</p>
+
+        <p className="mt-1 text-sm font-semibold text-slate-800">
+          {formatDate(application.createdAt || application.appliedAt)}
+        </p>
+      </div>
+
+      <ApplicationStatusPill status={application.status} />
+    </article>
+  );
+};
+
+const RecentApplicationsSection = ({
+  status,
+  applicationsData,
+  errorMessage,
+}) => {
+  const applications = applicationsData?.applications ?? [];
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+              Recent activity
+            </p>
+
+            <h2 className="mt-1 text-xl font-black text-slate-950">
+              Recent applications
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-600">
+              Track the latest roles you have applied to.
+            </p>
+          </div>
+
+          <Button as={Link} to="/candidate/applications" variant="secondary">
+            View all
+          </Button>
+        </div>
+      </CardHeader>
+
+      {status === "loading" && (
+        <CardBody>
+          <p className="text-sm text-slate-600">Loading applications...</p>
+        </CardBody>
+      )}
+
+      {status === "error" && (
+        <CardBody>
+          <AlertMessage>{errorMessage}</AlertMessage>
+        </CardBody>
+      )}
+
+      {status === "success" && applications.length === 0 && (
+        <CardBody>
+          <EmptyState
+            icon="📄"
+            title="No applications yet"
+            description="Start browsing jobs and your applications will appear here."
+            action={
+              <Button as={Link} to="/jobs">
+                Browse jobs
+              </Button>
+            }
+          />
+        </CardBody>
+      )}
+
+      {status === "success" && applications.length > 0 && (
+        <div className="divide-y divide-slate-100">
+          {applications.slice(0, 5).map((application) => {
+            const applicationId = application._id || application.id;
+
+            return (
+              <RecentApplicationRow
+                key={applicationId}
+                application={application}
+              />
+            );
+          })}
+        </div>
+      )}
+    </Card>
+  );
+};
+
 const CandidateDashboardPage = () => {
+  const { user } = useAuth();
+
   const [profileState, setProfileState] = useState({
     status: "loading",
     profile: null,
@@ -107,63 +313,17 @@ const CandidateDashboardPage = () => {
 
   return (
     <div className="grid gap-6">
-      <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
-            Candidate dashboard
-          </p>
-
-          <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-            Welcome back
-          </h1>
-
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Manage your profile, resume, applications, and job search from one
-            place.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Link
-            to="/candidate/profile"
-            className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Edit profile
-          </Link>
-
-          <Link
-            to="/candidate/resume"
-            className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Upload resume
-          </Link>
-
-          <Link
-            to="/candidate/applications"
-            className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            View applications
-          </Link>
-
-          <Link
-            to="/jobs"
-            className="inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            Browse jobs
-          </Link>
-        </div>
-      </section>
-
-      <CandidateProfileSummaryCard
-        status={profileState.status}
-        profile={profileState.profile}
-        errorMessage={profileState.errorMessage}
+      <PageHero
+        eyebrow="Candidate dashboard"
+        title={`Welcome back, ${getDisplayName(user)}`}
+        description="Manage your profile, resume, applications, and job search from one clean workspace."
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <CandidateResumeStatusCard
+      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <CandidateProfileSummaryCard
           status={profileState.status}
           profile={profileState.profile}
+          errorMessage={profileState.errorMessage}
         />
 
         <CandidateApplicationsSummaryCard
@@ -171,7 +331,20 @@ const CandidateDashboardPage = () => {
           applicationsData={applicationsState.applicationsData}
           errorMessage={applicationsState.errorMessage}
         />
-      </div>
+
+        <CandidateResumeStatusCard
+          status={profileState.status}
+          profile={profileState.profile}
+        />
+
+        <CandidateJobSearchCard />
+      </section>
+
+      <RecentApplicationsSection
+        status={applicationsState.status}
+        applicationsData={applicationsState.applicationsData}
+        errorMessage={applicationsState.errorMessage}
+      />
     </div>
   );
 };

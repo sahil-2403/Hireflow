@@ -6,6 +6,22 @@ import { verifyEmail } from "../../api/auth.api";
 
 import getApiError from "../../utils/getApiError";
 
+import Button from "../../components/ui/Button";
+import { Card, CardBody } from "../../components/ui/Card";
+
+const getStatusBoxClassName = (status) => {
+  const statusClasses = {
+    verifying: "border-amber-200 bg-amber-50 text-amber-700",
+    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    error: "border-red-200 bg-red-50 text-red-700",
+  };
+
+  return [
+    "mt-6 rounded-xl border px-4 py-4 text-sm",
+    statusClasses[status] || statusClasses.verifying,
+  ].join(" ");
+};
+
 const VerifyEmailPage = () => {
   const { token } = useParams();
 
@@ -43,49 +59,53 @@ const VerifyEmailPage = () => {
     };
 
     verifyUserEmail();
-  }, [token,navigate]);
-
-  const statusClasses = {
-    verifying: "border-amber-200 bg-amber-50 text-amber-700",
-
-    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
-
-    error: "border-red-200 bg-red-50 text-red-700",
-  };
+  }, [token, navigate]);
 
   return (
-    <main className="flex min-h-[calc(100vh-73px)] items-center justify-center px-4 py-12 sm:px-6">
-      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-          Email verification
-        </h1>
+    <main className="min-h-[calc(100vh-4rem)] bg-linear-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
+      <section className="mx-auto flex max-w-6xl items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardBody className="p-6 text-center sm:p-8">
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-blue-50 text-3xl">
+              {status === "error" ? "⚠️" : "✉️"}
+            </div>
 
-        <div
-          className={`mt-6 rounded-lg border px-4 py-4 text-sm ${statusClasses[status]}`}
-          role={status === "error" ? "alert" : "status"}
-        >
-          {message}
-        </div>
+            <p className="mt-6 text-sm font-semibold uppercase tracking-wider text-blue-600">
+              Email verification
+            </p>
 
-        <div className="mt-6 flex flex-col gap-3">
-          {status === "success" && (
-            <Link
-              to="/login"
-              className="rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
+              Verifying your email
+            </h1>
+
+            <div
+              className={getStatusBoxClassName(status)}
+              role={status === "error" ? "alert" : "status"}
             >
-              Continue to login
-            </Link>
-          )}
+              {message}
+            </div>
 
-          {status === "error" && (
-            <Link
-              to="/resend-verification"
-              className="rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Request a new verification link
-            </Link>
-          )}
-        </div>
+            <div className="mt-6 grid gap-3">
+              {status === "success" && (
+                <Button as={Link} to="/login" fullWidth>
+                  Continue to login
+                </Button>
+              )}
+
+              {status === "error" && (
+                <>
+                  <Button as={Link} to="/resend-verification" fullWidth>
+                    Request a new verification link
+                  </Button>
+
+                  <Button as={Link} to="/login" variant="secondary" fullWidth>
+                    Return to login
+                  </Button>
+                </>
+              )}
+            </div>
+          </CardBody>
+        </Card>
       </section>
     </main>
   );

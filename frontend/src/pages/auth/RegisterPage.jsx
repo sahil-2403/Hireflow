@@ -1,5 +1,7 @@
 import { useState } from "react";
+
 import { Link, useNavigate } from "react-router-dom";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -9,8 +11,21 @@ import { registerSchema } from "../../features/auth/auth.schemas";
 
 import getApiError from "../../utils/getApiError";
 
-import FieldError from "../../components/common/FieldError";
 import PasswordField from "../../components/common/PasswordField";
+
+import Button from "../../components/ui/Button";
+import { Card, CardBody } from "../../components/ui/Card";
+import FormField from "../../components/ui/FormField";
+
+const getInputClassName = (hasError) => {
+  return [
+    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
+    "placeholder:text-slate-400 focus:ring-4",
+    hasError
+      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
+      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
+  ].join(" ");
+};
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -33,7 +48,7 @@ const RegisterPage = () => {
     },
   });
 
-  const applyBackendFieldErrors = (backendErrors) => {
+  const applyBackendFieldErrors = (backendErrors = []) => {
     backendErrors.forEach((error) => {
       const fieldName = error.field;
 
@@ -51,11 +66,11 @@ const RegisterPage = () => {
   const onSubmit = async (formData) => {
     setApiError("");
 
-    const registrationData = ({
+    const registrationData = {
       username: formData.username,
       email: formData.email,
       password: formData.password,
-    } = formData);
+    };
 
     try {
       const result = await registerCandidate(registrationData);
@@ -76,129 +91,153 @@ const RegisterPage = () => {
   };
 
   return (
-    <main className="flex min-h-[calc(100vh-73px)] items-center justify-center px-4 py-12 sm:px-6">
-      <section className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="mb-8">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
+    <main className="min-h-[calc(100vh-4rem)] rounded-2xl bg-linear-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
+      <section className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_520px] lg:items-start">
+        <div className="hidden lg:block opacity-80">
+          <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
             Candidate registration
           </p>
 
-          <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-            Create your HireFlow account
+          <h1 className="mt-3 max-w-2xl text-5xl font-black tracking-tight text-slate-950">
+            Create your profile and start applying smarter.
           </h1>
 
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Register as a candidate and start applying to open opportunities.
+          <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
+            Register as a candidate, complete your profile, upload your resume,
+            and track every application from one clean workspace.
           </p>
+
+          <div className="mt-8 grid max-w-xl gap-4">
+            <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
+              <p className="text-sm font-bold text-slate-950">
+                Build a recruiter-ready profile
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Add your skills, experience level, location, and portfolio
+                links.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
+              <p className="text-sm font-bold text-slate-950">
+                Upload your resume
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Keep your resume ready before applying to jobs.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
+              <p className="text-sm font-bold text-slate-950">
+                Track applications
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Follow each application status from your candidate dashboard.
+              </p>
+            </div>
+          </div>
         </div>
 
-        {apiError && (
-          <div
-            className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            role="alert"
-          >
-            {apiError}
-          </div>
-        )}
+        <Card className="w-full">
+          <CardBody className="p-6 sm:p-8">
+            <div className="mb-8">
+              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                Register
+              </p>
 
-        <form
-          className="space-y-5"
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-        >
-          <div>
-            <label
-              htmlFor="username"
-              className="mb-2 block text-sm font-medium text-slate-700"
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
+                Create your HireFlow account
+              </h1>
+
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Register as a candidate and start applying to open
+                opportunities.
+              </p>
+            </div>
+
+            {apiError && (
+              <div
+                className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                role="alert"
+              >
+                {apiError}
+              </div>
+            )}
+
+            <form
+              className="space-y-5"
+              onSubmit={handleSubmit(onSubmit)}
+              noValidate
             >
-              Username
-            </label>
+              <FormField
+                label="Username"
+                htmlFor="username"
+                error={errors.username?.message}
+              >
+                <input
+                  id="username"
+                  type="text"
+                  autoComplete="username"
+                  placeholder="Username"
+                  className={getInputClassName(Boolean(errors.username))}
+                  {...register("username")}
+                />
+              </FormField>
 
-            <input
-              id="username"
-              type="text"
-              autoComplete="username"
-              placeholder="Username"
-              className={[
-                "w-full rounded-lg border bg-white px-3 py-2.5 text-slate-900 outline-none transition",
-                "placeholder:text-slate-400 focus:ring-2",
-                errors.username
-                  ? "border-red-400 focus:border-red-500 focus:ring-red-100"
-                  : "border-slate-300 focus:border-blue-500 focus:ring-blue-100",
-              ].join(" ")}
-              {...register("username")}
-            />
+              <FormField
+                label="Email address"
+                htmlFor="email"
+                error={errors.email?.message}
+              >
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  className={getInputClassName(Boolean(errors.email))}
+                  {...register("email")}
+                />
+              </FormField>
 
-            <FieldError message={errors.username?.message} />
-          </div>
+              <PasswordField
+                id="password"
+                label="Password"
+                placeholder="Create a strong password"
+                autoComplete="new-password"
+                registration={register("password")}
+                error={errors.password?.message}
+              />
 
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Email address
-            </label>
+              <PasswordField
+                id="confirmPassword"
+                label="Confirm password"
+                placeholder="Enter the password again"
+                autoComplete="new-password"
+                registration={register("confirmPassword")}
+                error={errors.confirmPassword?.message}
+              />
 
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              className={[
-                "w-full rounded-lg border bg-white px-3 py-2.5 text-slate-900 outline-none transition",
-                "placeholder:text-slate-400 focus:ring-2",
-                errors.email
-                  ? "border-red-400 focus:border-red-500 focus:ring-red-100"
-                  : "border-slate-300 focus:border-blue-500 focus:ring-blue-100",
-              ].join(" ")}
-              {...register("email")}
-            />
+              <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+                Passwords must contain at least eight characters, one uppercase
+                letter, one lowercase letter, and one number.
+              </div>
 
-            <FieldError message={errors.email?.message} />
-          </div>
+              <Button type="submit" disabled={isSubmitting} fullWidth size="lg">
+                {isSubmitting ? "Creating account..." : "Create account"}
+              </Button>
+            </form>
 
-          <PasswordField
-            id="password"
-            label="Password"
-            placeholder="Create a strong password"
-            autoComplete="new-password"
-            registration={register("password")}
-            error={errors.password?.message}
-          />
-
-          <PasswordField
-            id="confirmPassword"
-            label="Confirm password"
-            placeholder="Enter the password again"
-            autoComplete="new-password"
-            registration={register("confirmPassword")}
-            error={errors.confirmPassword?.message}
-          />
-
-          <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-            Passwords must contain at least eight characters, one uppercase
-            letter, one lowercase letter, and one number.
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400"
-          >
-            {isSubmitting ? "Creating account..." : "Create account"}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            className="font-semibold text-blue-600 hover:text-blue-700"
-          >
-            Login
-          </Link>
-        </p>
+            <p className="mt-6 text-center text-sm text-slate-600">
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                className="font-bold text-blue-600 hover:text-blue-700"
+              >
+                Login
+              </Link>
+            </p>
+          </CardBody>
+        </Card>
       </section>
     </main>
   );

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import FieldError from "./FieldError";
+import FormField from "../ui/FormField";
 
 const PasswordField = ({
   id,
@@ -13,16 +13,7 @@ const PasswordField = ({
   const [isVisible, setIsVisible] = useState(false);
 
   return (
-    <div>
-      {label && (
-        <label
-          htmlFor={id}
-          className="mb-2 block text-sm font-medium text-slate-700"
-        >
-          {label}
-        </label>
-      )}
-
+    <FormField label={label} htmlFor={id} error={error}>
       <div className="relative">
         <input
           id={id}
@@ -30,11 +21,11 @@ const PasswordField = ({
           autoComplete={autoComplete}
           placeholder={placeholder}
           className={[
-            "w-full rounded-lg border bg-white px-3 py-2.5 pr-12 text-slate-900 outline-none transition",
-            "placeholder:text-slate-400 focus:ring-2",
+            "w-full rounded-xl border bg-white px-3 py-2.5 pr-12 text-sm text-slate-900 outline-none transition",
+            "placeholder:text-slate-400 focus:ring-4",
             error
-              ? "border-red-400 focus:border-red-500 focus:ring-red-100"
-              : "border-slate-300 focus:border-blue-500 focus:ring-blue-100",
+              ? "border-red-400 focus:border-red-500 focus:ring-red-50"
+              : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
           ].join(" ")}
           {...registration}
         />
@@ -42,7 +33,7 @@ const PasswordField = ({
         <button
           type="button"
           onClick={() => setIsVisible((currentValue) => !currentValue)}
-          className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-slate-500 transition hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+          className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-slate-500 transition hover:text-slate-800 focus:outline-none focus:ring-4 focus:ring-inset focus:ring-blue-50"
           aria-label={isVisible ? "Hide password" : "Show password"}
           aria-pressed={isVisible}
         >
@@ -75,9 +66,7 @@ const PasswordField = ({
           )}
         </button>
       </div>
-
-      <FieldError message={error} />
-    </div>
+    </FormField>
   );
 };
 

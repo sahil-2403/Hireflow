@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { getPublicJobById } from "../../api/job.api";
-
 import { applyToJob } from "../../api/application.api";
 
 import { ROLES } from "../../features/auth/auth.constants";
@@ -11,26 +10,58 @@ import { ROLES } from "../../features/auth/auth.constants";
 import getApiError from "../../utils/getApiError";
 import useAuth from "../../hooks/useAuth";
 
+import Button from "../../components/ui/Button";
+import { Card, CardBody, CardHeader } from "../../components/ui/Card";
+import EmptyState from "../../components/ui/EmptyState";
+
 const formatSalary = (job) => {
   if (!job?.isSalaryVisible) {
     return "Salary not disclosed";
   }
 
-  if (job.salaryMin === null && job.salaryMax === null) {
+  if (job.salaryMin == null && job.salaryMax == null) {
     return "Salary not disclosed";
   }
 
   const currency = job.salaryCurrency || "INR";
 
-  if (job.salaryMin !== null && job.salaryMax !== null) {
+  if (job.salaryMin != null && job.salaryMax != null) {
     return `${currency} ${job.salaryMin} - ${job.salaryMax}`;
   }
 
-  if (job.salaryMin !== null) {
+  if (job.salaryMin != null) {
     return `${currency} ${job.salaryMin}+`;
   }
 
   return `Up to ${currency} ${job.salaryMax}`;
+};
+
+const getCompanyInitial = (job) => {
+  return (job?.companyId?.name || job?.title || "H").slice(0, 1).toUpperCase();
+};
+
+const DetailPill = ({ children }) => {
+  return (
+    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold capitalize text-slate-700">
+      {children}
+    </span>
+  );
+};
+
+const SectionList = ({ items }) => {
+  return (
+    <ul className="grid gap-3">
+      {items.map((item) => (
+        <li key={item} className="flex gap-3 text-sm leading-6 text-slate-700">
+          <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-blue-50 text-xs font-black text-blue-700">
+            ✓
+          </span>
+
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
 };
 
 const JobDetailsPage = () => {
@@ -125,252 +156,372 @@ const JobDetailsPage = () => {
 
   if (status === "loading") {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-        <p className="text-sm text-slate-600">Loading job details...</p>
-      </main>
+      <Card>
+        <CardBody>
+          <p className="text-sm text-slate-600">Loading job details...</p>
+        </CardBody>
+      </Card>
     );
   }
 
   if (status === "error") {
     return (
-      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
-          <h1 className="text-xl font-bold text-red-700">Could not load job</h1>
-
-          <p className="mt-2 text-sm text-red-700">{errorMessage}</p>
-
-          <Link
-            to="/jobs"
-            className="mt-5 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            Back to jobs
-          </Link>
-        </div>
+      <main className="bg-slate-50">
+        <section className="mx-auto max-w-8xl px-4 py-10 sm:px-6 lg:px-8">
+          <EmptyState
+            icon="⚠️"
+            title="Could not load job"
+            description={errorMessage}
+            action={
+              <Button as={Link} to="/jobs">
+                Back to jobs
+              </Button>
+            }
+          />
+        </section>
       </main>
     );
   }
 
   return (
     <main className="bg-slate-50">
-      <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-          <Link
-            to="/jobs"
-            className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-          >
+      <section className="overflow-hidden rounded-3xl border border-blue-100 bg-linear-to-br from-blue-50 via-white to-slate-50">
+        <div className="mx-auto max-w-8xl px-4 py-8 sm:px-4">
+          <Button as={Link} to="/jobs" variant="secondary" size="sm">
             ← Back to jobs
-          </Link>
+          </Button>
 
-          <p className="mt-6 text-sm font-medium text-slate-500">
-            {job.companyId?.name || "Company unavailable"}
-          </p>
+          <div className="mt-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex gap-4">
+              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-blue-600 text-2xl font-black text-white shadow-sm shadow-blue-200">
+                {getCompanyInitial(job)}
+              </div>
 
-          <h1 className="mt-2 text-4xl font-extrabold tracking-tight text-slate-950">
-            {job.title}
-          </h1>
+              <div>
+                <p className="px-1 text-sm font-bold text-blue-700">
+                  {job.companyId?.name || "Company unavailable"}
+                </p>
 
-          <p className="mt-3 text-sm text-slate-600">
-            {job.location} ·{" "}
-            <span className="capitalize">{job.workplaceType}</span> ·{" "}
-            <span className="capitalize">{job.employmentType}</span> ·{" "}
-            <span className="capitalize">{job.experienceLevel}</span>
-          </p>
+                <h1 className="mt-2 max-w-3xl text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                  {job.title}
+                </h1>
 
-          <p className="mt-3 text-sm font-semibold text-slate-800">
-            {formatSalary(job)}
-          </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <DetailPill>
+                    📍 {job.location || "Location unavailable"}
+                  </DetailPill>
+                  <DetailPill>🏢 {job.workplaceType}</DetailPill>
+                  <DetailPill>💼 {job.employmentType}</DetailPill>
+                  <DetailPill>⭐ {job.experienceLevel}</DetailPill>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/80 bg-white/90 px-5 py-4 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Salary
+              </p>
+
+              <p className="mt-1 text-lg font-black text-slate-950">
+                {formatSalary(job)}
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-5xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_340px] lg:px-8">
+      <section className="mx-auto grid max-w-8xl gap-6 px-0 py-8 sm:px-0 lg:grid-cols-[1fr_360px] ">
         <div className="grid gap-6">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-950">
-              Job description
-            </h2>
+          <Card>
+            <CardHeader>
+              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                Overview
+              </p>
 
-            <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-700">
-              {job.description}
-            </p>
-          </section>
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                Job description
+              </h2>
+            </CardHeader>
+
+            <CardBody>
+              <p className="whitespace-pre-line text-sm leading-7 text-slate-700">
+                {job.description}
+              </p>
+            </CardBody>
+          </Card>
 
           {job.responsibilities?.length > 0 && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-slate-950">
-                Responsibilities
-              </h2>
+            <Card>
+              <CardHeader>
+                <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
+                  Role
+                </p>
 
-              <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
-                {job.responsibilities.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </section>
+                <h2 className="mt-1 text-xl font-black text-slate-950">
+                  Responsibilities
+                </h2>
+              </CardHeader>
+
+              <CardBody>
+                <SectionList items={job.responsibilities} />
+              </CardBody>
+            </Card>
           )}
 
           {job.requirements?.length > 0 && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-slate-950">Requirements</h2>
+            <Card>
+              <CardHeader>
+                <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
+                  Requirements
+                </p>
 
-              <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700">
-                {job.requirements.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </section>
+                <h2 className="mt-1 text-xl font-black text-slate-950">
+                  What you need
+                </h2>
+              </CardHeader>
+
+              <CardBody>
+                <SectionList items={job.requirements} />
+              </CardBody>
+            </Card>
           )}
 
           {job.skills?.length > 0 && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-slate-950">Skills</h2>
+            <Card>
+              <CardHeader>
+                <p className="text-sm font-semibold uppercase tracking-wider text-amber-600">
+                  Skills
+                </p>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {job.skills.map((skill) => (
-                  <span
-                    key={skill}
-                    className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </section>
+                <h2 className="mt-1 text-xl font-black text-slate-950">
+                  Skills required for this role
+                </h2>
+              </CardHeader>
+
+              <CardBody>
+                <div className="flex flex-wrap gap-2">
+                  {job.skills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
           )}
         </div>
 
-        <aside className="grid gap-6 self-start">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-950">
-              Apply for this job
-            </h2>
+        <aside className="grid gap-6 self-start lg:sticky lg:top-24">
+          <Card>
+            <CardHeader>
+              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                Application
+              </p>
 
-            {!isAuthenticated && (
-              <div className="mt-4">
-                <p className="text-sm leading-6 text-slate-600">
-                  Login as a candidate to apply for this job.
-                </p>
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                Apply for this job
+              </h2>
+            </CardHeader>
 
-                <div className="mt-5 flex gap-3">
-                  <Link
-                    to="/login"
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            <CardBody>
+              {!isAuthenticated && (
+                <div>
+                  <p className="text-sm leading-6 text-slate-600">
+                    Login as a candidate to apply for this job.
+                  </p>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                    <Button as={Link} to="/login" fullWidth>
+                      Login
+                    </Button>
+
+                    <Button
+                      as={Link}
+                      to="/register"
+                      variant="secondary"
+                      fullWidth
+                    >
+                      Register
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {isCompanyUser && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+                  Company users cannot apply to jobs. Login as a candidate to
+                  apply.
+                </div>
+              )}
+
+              {canApply && (
+                <form onSubmit={handleApply}>
+                  {applyMessage && (
+                    <div
+                      className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+                      role="status"
+                    >
+                      {applyMessage}
+                    </div>
+                  )}
+
+                  {applyError && (
+                    <div
+                      className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                      role="alert"
+                    >
+                      {applyError}
+                    </div>
+                  )}
+
+                  <label
+                    htmlFor="coverLetter"
+                    className="mb-2 block text-sm font-bold text-slate-700"
                   >
-                    Login
-                  </Link>
+                    Cover letter
+                  </label>
 
-                  <Link
-                    to="/register"
-                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  <textarea
+                    id="coverLetter"
+                    rows={7}
+                    value={coverLetter}
+                    onChange={(event) => setCoverLetter(event.target.value)}
+                    placeholder="Optional cover letter..."
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+                  />
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    {coverLetter.length}/5000 characters
+                  </p>
+
+                  <Button
+                    type="submit"
+                    disabled={
+                      applyStatus === "submitting" || applyStatus === "success"
+                    }
+                    fullWidth
+                    className="mt-5"
                   >
-                    Register
-                  </Link>
+                    {applyStatus === "submitting"
+                      ? "Applying..."
+                      : applyStatus === "success"
+                        ? "Applied"
+                        : "Apply now"}
+                  </Button>
+
+                  {applyStatus === "success" && (
+                    <Button
+                      as={Link}
+                      to="/candidate/applications"
+                      variant="secondary"
+                      fullWidth
+                      className="mt-3"
+                    >
+                      View my applications
+                    </Button>
+                  )}
+                </form>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
+                Company
+              </p>
+
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                About the company
+              </h2>
+            </CardHeader>
+
+            <CardBody>
+              <div className="flex gap-3">
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-900 text-sm font-black text-white">
+                  {getCompanyInitial(job)}
+                </div>
+
+                <div>
+                  <p className="font-black text-slate-950">
+                    {job.companyId?.name || "Company unavailable"}
+                  </p>
+
+                  {job.companyId?.industry && (
+                    <p className="mt-1 text-sm text-slate-600">
+                      {job.companyId.industry}
+                    </p>
+                  )}
+
+                  {job.companyId?.headquarters && (
+                    <p className="mt-1 text-sm text-slate-600">
+                      {job.companyId.headquarters}
+                    </p>
+                  )}
                 </div>
               </div>
-            )}
 
-            {isCompanyUser && (
-              <p className="mt-4 text-sm leading-6 text-amber-700">
-                Company users cannot apply to jobs. Login as a candidate to
-                apply.
-              </p>
-            )}
-
-            {canApply && (
-              <form onSubmit={handleApply} className="mt-5">
-                {applyMessage && (
-                  <div
-                    className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-                    role="status"
-                  >
-                    {applyMessage}
-                  </div>
-                )}
-
-                {applyError && (
-                  <div
-                    className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                    role="alert"
-                  >
-                    {applyError}
-                  </div>
-                )}
-
-                <label
-                  htmlFor="coverLetter"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Cover letter
-                </label>
-
-                <textarea
-                  id="coverLetter"
-                  rows={7}
-                  value={coverLetter}
-                  onChange={(event) => setCoverLetter(event.target.value)}
-                  placeholder="Optional cover letter..."
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                />
-
-                <p className="mt-1 text-xs text-slate-500">
-                  {coverLetter.length}/5000 characters
+              {job.companyId?.description && (
+                <p className="mt-4 text-sm leading-6 text-slate-600">
+                  {job.companyId.description}
                 </p>
+              )}
 
-                <button
-                  type="submit"
-                  disabled={
-                    applyStatus === "submitting" || applyStatus === "success"
-                  }
-                  className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+              {job.companyId?.websiteUrl && (
+                <Button
+                  as="a"
+                  href={job.companyId.websiteUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="secondary"
+                  fullWidth
+                  className="mt-5"
                 >
-                  {applyStatus === "submitting"
-                    ? "Applying..."
-                    : applyStatus === "success"
-                      ? "Applied"
-                      : "Apply now"}
-                </button>
+                  Visit website
+                </Button>
+              )}
+            </CardBody>
+          </Card>
 
-                {applyStatus === "success" && (
-                  <Link
-                    to="/candidate/applications"
-                    className="mt-3 inline-flex w-full justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    View my applications
-                  </Link>
-                )}
-              </form>
-            )}
-          </section>
-
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-950">Company</h2>
-
-            <p className="mt-3 font-semibold text-slate-900">
-              {job.companyId?.name || "Company unavailable"}
-            </p>
-
-            {job.companyId?.industry && (
-              <p className="mt-1 text-sm text-slate-600">
-                {job.companyId.industry}
+          <Card>
+            <CardBody>
+              <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
+                Candidate tip
               </p>
-            )}
 
-            {job.companyId?.headquarters && (
-              <p className="mt-1 text-sm text-slate-600">
-                {job.companyId.headquarters}
+              <h2 className="mt-2 text-lg font-black text-slate-950">
+                Apply with a ready profile
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Before applying, make sure your profile and resume are updated
+                so recruiters can review your application properly.
               </p>
-            )}
 
-            {job.companyId?.websiteUrl && (
-              <a
-                href={job.companyId.websiteUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700"
-              >
-                Visit website
-              </a>
-            )}
-          </section>
+              <div className="mt-5 grid gap-3">
+                <Button
+                  as={Link}
+                  to="/candidate/profile"
+                  variant="secondary"
+                  fullWidth
+                >
+                  Complete profile
+                </Button>
+
+                <Button
+                  as={Link}
+                  to="/candidate/resume"
+                  variant="secondary"
+                  fullWidth
+                >
+                  Upload resume
+                </Button>
+              </div>
+            </CardBody>
+          </Card>
         </aside>
       </section>
     </main>
