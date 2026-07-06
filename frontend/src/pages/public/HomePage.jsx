@@ -25,29 +25,6 @@ const popularFilters = [
   },
 ];
 
-const candidateSteps = [
-  {
-    label: "Complete profile",
-    description: "Add your personal details and experience.",
-    icon: "👤",
-  },
-  {
-    label: "Upload resume",
-    description: "Upload your resume to stand out.",
-    icon: "📄",
-  },
-  {
-    label: "Apply to jobs",
-    description: "Find jobs and apply in a few clicks.",
-    icon: "✈️",
-  },
-  {
-    label: "Track application status",
-    description: "Track your applications and get updates.",
-    icon: "☑️",
-  },
-];
-
 const candidateProcess = [
   "Create account",
   "Complete profile and resume",

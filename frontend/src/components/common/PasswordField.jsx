@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import FieldError from "./FieldError";
+import FormField from "../ui/FormField";
 
 const PasswordField = ({
   id,
@@ -13,16 +13,7 @@ const PasswordField = ({
   const [isVisible, setIsVisible] = useState(false);
 
   return (
-    <div>
-      {label && (
-        <label
-          htmlFor={id}
-          className="mb-2 block text-sm font-bold text-slate-700"
-        >
-          {label}
-        </label>
-      )}
-
+    <FormField label={label} htmlFor={id} error={error}>
       <div className="relative">
         <input
           id={id}
@@ -75,9 +66,7 @@ const PasswordField = ({
           )}
         </button>
       </div>
-
-      <FieldError message={error} />
-    </div>
+    </FormField>
   );
 };
 
