@@ -294,7 +294,7 @@ const JobDetailsPage = () => {
                 </p>
 
                 <h2 className="mt-1 text-xl font-black text-slate-950">
-                  Skills used in this role
+                  Skills required for this role
                 </h2>
               </CardHeader>
 

@@ -91,9 +91,9 @@ const RegisterPage = () => {
   };
 
   return (
-    <main className="min-h-[calc(100vh-4rem)] bg-linear-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
-      <section className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_520px] lg:items-center">
-        <div className="hidden lg:block">
+    <main className="min-h-[calc(100vh-4rem)] rounded-2xl bg-linear-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
+      <section className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_520px] lg:items-start">
+        <div className="hidden lg:block opacity-80">
           <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
             Candidate registration
           </p>

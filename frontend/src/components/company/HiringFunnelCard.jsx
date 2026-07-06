@@ -30,7 +30,7 @@ const HiringFunnelCard = ({ status, funnelData, errorMessage }) => {
             </p>
           </div>
 
-          <div className="rounded-2xl bg-violet-50 px-4 py-2 text-right ring-1 ring-violet-100">
+          <div className="flex flex-col rounded-2xl bg-violet-50 px-4 py-2 ring-1 ring-violet-100 justify-center items-center">
             <p className="text-lg font-black text-violet-700">
               {totalApplications}
             </p>

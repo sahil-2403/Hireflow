@@ -91,15 +91,16 @@ const RecentApplicationsCard = ({ applications }) => {
                         {candidateName || "Candidate unavailable"}
                       </p>
 
-                      <p className="mt-1 text-sm font-semibold text-slate-600">
-                        {application.jobId?.title || "Job unavailable"}
-                      </p>
-
                       {application.candidateId?.headline && (
                         <p className="mt-1 text-sm text-slate-500">
                           {application.candidateId.headline}
                         </p>
                       )}
+
+                      <p className="mt-1 text-sm font-semibold text-slate-600">
+                        Applied for:{"   "}
+                        {application.jobId?.title || "Job unavailable"}
+                      </p>
                     </div>
 
                     <div className="shrink-0 sm:text-right">
