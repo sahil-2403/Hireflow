@@ -640,7 +640,7 @@ const CandidateProfilePage = () => {
             </CardBody>
           </Card>
 
-          <Card className="sticky bottom-4 z-20 bg-white/95 backdrop-blur">
+          <Card className="sticky bottom-2 z-20 bg-gray-200! backdrop-blur">
             <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-slate-600">
                 {mode === "edit"

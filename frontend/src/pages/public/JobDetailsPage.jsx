@@ -156,22 +156,18 @@ const JobDetailsPage = () => {
 
   if (status === "loading") {
     return (
-      <main className="bg-slate-50">
-        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <Card>
-            <CardBody>
-              <p className="text-sm text-slate-600">Loading job details...</p>
-            </CardBody>
-          </Card>
-        </section>
-      </main>
+      <Card>
+        <CardBody>
+          <p className="text-sm text-slate-600">Loading job details...</p>
+        </CardBody>
+      </Card>
     );
   }
 
   if (status === "error") {
     return (
       <main className="bg-slate-50">
-        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <section className="mx-auto max-w-8xl px-4 py-10 sm:px-6 lg:px-8">
           <EmptyState
             icon="⚠️"
             title="Could not load job"
@@ -189,8 +185,8 @@ const JobDetailsPage = () => {
 
   return (
     <main className="bg-slate-50">
-      <section className="overflow-hidden border-b border-blue-100 bg-linear-to-br from-blue-50 via-white to-slate-50">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <section className="overflow-hidden rounded-3xl border border-blue-100 bg-linear-to-br from-blue-50 via-white to-slate-50">
+        <div className="mx-auto max-w-8xl px-4 py-8 sm:px-4">
           <Button as={Link} to="/jobs" variant="secondary" size="sm">
             ← Back to jobs
           </Button>
@@ -202,7 +198,7 @@ const JobDetailsPage = () => {
               </div>
 
               <div>
-                <p className="text-sm font-bold text-blue-700">
+                <p className="px-1 text-sm font-bold text-blue-700">
                   {job.companyId?.name || "Company unavailable"}
                 </p>
 
@@ -234,7 +230,7 @@ const JobDetailsPage = () => {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_360px] lg:px-8">
+      <section className="mx-auto grid max-w-8xl gap-6 px-0 py-8 sm:px-0 lg:grid-cols-[1fr_360px] ">
         <div className="grid gap-6">
           <Card>
             <CardHeader>

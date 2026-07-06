@@ -870,126 +870,122 @@ const JobsPage = () => {
   ].filter(Boolean).length;
 
   return (
-    <main className="bg-slate-50 px-3 py-4 sm:px-4 sm:py-6">
-      <div className="mx-auto grid max-w-375 gap-6">
-        <PageHero
-          eyebrow="Public jobs"
-          title="Browse jobs"
-          description="Search your preferred job by role, location, or skill."
-        />
+    <div className="mx-auto grid max-w-375 gap-6">
+      <PageHero
+        eyebrow="Public jobs"
+        title="Browse jobs"
+        description="Search your preferred job by role, location, or skill."
+      />
 
-        <JobsSearchControls
-          key={searchParamsString}
-          filters={filters}
-          activeAdvancedFilterCount={activeAdvancedFilterCount}
-          activeFilterChips={activeFilterChips}
-          onApplyFilters={handleApplyFilters}
-          onClearFilters={handleClearFilters}
-          onRemoveFilter={handleRemoveFilter}
-        />
+      <JobsSearchControls
+        key={searchParamsString}
+        filters={filters}
+        activeAdvancedFilterCount={activeAdvancedFilterCount}
+        activeFilterChips={activeFilterChips}
+        onApplyFilters={handleApplyFilters}
+        onClearFilters={handleClearFilters}
+        onRemoveFilter={handleRemoveFilter}
+      />
 
-        <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
-          <section className="grid gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                  Job results
-                </p>
+      <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+        <section className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                Job results
+              </p>
 
-                <h2 className="mt-1 text-2xl font-black text-slate-950">
-                  {pagination?.total ?? jobs.length} matching job
-                  {(pagination?.total ?? jobs.length) === 1 ? "" : "s"}
-                </h2>
+              <h2 className="mt-1 text-2xl font-black text-slate-950">
+                {pagination?.total ?? jobs.length} matching job
+                {(pagination?.total ?? jobs.length) === 1 ? "" : "s"}
+              </h2>
+            </div>
+
+            {pagination && (
+              <p className="text-sm font-semibold text-slate-500">
+                Page {pagination.page} of {pagination.totalPages || 1}
+              </p>
+            )}
+          </div>
+
+          {status === "loading" && (
+            <Card>
+              <CardBody>
+                <p className="text-sm text-slate-600">Loading jobs...</p>
+              </CardBody>
+            </Card>
+          )}
+
+          {status === "error" && (
+            <div
+              className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              role="alert"
+            >
+              {errorMessage}
+            </div>
+          )}
+
+          {status === "success" && jobs.length === 0 && (
+            <EmptyState
+              icon="🔎"
+              title="No jobs found"
+              description="Try changing your search, location, or filters."
+              action={
+                <Button type="button" onClick={handleClearFilters}>
+                  Clear filters
+                </Button>
+              }
+            />
+          )}
+
+          {status === "success" && jobs.length > 0 && (
+            <>
+              <div className="grid gap-4">
+                {jobs.map((job) => (
+                  <JobCard key={getJobId(job)} job={job} />
+                ))}
               </div>
 
               {pagination && (
-                <p className="text-sm font-semibold text-slate-500">
-                  Page {pagination.page} of {pagination.totalPages || 1}
-                </p>
+                <Card>
+                  <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm text-slate-600">
+                      Page {pagination.page} of {pagination.totalPages || 1} ·{" "}
+                      {pagination.total} jobs
+                    </p>
+
+                    <div className="flex gap-3">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={!pagination.hasPreviousPage}
+                        onClick={() => handlePageChange(Math.max(page - 1, 1))}
+                      >
+                        Previous
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={!pagination.hasNextPage}
+                        onClick={() => handlePageChange(page + 1)}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </CardBody>
+                </Card>
               )}
-            </div>
+            </>
+          )}
+        </section>
 
-            {status === "loading" && (
-              <Card>
-                <CardBody>
-                  <p className="text-sm text-slate-600">Loading jobs...</p>
-                </CardBody>
-              </Card>
-            )}
-
-            {status === "error" && (
-              <div
-                className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                role="alert"
-              >
-                {errorMessage}
-              </div>
-            )}
-
-            {status === "success" && jobs.length === 0 && (
-              <EmptyState
-                icon="🔎"
-                title="No jobs found"
-                description="Try changing your search, location, or filters."
-                action={
-                  <Button type="button" onClick={handleClearFilters}>
-                    Clear filters
-                  </Button>
-                }
-              />
-            )}
-
-            {status === "success" && jobs.length > 0 && (
-              <>
-                <div className="grid gap-4">
-                  {jobs.map((job) => (
-                    <JobCard key={getJobId(job)} job={job} />
-                  ))}
-                </div>
-
-                {pagination && (
-                  <Card>
-                    <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-sm text-slate-600">
-                        Page {pagination.page} of {pagination.totalPages || 1} ·{" "}
-                        {pagination.total} jobs
-                      </p>
-
-                      <div className="flex gap-3">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          disabled={!pagination.hasPreviousPage}
-                          onClick={() =>
-                            handlePageChange(Math.max(page - 1, 1))
-                          }
-                        >
-                          Previous
-                        </Button>
-
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          disabled={!pagination.hasNextPage}
-                          onClick={() => handlePageChange(page + 1)}
-                        >
-                          Next
-                        </Button>
-                      </div>
-                    </CardBody>
-                  </Card>
-                )}
-              </>
-            )}
-          </section>
-
-          <aside className="grid gap-6 self-start">
-            <CandidateChecklistCard />
-            <SearchTipsCard />
-          </aside>
-        </div>
+        <aside className="grid gap-6 self-start">
+          <CandidateChecklistCard />
+          <SearchTipsCard />
+        </aside>
       </div>
-    </main>
+    </div>
   );
 };
 

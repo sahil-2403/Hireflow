@@ -416,228 +416,222 @@ const HomePage = () => {
   };
 
   return (
-    <main className="bg-slate-50 px-3 py-4 sm:px-4 sm:py-6">
-      <div className="mx-auto max-w-375 overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm">
-        <section className="bg-linear-to-br from-white via-white to-blue-50 px-4 pb-16 pt-14 sm:px-6 lg:px-8 lg:pb-20">
-          <div className="mx-auto max-w-7xl text-center">
-            <div className="mb-8 flex justify-center">
-              <ApiStatus />
-            </div>
-
-            <h1 className="mx-auto mt-7 max-w-5xl text-4xl font-black tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
-              Find jobs that match your skills and career goals
-            </h1>
-
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
-              Browse jobs, apply with your profile, upload resume, and track
-              applications from one clean dashboard.
-            </p>
-
-            <form
-              onSubmit={handleSearchSubmit}
-              className="mx-auto mt-8 grid max-w-4xl gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-[1.2fr_0.8fr_auto]"
-            >
-              <label className="sr-only" htmlFor="keyword">
-                Job title, keyword, or skill
-              </label>
-              <input
-                id="keyword"
-                type="search"
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder="Job title, keyword, or skill"
-                className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
-              />
-
-              <label className="sr-only" htmlFor="location">
-                Location
-              </label>
-              <input
-                id="location"
-                type="search"
-                value={location}
-                onChange={(event) => setLocation(event.target.value)}
-                placeholder="Location"
-                className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
-              />
-
-              <HomeButton type="submit" className="px-8">
-                Search jobs
-              </HomeButton>
-            </form>
-
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-              <span className="text-sm font-bold text-slate-600">Popular:</span>
-
-              {popularFilters.map((filter) => (
-                <Link
-                  key={filter.label}
-                  to={filter.to}
-                  className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
-                >
-                  {filter.label}
-                </Link>
-              ))}
-            </div>
-
-            <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-              <HomeButton to="/jobs" className="sm:min-w-52">
-                Browse all jobs
-              </HomeButton>
-
-              <HomeButton
-                to="/register"
-                variant="secondary"
-                className="sm:min-w-64"
-              >
-                Create candidate account
-              </HomeButton>
-            </div>
+    <div className="mx-auto max-w-375 overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm">
+      <section className="bg-linear-to-br from-white via-white to-blue-50 px-4 pb-16 pt-14 sm:px-6 lg:px-8 lg:pb-20">
+        <div className="mx-auto max-w-7xl text-center">
+          <div className="mb-8 flex justify-center">
+            <ApiStatus />
           </div>
-        </section>
 
-        <VisualMosaic />
+          <h1 className="mx-auto mt-7 max-w-5xl text-4xl font-black tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
+            Find jobs that match your skills and career goals
+          </h1>
 
-        <section className="border-y border-slate-200 bg-white px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <SectionHeading title="Choose how you want to use HireFlow" />
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
+            Browse jobs, apply with your profile, upload resume, and track
+            applications from one clean dashboard.
+          </p>
 
-            <div className="mt-10 grid gap-6 lg:grid-cols-2">
-              <article className="rounded-4xl border border-blue-100 bg-blue-50 p-6 shadow-sm sm:p-8">
-                <div className="grid gap-6 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-                  <div className="grid h-16 w-16 place-items-center rounded-3xl bg-white text-3xl text-blue-700 shadow-sm">
-                    👤
-                  </div>
-
-                  <div>
-                    <h3 className="text-2xl font-black text-blue-700">
-                      Candidate
-                    </h3>
-
-                    <p className="mt-2 text-sm leading-6 text-slate-600">
-                      Browse jobs, apply, upload resume, and track applications.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    <HomeButton to="/register">
-                      Create candidate account
-                    </HomeButton>
-                    <HomeButton to="/jobs" variant="secondary">
-                      Browse jobs
-                    </HomeButton>
-                  </div>
-                </div>
-              </article>
-
-              <article className="rounded-4xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm sm:p-8">
-                <div className="grid gap-6 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-                  <div className="grid h-16 w-16 place-items-center rounded-3xl bg-white text-3xl text-emerald-700 shadow-sm">
-                    💼
-                  </div>
-
-                  <div>
-                    <h3 className="text-2xl font-black text-emerald-700">
-                      Company / Recruiter
-                    </h3>
-
-                    <p className="mt-2 text-sm leading-6 text-slate-600">
-                      Manage jobs, applications, company profile, and recruiter
-                      access.
-                    </p>
-                  </div>
-
-                  <HomeButton to="/login" variant="green">
-                    Login to dashboard
-                  </HomeButton>
-                </div>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-slate-50 px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <SectionHeading
-              title="A smooth process with practical hiring tools"
-              description="The homepage stays focused on the real flows already available in HireFlow."
+          <form
+            onSubmit={handleSearchSubmit}
+            className="mx-auto mt-8 grid max-w-4xl gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-[1.2fr_0.8fr_auto]"
+          >
+            <label className="sr-only" htmlFor="keyword">
+              Job title, keyword, or skill
+            </label>
+            <input
+              id="keyword"
+              type="search"
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="Job title, keyword, or skill"
+              className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
             />
 
-            <div className="mt-10 grid gap-6 lg:grid-cols-2">
-              <ProcessCard
-                title="For candidates"
-                icon="👤"
-                items={candidateProcess}
-              />
+            <label className="sr-only" htmlFor="location">
+              Location
+            </label>
+            <input
+              id="location"
+              type="search"
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+              placeholder="Location"
+              className="rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+            />
 
-              <ProcessCard
-                title="For companies"
-                icon="💼"
-                accent="green"
-                items={companyProcess}
-              />
-            </div>
+            <HomeButton type="submit" className="px-8">
+              Search jobs
+            </HomeButton>
+          </form>
+
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <span className="text-sm font-bold text-slate-600">Popular:</span>
+
+            {popularFilters.map((filter) => (
+              <Link
+                key={filter.label}
+                to={filter.to}
+                className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+              >
+                {filter.label}
+              </Link>
+            ))}
           </div>
-        </section>
 
-        <LatestJobsSection />
+          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+            <HomeButton to="/jobs" className="sm:min-w-52">
+              Browse all jobs
+            </HomeButton>
 
-        <section className="bg-white px-4 pb-16 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <SectionHeading title="Built for a clean hiring workflow" />
+            <HomeButton
+              to="/register"
+              variant="secondary"
+              className="sm:min-w-64"
+            >
+              Create candidate account
+            </HomeButton>
+          </div>
+        </div>
+      </section>
 
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-              {featureCards.map((feature) => (
-                <article
-                  key={feature.title}
-                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
-                >
-                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-2xl text-blue-700">
-                    {feature.icon}
-                  </div>
+      <VisualMosaic />
 
-                  <h3 className="mt-5 font-black text-slate-950">
-                    {feature.title}
+      <section className="border-y border-slate-200 bg-white px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <SectionHeading title="Choose how you want to use HireFlow" />
+
+          <div className="mt-10 grid gap-6 lg:grid-cols-2">
+            <article className="rounded-4xl border border-blue-100 bg-blue-50 p-6 shadow-sm sm:p-8">
+              <div className="grid gap-6 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+                <div className="grid h-16 w-16 place-items-center rounded-3xl bg-white text-3xl text-blue-700 shadow-sm">
+                  👤
+                </div>
+
+                <div>
+                  <h3 className="text-2xl font-black text-blue-700">
+                    Candidate
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    {feature.description}
+                    Browse jobs, apply, upload resume, and track applications.
                   </p>
-                </article>
-              ))}
-            </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <HomeButton to="/register">
+                    Create candidate account
+                  </HomeButton>
+                  <HomeButton to="/jobs" variant="secondary">
+                    Browse jobs
+                  </HomeButton>
+                </div>
+              </div>
+            </article>
+
+            <article className="rounded-4xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm sm:p-8">
+              <div className="grid gap-6 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+                <div className="grid h-16 w-16 place-items-center rounded-3xl bg-white text-3xl text-emerald-700 shadow-sm">
+                  💼
+                </div>
+
+                <div>
+                  <h3 className="text-2xl font-black text-emerald-700">
+                    Company / Recruiter
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Manage jobs, applications, company profile, and recruiter
+                    access.
+                  </p>
+                </div>
+
+                <HomeButton to="/login" variant="green">
+                  Login to dashboard
+                </HomeButton>
+              </div>
+            </article>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="px-4 pb-16 sm:px-6 lg:px-8">
-          <div className="mx-auto grid max-w-6xl gap-6 rounded-4xl border border-blue-100 bg-blue-50 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div>
-              <h2 className="text-2xl font-black text-slate-950">
-                Ready to take the next step?
-              </h2>
+      <section className="bg-slate-50 px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <SectionHeading
+            title="A smooth process with practical hiring tools"
+            description="The homepage stays focused on the real flows already available in HireFlow."
+          />
 
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Browse opportunities or login to your account.
-              </p>
-            </div>
+          <div className="mt-10 grid gap-6 lg:grid-cols-2">
+            <ProcessCard
+              title="For candidates"
+              icon="👤"
+              items={candidateProcess}
+            />
 
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <HomeButton to="/jobs" className="sm:min-w-40">
-                Browse jobs
-              </HomeButton>
+            <ProcessCard
+              title="For companies"
+              icon="💼"
+              accent="green"
+              items={companyProcess}
+            />
+          </div>
+        </div>
+      </section>
 
-              <HomeButton
-                to="/login"
-                variant="secondary"
-                className="sm:min-w-32"
+      <LatestJobsSection />
+
+      <section className="bg-white px-4 pb-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <SectionHeading title="Built for a clean hiring workflow" />
+
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {featureCards.map((feature) => (
+              <article
+                key={feature.title}
+                className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
               >
-                Login
-              </HomeButton>
-            </div>
+                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-2xl text-blue-700">
+                  {feature.icon}
+                </div>
+
+                <h3 className="mt-5 font-black text-slate-950">
+                  {feature.title}
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {feature.description}
+                </p>
+              </article>
+            ))}
           </div>
-        </section>
-      </div>
-    </main>
+        </div>
+      </section>
+
+      <section className="px-4 pb-16 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-6xl gap-6 rounded-4xl border border-blue-100 bg-blue-50 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div>
+            <h2 className="text-2xl font-black text-slate-950">
+              Ready to take the next step?
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Browse opportunities or login to your account.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <HomeButton to="/jobs" className="sm:min-w-40">
+              Browse jobs
+            </HomeButton>
+
+            <HomeButton to="/login" variant="secondary" className="sm:min-w-32">
+              Login
+            </HomeButton>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 };
 
