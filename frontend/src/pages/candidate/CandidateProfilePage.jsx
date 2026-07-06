@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Link, useNavigate } from "react-router-dom";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
@@ -285,14 +285,14 @@ const CandidateProfilePage = () => {
     register,
     handleSubmit,
     reset,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(candidateProfileSchema),
     defaultValues: getDefaultValues(),
   });
 
-  const watchedValues = watch();
+  const watchedValues = useWatch({ control }) ?? getDefaultValues();
 
   const completion = useMemo(() => {
     return getProfileCompletion(watchedValues);

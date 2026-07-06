@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { Link } from "react-router-dom";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
@@ -176,14 +176,14 @@ const CompanyProfilePage = () => {
     register,
     handleSubmit,
     reset,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(companyProfileSchema),
     defaultValues: getDefaultValues(),
   });
 
-  const watchedValues = watch();
+  const watchedValues = useWatch({ control }) ?? getDefaultValues();
 
   const previewCompany = {
     ...company,
