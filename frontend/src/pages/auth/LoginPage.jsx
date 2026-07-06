@@ -38,7 +38,7 @@ const LoginPage = () => {
 
   const navigationMessage = location.state?.message || "";
 
-  const [successMessage, setSuccessMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState(navigationMessage);
 
   const { signIn } = useAuth();
 
