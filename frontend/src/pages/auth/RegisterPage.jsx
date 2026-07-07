@@ -52,16 +52,16 @@ const registrationOptions = [
   {
     role: ROLES.OWNER,
     eyebrow: "Hiring for your company?",
-    title: "Register as a company owner",
-    heroEyebrow: "Company owner registration",
+    title: "Register as a company Admin",
+    heroEyebrow: "Company Admin registration",
     heroTitle: "Create your hiring workspace for your company.",
     heroDescription:
-      "Register as a company owner first. After email verification, you can create your company profile, post jobs, and invite recruiters.",
-    formTitle: "Create your company owner account",
+      "Register as a company admin first. After email verification, you can create your company profile, post jobs, and invite recruiters.",
+    formTitle: "Create your company admin account",
     formDescription:
       "After verifying your email, you can create your company profile and start managing hiring workflows.",
-    submitLabel: "Create company owner account",
-    loadingLabel: "Creating owner account...",
+    submitLabel: "Create company Admin account",
+    loadingLabel: "Creating admin account...",
     highlights: [
       {
         title: "Create your company profile",

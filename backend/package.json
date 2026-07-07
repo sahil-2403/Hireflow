@@ -9,8 +9,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
-    "create:owner": "node src/scripts/createOwner.js"
+    "start": "node src/server.js"
   },
   "keywords": [],
   "author": "",

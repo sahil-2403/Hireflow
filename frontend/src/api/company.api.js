@@ -1,7 +1,7 @@
 import apiClient from "./apiClient";
 
-const getPublicCompany = async () => {
-  const response = await apiClient.get("/company/public");
+const getMyCompany = async () => {
+  const response = await apiClient.get("/company");
 
   return response.data;
 };
@@ -52,7 +52,7 @@ const updateRecruiterStatus = async (recruiterId, isActive) => {
 };
 
 export {
-  getPublicCompany,
+  getMyCompany,
   createCompanyProfile,
   updateCompanyProfile,
   uploadCompanyLogo,

@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
   createCompanyProfile,
-  getPublicCompany,
+  getMyCompany,
   updateCompanyProfile,
   uploadCompanyLogo,
 } from "../../api/company.api";
@@ -195,7 +195,7 @@ const CompanyProfilePage = () => {
 
     const loadCompany = async () => {
       try {
-        const result = await getPublicCompany();
+        const result = await getMyCompany();
 
         if (shouldIgnore) {
           return;

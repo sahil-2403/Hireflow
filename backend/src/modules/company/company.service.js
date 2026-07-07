@@ -10,25 +10,26 @@ import {
   deleteAsset,
 } from "../../shared/services/media.service.js";
 
-const getOwnerCompany = async (ownerId) => {
-  const company = await Company.findOne({
-    ownerId,
-  });
+import {
+  getOwnerCompany,
+  getStaffCompany,
+} from "../../shared/utils/companyAccess.js";
 
-  if (!company) {
-    throw new ApiError(404, "Company profile not found");
-  }
+const getMyCompany = async (userId, role) => {
+  const company = await getStaffCompany(userId, role);
 
   return company;
 };
 
 const createCompany = async (ownerId, companyData) => {
-  const existingCompany = await Company.findOne();
+  const existingCompany = await Company.findOne({
+    ownerId,
+  });
 
   if (existingCompany) {
     throw new ApiError(
       409,
-      "A company profile already exists for this installation",
+      "A company profile already exists for this account",
     );
   }
 
@@ -65,16 +66,6 @@ const updateCompany = async (ownerId, companyData) => {
     company,
     message: "Company profile updated successfully",
   };
-};
-
-const getPublicCompany = async () => {
-  const company = await Company.findOne().select("-ownerId").lean();
-
-  if (!company) {
-    throw new ApiError(404, "Company profile not found");
-  }
-
-  return company;
 };
 
 const createRecruiter = async (ownerId, recruiterData) => {
@@ -236,9 +227,9 @@ const uploadCompanyLogo = async (ownerId, file) => {
 };
 
 export {
+  getMyCompany,
   createCompany,
   updateCompany,
-  getPublicCompany,
   createRecruiter,
   listRecruiters,
   updateRecruiterStatus,

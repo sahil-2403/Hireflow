@@ -17,7 +17,7 @@ import {
 import {
   createCompany,
   updateCompany,
-  getPublicCompany,
+  getMyCompany,
   createRecruiter,
   listRecruiters,
   updateRecruiterStatus,
@@ -28,18 +28,29 @@ const router = express.Router();
 
 /**
  * @openapi
- * /api/v1/company/public:
+ * /api/v1/company:
  *   get:
  *     tags:
  *       - Company
- *     summary: Get the public company profile
+ *     summary: Get the current user's company profile
+ *     security:
+ *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: Public company profile returned
+ *         description: Current company profile returned
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Owner or recruiter role required
  *       404:
  *         description: Company profile not found
  */
-router.get("/public", getPublicCompany);
+router.get(
+  "/",
+  authenticate,
+  authorize(ROLES.OWNER, ROLES.RECRUITER),
+  getMyCompany,
+);
 
 /**
  * @openapi

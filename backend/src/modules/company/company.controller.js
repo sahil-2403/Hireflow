@@ -19,8 +19,8 @@ const updateCompany = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, result.message, result.company));
 });
 
-const getPublicCompany = asyncHandler(async (req, res) => {
-  const company = await companyService.getPublicCompany();
+const getMyCompany = asyncHandler(async (req, res) => {
+  const company = await companyService.getMyCompany(req.user.id, req.user.role);
 
   return res
     .status(200)
@@ -68,7 +68,7 @@ const uploadCompanyLogo = asyncHandler(async (req, res) => {
 export {
   createCompany,
   updateCompany,
-  getPublicCompany,
+  getMyCompany,
   createRecruiter,
   listRecruiters,
   updateRecruiterStatus,
