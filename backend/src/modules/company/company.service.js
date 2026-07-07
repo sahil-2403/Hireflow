@@ -21,7 +21,7 @@ const getMyCompany = async (userId, role) => {
   return company;
 };
 
-const createCompany = async (ownerId, companyData) => {
+const createCompany = async (ownerId, companyData, file = null) => {
   const existingCompany = await Company.findOne({
     ownerId,
   });
@@ -33,15 +33,31 @@ const createCompany = async (ownerId, companyData) => {
     );
   }
 
-  const company = await Company.create({
-    ...companyData,
-    ownerId,
-  });
+  let uploadedAsset = null;
 
-  return {
-    company,
-    message: "Company profile created successfully",
-  };
+  if (file) {
+    uploadedAsset = await uploadLogoFile(file.buffer);
+  }
+
+  try {
+    const company = await Company.create({
+      ...companyData,
+      ownerId,
+      logoUrl: uploadedAsset?.url || null,
+      logoPublicId: uploadedAsset?.publicId || null,
+    });
+
+    return {
+      company,
+      message: "Company profile created successfully",
+    };
+  } catch (error) {
+    if (uploadedAsset?.publicId) {
+      await deleteAsset(uploadedAsset.publicId, "image");
+    }
+
+    throw error;
+  }
 };
 
 const updateCompany = async (ownerId, companyData) => {

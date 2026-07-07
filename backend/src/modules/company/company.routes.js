@@ -106,6 +106,7 @@ router.post(
   "/",
   authenticate,
   authorize(ROLES.OWNER),
+  uploadCompanyLogoFile,
   validate(createCompanySchema),
   createCompany,
 );

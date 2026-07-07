@@ -1,13 +1,30 @@
 import apiClient from "./apiClient";
 
+const appendCompanyDataToFormData = (formData, companyData) => {
+  Object.entries(companyData).forEach(([key, value]) => {
+    formData.append(key, value ?? "");
+  });
+};
+
 const getMyCompany = async () => {
   const response = await apiClient.get("/company");
 
   return response.data;
 };
 
-const createCompanyProfile = async (companyData) => {
-  const response = await apiClient.post("/company", companyData);
+const createCompanyProfile = async (companyData, logoFile = null) => {
+  if (!logoFile) {
+    const response = await apiClient.post("/company", companyData);
+
+    return response.data;
+  }
+
+  const formData = new FormData();
+
+  appendCompanyDataToFormData(formData, companyData);
+  formData.append("logo", logoFile);
+
+  const response = await apiClient.post("/company", formData);
 
   return response.data;
 };

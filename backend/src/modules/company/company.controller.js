@@ -4,7 +4,11 @@ import ApiResponse from "../../shared/responses/ApiResponse.js";
 import * as companyService from "./company.service.js";
 
 const createCompany = asyncHandler(async (req, res) => {
-  const result = await companyService.createCompany(req.user.id, req.body);
+  const result = await companyService.createCompany(
+    req.user.id,
+    req.body,
+    req.file,
+  );
 
   return res
     .status(201)

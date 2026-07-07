@@ -74,7 +74,7 @@ const getCompanyInitial = (company) => {
   return (company?.name || "H").slice(0, 1).toUpperCase();
 };
 
-const CompanyPreviewCard = ({ company, mode }) => {
+const CompanyPreviewCard = ({ company }) => {
   return (
     <Card>
       <CardHeader>
@@ -146,12 +146,12 @@ const CompanyPreviewCard = ({ company, mode }) => {
           </Button>
         )}
 
-        {mode === "create" && (
+        {/* {mode === "create" && (
           <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
             Create your company profile first. After that, you can upload a
             company logo.
           </div>
-        )}
+        )} */}
       </CardBody>
     </Card>
   );
@@ -242,11 +242,12 @@ const CompanyProfilePage = () => {
       const result =
         mode === "edit"
           ? await updateCompanyProfile(payload)
-          : await createCompanyProfile(payload);
+          : await createCompanyProfile(payload, selectedLogo);
 
       setCompany(result.data);
       setMode("edit");
       setSuccessMessage(result.message);
+      setSelectedLogo(null);
 
       reset(getDefaultValues(result.data));
     } catch (error) {
@@ -393,34 +394,41 @@ const CompanyProfilePage = () => {
                 )}
 
                 <div className="flex-1">
-                  {mode === "edit" ? (
-                    <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-                      <div>
-                        <label
-                          htmlFor="logo"
-                          className="mb-2 block text-sm font-bold text-slate-700"
-                        >
-                          Logo file
-                        </label>
+                  <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+                    <div>
+                      <label
+                        htmlFor="logo"
+                        className="mb-2 block text-sm font-bold text-slate-700"
+                      >
+                        Logo file
+                      </label>
 
-                        <input
-                          id="logo"
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          onChange={handleLogoChange}
-                          className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-blue-700 hover:file:bg-blue-100"
-                        />
+                      <input
+                        id="logo"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleLogoChange}
+                        className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-blue-700 hover:file:bg-blue-100"
+                      />
 
-                        {selectedLogo && (
-                          <p className="mt-2 text-sm text-slate-600">
-                            Selected file:{" "}
-                            <span className="font-bold text-slate-900">
-                              {selectedLogo.name}
-                            </span>
-                          </p>
-                        )}
-                      </div>
+                      {selectedLogo && (
+                        <p className="mt-2 text-sm text-slate-600">
+                          Selected file:{" "}
+                          <span className="font-bold text-slate-900">
+                            {selectedLogo.name}
+                          </span>
+                        </p>
+                      )}
 
+                      {mode === "create" && (
+                        <p className="mt-2 text-sm leading-6 text-slate-500">
+                          Optional. The selected logo will be uploaded when you
+                          create the company profile.
+                        </p>
+                      )}
+                    </div>
+
+                    {mode === "edit" && (
                       <Button
                         type="button"
                         disabled={isUploadingLogo || !selectedLogo}
@@ -428,12 +436,8 @@ const CompanyProfilePage = () => {
                       >
                         {isUploadingLogo ? "Uploading..." : "Upload logo"}
                       </Button>
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
-                      Create the company profile first, then upload the logo.
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </CardBody>
