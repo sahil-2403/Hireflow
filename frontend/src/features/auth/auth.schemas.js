@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import { ROLES } from "./auth.constants";
+
+const PUBLIC_REGISTRATION_ROLES = [ROLES.CANDIDATE, ROLES.OWNER];
+
 const loginSchema = z.object({
   email: z.email("Enter a valid email address").trim().toLowerCase(),
 
@@ -8,6 +12,13 @@ const loginSchema = z.object({
 
 const registerSchema = z
   .object({
+    role: z
+      .enum(PUBLIC_REGISTRATION_ROLES, {
+        message:
+          "Select whether you are registering as a candidate or company owner",
+      })
+      .default(ROLES.CANDIDATE),
+
     username: z
       .string()
       .trim()

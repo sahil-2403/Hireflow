@@ -35,13 +35,14 @@ const verifyEmail = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, result.message));
 });
 
-const registerCandidate = asyncHandler(async (req, res) => {
-  const result = await authService.registerCandidate(req.body);
+const registerUser = asyncHandler(async (req, res) => {
+  const result = await authService.registerUser(req.body);
 
   return res.status(201).json(
     new ApiResponse(201, result.message, {
       userId: result.userId,
       email: result.email,
+      role: result.role,
     }),
   );
 });
@@ -111,7 +112,7 @@ const getCsrfToken = asyncHandler(async (req, res) => {
 });
 
 export {
-  registerCandidate,
+  registerUser,
   verifyEmail,
   loginUser,
   refreshAccessToken,

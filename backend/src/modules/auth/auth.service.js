@@ -22,6 +22,8 @@ const REFRESH_TOKEN_EXPIRY_DAYS = Number(process.env.REFRESH_TOKEN_EXPIRY) || 7;
 const PASSWORD_RESET_TOKEN_EXPIRY_MINUTES =
   Number(process.env.PASSWORD_RESET_TOKEN_EXPIRY_MINUTES) || 15;
 
+const PUBLIC_REGISTRATION_ROLES = [ROLES.CANDIDATE, ROLES.OWNER];
+
 const resetPassword = async (token, password) => {
   const tokenHash = hashToken(token);
 
@@ -281,7 +283,27 @@ const createEmailVerificationToken = async (userId) => {
   return rawToken;
 };
 
-const registerCandidate = async ({ username, email, password }) => {
+const getRegistrationSuccessMessage = (role) => {
+  if (role === ROLES.OWNER) {
+    return "Company owner registration successful. Please check your email to verify your account.";
+  }
+
+  return "Candidate registration successful. Please check your email to verify your account.";
+};
+
+const registerUser = async ({
+  username,
+  email,
+  password,
+  role = ROLES.CANDIDATE,
+}) => {
+  if (!PUBLIC_REGISTRATION_ROLES.includes(role)) {
+    throw new ApiError(
+      400,
+      "Registration role must be either candidate or owner",
+    );
+  }
+
   const existingUsername = await User.findOne({ username });
 
   if (existingUsername && existingUsername.email !== email) {
@@ -295,6 +317,13 @@ const registerCandidate = async ({ username, email, password }) => {
       throw new ApiError(409, "Email already exists");
     }
 
+    if (existingUser.role !== role) {
+      throw new ApiError(
+        409,
+        "An unverified account already exists with this email. Please verify that account or use a different email.",
+      );
+    }
+
     const verificationToken = await createEmailVerificationToken(
       existingUser._id,
     );
@@ -304,6 +333,7 @@ const registerCandidate = async ({ username, email, password }) => {
     return {
       userId: existingUser._id,
       email: existingUser.email,
+      role: existingUser.role,
       message: "Verification email resent. Please check your inbox.",
     };
   }
@@ -312,7 +342,7 @@ const registerCandidate = async ({ username, email, password }) => {
     username,
     email,
     password,
-    role: ROLES.CANDIDATE,
+    role,
   });
 
   const verificationToken = await createEmailVerificationToken(user._id);
@@ -322,8 +352,8 @@ const registerCandidate = async ({ username, email, password }) => {
   return {
     userId: user._id,
     email: user.email,
-    message:
-      "Registration successful. Please check your email to verify your account.",
+    role: user.role,
+    message: getRegistrationSuccessMessage(user.role),
   };
 };
 
@@ -382,7 +412,7 @@ const resendVerificationEmail = async (email) => {
 };
 
 export {
-  registerCandidate,
+  registerUser,
   verifyEmail,
   loginUser,
   refreshAccessToken,

@@ -16,7 +16,7 @@ import {
 } from "./auth.validation.js";
 
 import {
-  registerCandidate,
+  registerUser,
   verifyEmail,
   loginUser,
   refreshAccessToken,
@@ -38,7 +38,7 @@ router.get("/csrf-token", getCsrfToken);
  *   post:
  *     tags:
  *       - Auth
- *     summary: Register a candidate account
+ *     summary: Register a candidate or company owner account
  *     requestBody:
  *       required: true
  *       content:
@@ -49,6 +49,7 @@ router.get("/csrf-token", getCsrfToken);
  *               - username
  *               - email
  *               - password
+ *               - role
  *             properties:
  *               username:
  *                 type: string
@@ -60,6 +61,12 @@ router.get("/csrf-token", getCsrfToken);
  *               password:
  *                 type: string
  *                 example: Password123
+ *               role:
+ *                 type: string
+ *                 enum:
+ *                   - candidate
+ *                   - owner
+ *                 example: candidate
  *     responses:
  *       201:
  *         description: Registration successful
@@ -68,12 +75,7 @@ router.get("/csrf-token", getCsrfToken);
  *       409:
  *         description: Account already exists
  */
-router.post(
-  "/register",
-  authLimiter,
-  validate(registerSchema),
-  registerCandidate,
-);
+router.post("/register", authLimiter, validate(registerSchema), registerUser);
 
 /**
  * @openapi

@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import { ROLES } from "../../config/constants.js";
+
+const PUBLIC_REGISTRATION_ROLES = [ROLES.CANDIDATE, ROLES.OWNER];
+
 const usernameSchema = z
   .string()
   .trim()
@@ -25,10 +29,17 @@ const passwordSchema = z
     "Password must contain uppercase, lowercase and a number",
   );
 
+const publicRegistrationRoleSchema = z
+  .enum(PUBLIC_REGISTRATION_ROLES, {
+    message: "Registration role must be either candidate or owner",
+  })
+  .default(ROLES.CANDIDATE);
+
 export const registerSchema = z.object({
   username: usernameSchema,
   email: emailSchema,
   password: passwordSchema,
+  role: publicRegistrationRoleSchema,
 });
 
 export const loginSchema = z.object({
