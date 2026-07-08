@@ -324,6 +324,7 @@ const CandidateDashboardPage = () => {
           status={profileState.status}
           profile={profileState.profile}
           errorMessage={profileState.errorMessage}
+          user={user}
         />
 
         <CandidateApplicationsSummaryCard

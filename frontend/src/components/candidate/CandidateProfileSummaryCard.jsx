@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import Button from "../ui/Button";
 import { Card, CardBody, CardFooter } from "../ui/Card";
+import ProfileAvatar from "../common/ProfileAvatar";
 
 const getProfileCompletion = (profile) => {
   if (!profile) {
@@ -48,7 +49,12 @@ const ProfileProgressCircle = ({ percentage }) => {
   );
 };
 
-const CandidateProfileSummaryCard = ({ status, profile, errorMessage }) => {
+const CandidateProfileSummaryCard = ({
+  status,
+  profile,
+  errorMessage,
+  user,
+}) => {
   if (status === "loading") {
     return (
       <Card className="flex min-h-full flex-col">
@@ -63,9 +69,11 @@ const CandidateProfileSummaryCard = ({ status, profile, errorMessage }) => {
     return (
       <Card className="flex min-h-full flex-col border-amber-200 bg-amber-50">
         <CardBody className="flex flex-1 flex-col">
-          <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-amber-100 text-xl">
-            👤
-          </div>
+          <ProfileAvatar
+            user={user}
+            size="md"
+            fallbackClassName="mb-4 bg-amber-100 text-amber-700"
+          />
 
           <p className="text-sm font-semibold uppercase tracking-wider text-amber-700">
             Profile incomplete
@@ -113,9 +121,12 @@ const CandidateProfileSummaryCard = ({ status, profile, errorMessage }) => {
     <Card className="flex min-h-full flex-col">
       <CardBody className="flex flex-1 flex-col">
         <div className="flex items-start justify-between gap-4">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-xl">
-            👤
-          </div>
+          <ProfileAvatar
+            user={user}
+            name={fullName}
+            size="md"
+            fallbackClassName="bg-blue-50 text-blue-700"
+          />
 
           <ProfileProgressCircle percentage={completion.percentage} />
         </div>
