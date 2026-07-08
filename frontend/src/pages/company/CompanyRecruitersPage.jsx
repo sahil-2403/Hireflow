@@ -12,6 +12,7 @@ import {
 import { createRecruiterSchema } from "../../features/companies/recruiter.schemas";
 
 import getApiError from "../../utils/getApiError";
+import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
 
 import PasswordField from "../../components/common/PasswordField";
 
@@ -20,6 +21,8 @@ import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
 import FormField from "../../components/ui/FormField";
 import PageHero from "../../components/ui/PageHero";
+
+import CompanySetupRequired from "../../components/company/CompanySetupRequired";
 
 const defaultValues = {
   username: "",
@@ -132,7 +135,11 @@ const CompanyRecruitersPage = () => {
         setApiError(normalizedError.message);
 
         setRecruiters([]);
-        setRequestStatus("error");
+        setRequestStatus(
+          isCompanyProfileMissingError(normalizedError)
+            ? "company-missing"
+            : "error",
+        );
       }
     };
 
@@ -240,228 +247,235 @@ const CompanyRecruitersPage = () => {
         </div>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
-        <Card className="self-start xl:sticky xl:top-24">
-          <CardHeader>
-            <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-              New recruiter
-            </p>
+      {requestStatus === "company-missing" && (
+        <CompanySetupRequired description="Create your company profile before inviting recruiters." />
+      )}
 
-            <h2 className="mt-1 text-xl font-black text-slate-950">
-              Create recruiter
-            </h2>
+      {requestStatus !== "company-missing" && (
+        <div className="grid gap-6 xl:grid-cols-[750px_1fr]">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
+                    Team access
+                  </p>
 
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              Recruiters can manage jobs and applications. Only owners can
-              manage company profile and recruiter access.
-            </p>
-          </CardHeader>
+                  <h2 className="mt-1 text-xl font-black text-slate-950">
+                    Recruiter accounts
+                  </h2>
 
-          <CardBody>
-            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5">
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                <FormField
-                  label="First name"
-                  htmlFor="firstName"
-                  error={errors.firstName?.message}
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Active recruiters can log in and work on company jobs and
+                    applications.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
+                  {inactiveRecruiters.length} inactive
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardBody>
+              {requestStatus === "loading" && (
+                <p className="text-sm text-slate-600">Loading recruiters...</p>
+              )}
+
+              {requestStatus === "error" && (
+                <div
+                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                  role="alert"
                 >
-                  <input
-                    id="firstName"
-                    type="text"
-                    placeholder="First name"
-                    className={getInputClassName(Boolean(errors.firstName))}
-                    {...register("firstName")}
-                  />
-                </FormField>
+                  Could not load recruiters.
+                </div>
+              )}
 
-                <FormField
-                  label="Last name"
-                  htmlFor="lastName"
-                  error={errors.lastName?.message}
-                >
-                  <input
-                    id="lastName"
-                    type="text"
-                    placeholder="Last name"
-                    className={getInputClassName(Boolean(errors.lastName))}
-                    {...register("lastName")}
-                  />
-                </FormField>
-              </div>
-
-              <FormField
-                label="Job title"
-                htmlFor="jobTitle"
-                error={errors.jobTitle?.message}
-              >
-                <input
-                  id="jobTitle"
-                  type="text"
-                  placeholder="Technical Recruiter"
-                  className={getInputClassName(Boolean(errors.jobTitle))}
-                  {...register("jobTitle")}
+              {requestStatus === "success" && recruiters.length === 0 && (
+                <EmptyState
+                  icon="🤝"
+                  title="No recruiters created yet"
+                  description="Create your first recruiter account to let your team manage jobs and applications."
                 />
-              </FormField>
+              )}
 
-              <FormField
-                label="Username"
-                htmlFor="username"
-                error={errors.username?.message}
-                hint="Only letters, numbers, and underscores are allowed."
-              >
-                <input
-                  id="username"
-                  type="text"
-                  placeholder="recruiter_one"
-                  className={getInputClassName(Boolean(errors.username))}
-                  {...register("username")}
-                />
-              </FormField>
+              {requestStatus === "success" && recruiters.length > 0 && (
+                <div className="divide-y divide-slate-100">
+                  {recruiters.map((recruiter) => {
+                    const recruiterId = getRecruiterId(recruiter);
 
-              <FormField
-                label="Email"
-                htmlFor="email"
-                error={errors.email?.message}
-              >
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="recruiter@example.com"
-                  className={getInputClassName(Boolean(errors.email))}
-                  {...register("email")}
-                />
-              </FormField>
-
-              <PasswordField
-                id="password"
-                label="Temporary password"
-                placeholder="Recruiter123"
-                registration={register("password")}
-                error={errors.password?.message}
-              />
-
-              <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-                Password must contain at least 8 characters, one uppercase
-                letter, one lowercase letter, and one number.
-              </div>
-
-              <Button type="submit" disabled={isSubmitting} fullWidth>
-                {isSubmitting ? "Creating..." : "Create recruiter"}
-              </Button>
-            </form>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-                  Team access
-                </p>
-
-                <h2 className="mt-1 text-xl font-black text-slate-950">
-                  Recruiter accounts
-                </h2>
-
-                <p className="mt-1 text-sm leading-6 text-slate-600">
-                  Active recruiters can log in and work on company jobs and
-                  applications.
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
-                {inactiveRecruiters.length} inactive
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardBody>
-            {requestStatus === "loading" && (
-              <p className="text-sm text-slate-600">Loading recruiters...</p>
-            )}
-
-            {requestStatus === "error" && (
-              <div
-                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                role="alert"
-              >
-                Could not load recruiters.
-              </div>
-            )}
-
-            {requestStatus === "success" && recruiters.length === 0 && (
-              <EmptyState
-                icon="🤝"
-                title="No recruiters created yet"
-                description="Create your first recruiter account to let your team manage jobs and applications."
-              />
-            )}
-
-            {requestStatus === "success" && recruiters.length > 0 && (
-              <div className="divide-y divide-slate-100">
-                {recruiters.map((recruiter) => {
-                  const recruiterId = getRecruiterId(recruiter);
-
-                  return (
-                    <article
-                      key={recruiterId}
-                      className="grid gap-4 py-5 first:pt-0 last:pb-0 lg:grid-cols-[1.5fr_1fr_auto] lg:items-center"
-                    >
-                      <div className="flex gap-4">
-                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-lg font-black text-blue-700 ring-1 ring-blue-100">
-                          {getRecruiterInitial(recruiter)}
-                        </div>
-
-                        <div>
-                          <p className="font-black text-slate-950">
-                            {getRecruiterName(recruiter)}
-                          </p>
-
-                          <p className="mt-1 text-sm font-semibold text-slate-600">
-                            {recruiter.jobTitle || "Recruiter"}
-                          </p>
-
-                          <p className="mt-1 text-sm text-slate-500">
-                            @{getRecruiterUsername(recruiter)}
-                          </p>
-
-                          <p className="mt-1 text-sm text-slate-500">
-                            {getRecruiterEmail(recruiter)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <RecruiterStatusPill recruiter={recruiter} />
-                      </div>
-
-                      <Button
-                        type="button"
-                        disabled={updatingRecruiterId === recruiterId}
-                        onClick={() => handleToggleRecruiterStatus(recruiter)}
-                        variant={recruiter.isActive ? "danger" : "secondary"}
-                        size="sm"
-                        className={
-                          recruiter.isActive
-                            ? ""
-                            : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                        }
+                    return (
+                      <article
+                        key={recruiterId}
+                        className="grid gap-4 py-5 first:pt-0 last:pb-0 lg:grid-cols-[2fr_0.5fr_auto] lg:items-center"
                       >
-                        {updatingRecruiterId === recruiterId
-                          ? "Updating..."
-                          : recruiter.isActive
-                            ? "Deactivate"
-                            : "Activate"}
-                      </Button>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </CardBody>
-        </Card>
-      </div>
+                        <div className="flex gap-4">
+                          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-lg font-black text-blue-700 ring-1 ring-blue-100">
+                            {getRecruiterInitial(recruiter)}
+                          </div>
+
+                          <div>
+                            <p className="font-black text-slate-950">
+                              {getRecruiterName(recruiter)}
+                            </p>
+
+                            <p className="mt-1 text-sm font-semibold text-slate-600">
+                              {recruiter.jobTitle || "Recruiter"}
+                            </p>
+
+                            <p className="mt-1 text-sm text-slate-500">
+                              @{getRecruiterUsername(recruiter)}
+                            </p>
+
+                            <p className="mt-1 text-sm text-slate-500">
+                              {getRecruiterEmail(recruiter)}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-col mr-5 w-full place-items-end self-center">
+                            <RecruiterStatusPill recruiter={recruiter} />
+                          </div>
+
+                        </div>
+
+                        <Button
+                          type="button"
+                          disabled={updatingRecruiterId === recruiterId}
+                          onClick={() => handleToggleRecruiterStatus(recruiter)}
+                          variant={recruiter.isActive ? "danger" : "secondary"}
+                          size="sm"
+                          className={
+                            recruiter.isActive
+                              ? ""
+                              : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                          }
+                        >
+                          {updatingRecruiterId === recruiterId
+                            ? "Updating..."
+                            : recruiter.isActive
+                              ? "Deactivate"
+                              : "Activate"}
+                        </Button>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card className="self-start xl:sticky xl:top-24">
+            <CardHeader>
+              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                New recruiter
+              </p>
+
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                Create recruiter
+              </h2>
+
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Recruiters can manage jobs and applications. Only owners can
+                manage company profile and recruiter access.
+              </p>
+            </CardHeader>
+
+            <CardBody>
+              <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5">
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                  <FormField
+                    label="First name"
+                    htmlFor="firstName"
+                    error={errors.firstName?.message}
+                  >
+                    <input
+                      id="firstName"
+                      type="text"
+                      placeholder="First name"
+                      className={getInputClassName(Boolean(errors.firstName))}
+                      {...register("firstName")}
+                    />
+                  </FormField>
+
+                  <FormField
+                    label="Last name"
+                    htmlFor="lastName"
+                    error={errors.lastName?.message}
+                  >
+                    <input
+                      id="lastName"
+                      type="text"
+                      placeholder="Last name"
+                      className={getInputClassName(Boolean(errors.lastName))}
+                      {...register("lastName")}
+                    />
+                  </FormField>
+                </div>
+
+                <FormField
+                  label="Job title"
+                  htmlFor="jobTitle"
+                  error={errors.jobTitle?.message}
+                >
+                  <input
+                    id="jobTitle"
+                    type="text"
+                    placeholder="Technical Recruiter"
+                    className={getInputClassName(Boolean(errors.jobTitle))}
+                    {...register("jobTitle")}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Username"
+                  htmlFor="username"
+                  error={errors.username?.message}
+                  hint="Only letters, numbers, and underscores are allowed."
+                >
+                  <input
+                    id="username"
+                    type="text"
+                    placeholder="recruiter_one"
+                    className={getInputClassName(Boolean(errors.username))}
+                    {...register("username")}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Email"
+                  htmlFor="email"
+                  error={errors.email?.message}
+                >
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="recruiter@example.com"
+                    className={getInputClassName(Boolean(errors.email))}
+                    {...register("email")}
+                  />
+                </FormField>
+
+                <PasswordField
+                  id="password"
+                  label="Temporary password"
+                  placeholder="Recruiter123"
+                  registration={register("password")}
+                  error={errors.password?.message}
+                />
+
+                <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+                  Password must contain at least 8 characters, one uppercase
+                  letter, one lowercase letter, and one number.
+                </div>
+
+                <Button type="submit" disabled={isSubmitting} fullWidth>
+                  {isSubmitting ? "Creating..." : "Create recruiter"}
+                </Button>
+              </form>
+            </CardBody>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

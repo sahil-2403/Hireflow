@@ -20,12 +20,15 @@ import {
 } from "../../features/jobs/job.constants";
 
 import getApiError from "../../utils/getApiError";
+import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
 
 import Button from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
 import FormField from "../../components/ui/FormField";
 import PageHero from "../../components/ui/PageHero";
+
+import CompanySetupRequired from "../../components/company/CompanySetupRequired";
 
 const defaultValues = {
   title: "",
@@ -176,6 +179,8 @@ const CompanyJobFormPage = () => {
 
   const [apiError, setApiError] = useState("");
 
+  const [isCompanyMissing, setIsCompanyMissing] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -229,6 +234,7 @@ const CompanyJobFormPage = () => {
 
   const onSubmit = async (formData) => {
     setApiError("");
+    setIsCompanyMissing(false);
 
     const payload = convertFormDataToPayload(formData);
 
@@ -244,6 +250,10 @@ const CompanyJobFormPage = () => {
       });
     } catch (error) {
       const normalizedError = getApiError(error);
+
+      if (isCompanyProfileMissingError(normalizedError)) {
+        setIsCompanyMissing(true);
+      }
 
       setApiError(normalizedError.message);
     }
@@ -291,7 +301,15 @@ const CompanyJobFormPage = () => {
         }
       />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
+      {isCompanyMissing && (
+        <CompanySetupRequired description="Create your company profile before posting a job." />
+      )}
+
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="grid gap-6"
+        hidden={isCompanyMissing}
+      >
         {apiError && (
           <div
             className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"

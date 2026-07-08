@@ -9,6 +9,7 @@ import {
 } from "../../api/analytics.api";
 
 import getApiError from "../../utils/getApiError";
+import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
 
 import Button from "../../components/ui/Button";
 import { Card, CardBody } from "../../components/ui/Card";
@@ -18,6 +19,7 @@ import CompanyMetricCard from "../../components/company/CompanyMetricCard";
 import HiringFunnelCard from "../../components/company/HiringFunnelCard";
 import TopJobsCard from "../../components/company/TopJobsCard";
 import RecentApplicationsCard from "../../components/company/RecentApplicationsCard";
+import CompanySetupRequired from "../../components/company/CompanySetupRequired";
 
 const CompanyDashboardPage = () => {
   const [overviewState, setOverviewState] = useState({
@@ -62,7 +64,9 @@ const CompanyDashboardPage = () => {
         const normalizedError = getApiError(error);
 
         setOverviewState({
-          status: "error",
+          status: isCompanyProfileMissingError(normalizedError)
+            ? "company-missing"
+            : "error",
           data: null,
           errorMessage: normalizedError.message,
         });
@@ -241,6 +245,10 @@ const CompanyDashboardPage = () => {
             </p>
           </CardBody>
         </Card>
+      )}
+
+      {overviewState.status === "company-missing" && (
+        <CompanySetupRequired description="Create your company profile before using the company dashboard, jobs, applications, and recruiter tools." />
       )}
 
       {overviewState.status === "error" && (

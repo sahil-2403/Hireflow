@@ -8,6 +8,7 @@ import {
 
 import getApiError from "../../utils/getApiError";
 import openPdfBlob from "../../utils/openPdfBlob";
+import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
 
 import ApplicationStatusBadge from "../../components/application/ApplicationStatusBadge";
 
@@ -16,6 +17,8 @@ import { Card, CardBody } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
 import FormField from "../../components/ui/FormField";
 import PageHero from "../../components/ui/PageHero";
+
+import CompanySetupRequired from "../../components/company/CompanySetupRequired";
 
 import {
   APPLICATION_STATUS_FILTERS,
@@ -177,7 +180,11 @@ const CompanyApplicationsPage = () => {
         setErrorMessage(normalizedError.message);
 
         setApplicationsData(null);
-        setRequestStatus("error");
+        setRequestStatus(
+          isCompanyProfileMissingError(normalizedError)
+            ? "company-missing"
+            : "error",
+        );
       }
     };
 
@@ -286,76 +293,78 @@ const CompanyApplicationsPage = () => {
         description="Review candidates, open resumes, read cover letters, and move applications through your hiring workflow."
       />
 
-      <Card>
-        <CardBody>
-          <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-            <FormField label="Application status" htmlFor="status">
-              <select
-                id="status"
-                value={selectedStatus}
-                onChange={handleStatusFilterChange}
-                className={getInputClassName()}
-              >
-                {APPLICATION_STATUS_FILTERS.map((option) => (
-                  <option key={option.label} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-
-            <FormField label="Sort" htmlFor="order">
-              <select
-                id="order"
-                value={order}
-                onChange={handleOrderChange}
-                className={getInputClassName()}
-              >
-                {SORT_OPTIONS.map((option) => (
-                  <option key={option.label} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleClearFilters}
-            >
-              Clear
-            </Button>
-          </div>
-
-          {activeFilterChips.length > 0 && (
-            <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Active filters:
-              </span>
-
-              {activeFilterChips.map((chip) => (
-                <button
-                  key={chip.key}
-                  type="button"
-                  onClick={() => handleRemoveFilter(chip.key)}
-                  className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
+      {requestStatus !== "company-missing" && (
+        <Card>
+          <CardBody>
+            <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <FormField label="Application status" htmlFor="status">
+                <select
+                  id="status"
+                  value={selectedStatus}
+                  onChange={handleStatusFilterChange}
+                  className={getInputClassName()}
                 >
-                  {chip.label} ×
-                </button>
-              ))}
+                  {APPLICATION_STATUS_FILTERS.map((option) => (
+                    <option key={option.label} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
 
-              <button
+              <FormField label="Sort" htmlFor="order">
+                <select
+                  id="order"
+                  value={order}
+                  onChange={handleOrderChange}
+                  className={getInputClassName()}
+                >
+                  {SORT_OPTIONS.map((option) => (
+                    <option key={option.label} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={handleClearFilters}
-                className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
               >
-                Clear all
-              </button>
+                Clear
+              </Button>
             </div>
-          )}
-        </CardBody>
-      </Card>
+
+            {activeFilterChips.length > 0 && (
+              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-5">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Active filters:
+                </span>
+
+                {activeFilterChips.map((chip) => (
+                  <button
+                    key={chip.key}
+                    type="button"
+                    onClick={() => handleRemoveFilter(chip.key)}
+                    className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
+                  >
+                    {chip.label} ×
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      )}
 
       {successMessage && (
         <div
@@ -381,6 +390,10 @@ const CompanyApplicationsPage = () => {
             <p className="text-sm text-slate-600">Loading applications...</p>
           </CardBody>
         </Card>
+      )}
+
+      {requestStatus === "company-missing" && (
+        <CompanySetupRequired description="Create your company profile before reviewing applications." />
       )}
 
       {requestStatus === "error" && (
