@@ -5,8 +5,7 @@ import User from "../../modules/auth/auth.model.js";
 import { getAccessTokenCookieName } from "../../modules/auth/auth.cookie.js";
 
 const authenticate = asyncHandler(async (req, res, next) => {
-  const accessToken =
-    req.cookies?.[getAccessTokenCookieName()];
+  const accessToken = req.cookies?.[getAccessTokenCookieName()];
 
   if (!accessToken) {
     throw new ApiError(401, "Authentication token missing");
@@ -29,6 +28,7 @@ const authenticate = asyncHandler(async (req, res, next) => {
     id: user._id.toString(),
     email: user.email,
     role: user.role,
+    profilePhotoUrl: user.profilePhotoUrl,
   };
 
   next();

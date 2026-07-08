@@ -10,6 +10,8 @@ import { getDashboardPathForRole } from "../../features/auth/auth.utils";
 
 import getRoleDisplayName from "../../utils/getRoleDisplayName";
 
+import ProfileAvatar from "../common/ProfileAvatar";
+
 const Icon = ({ name, className = "h-4 w-4" }) => {
   const icons = {
     dashboard: (
@@ -117,18 +119,6 @@ const Icon = ({ name, className = "h-4 w-4" }) => {
 
 const getDisplayName = (user) => {
   return user?.firstName || user?.username || user?.email || "User";
-};
-
-const getInitials = (user) => {
-  const displayName = getDisplayName(user);
-
-  const parts = displayName.replace("@", " ").split(" ").filter(Boolean);
-
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-
-  return displayName[0].toUpperCase();
 };
 
 const getDashboardNavLinksByRole = (role) => {
@@ -391,9 +381,7 @@ const PublicNavbar = ({ variant = "public" }) => {
 
           {isAuthenticated && (
             <div className="hidden items-center gap-3 py-1.5 pl-1.5 pr-3 lg:flex">
-              <div className="grid h-8 w-8 place-items-center rounded-full bg-slate-900 text-xs font-bold text-white">
-                {getInitials(user)}
-              </div>
+              <ProfileAvatar user={user} size="xs" />
 
               <div className="min-w-0">
                 <p className="max-w-35 truncate text-sm font-bold text-slate-900">
@@ -448,9 +436,7 @@ const PublicNavbar = ({ variant = "public" }) => {
           <div className="absolute right-4 top-[4.4rem] w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-200/70 md:hidden">
             {isAuthenticated && (
               <div className="mb-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3">
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-slate-900 text-sm font-bold text-white">
-                  {getInitials(user)}
-                </div>
+                <ProfileAvatar user={user} size="sm" />
 
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-slate-950">

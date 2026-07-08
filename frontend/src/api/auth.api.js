@@ -55,6 +55,22 @@ const getCurrentUser = async () => {
   return response.data;
 };
 
+const uploadProfilePhoto = async (photoFile) => {
+  const formData = new FormData();
+
+  formData.append("photo", photoFile);
+
+  const response = await apiClient.patch("/auth/me/profile-photo", formData);
+
+  return response.data;
+};
+
+const deleteProfilePhoto = async () => {
+  const response = await apiClient.delete("/auth/me/profile-photo");
+
+  return response.data;
+};
+
 const logout = async () => {
   const response = await apiClient.post("/auth/logout");
 
@@ -70,5 +86,7 @@ export {
   verifyEmail,
   refreshSession,
   getCurrentUser,
+  uploadProfilePhoto,
+  deleteProfilePhoto,
   logout,
 };
