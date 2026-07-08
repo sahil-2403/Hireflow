@@ -12,6 +12,11 @@ import {
   verifyRefreshToken,
 } from "../../shared/utils/jwt.js";
 
+import {
+  uploadProfilePhotoFile,
+  deleteAsset,
+} from "../../shared/services/media.service.js";
+
 import crypto from "node:crypto";
 
 const EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS =
@@ -23,6 +28,16 @@ const PASSWORD_RESET_TOKEN_EXPIRY_MINUTES =
   Number(process.env.PASSWORD_RESET_TOKEN_EXPIRY_MINUTES) || 15;
 
 const PUBLIC_REGISTRATION_ROLES = [ROLES.CANDIDATE, ROLES.OWNER];
+
+const buildAuthUserResponse = (user) => {
+  return {
+    id: user._id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    profilePhotoUrl: user.profilePhotoUrl,
+  };
+};
 
 const resetPassword = async (token, password) => {
   const tokenHash = hashToken(token);
@@ -123,6 +138,62 @@ const logoutUser = async (refreshToken) => {
   };
 };
 
+const uploadProfilePhoto = async (userId, file) => {
+  if (!file) {
+    throw new ApiError(400, "Profile photo file is required");
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const oldPublicId = user.profilePhotoPublicId;
+
+  const uploadedAsset = await uploadProfilePhotoFile(file.buffer);
+
+  try {
+    user.profilePhotoUrl = uploadedAsset.url;
+    user.profilePhotoPublicId = uploadedAsset.publicId;
+
+    await user.save();
+  } catch (error) {
+    await deleteAsset(uploadedAsset.publicId, "image");
+
+    throw error;
+  }
+
+  await deleteAsset(oldPublicId, "image");
+
+  return {
+    user: buildAuthUserResponse(user),
+    message: "Profile photo uploaded successfully",
+  };
+};
+
+const deleteProfilePhoto = async (userId) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const oldPublicId = user.profilePhotoPublicId;
+
+  user.profilePhotoUrl = null;
+  user.profilePhotoPublicId = null;
+
+  await user.save();
+
+  await deleteAsset(oldPublicId, "image");
+
+  return {
+    user: buildAuthUserResponse(user),
+    message: "Profile photo removed successfully",
+  };
+};
+
 const createRefreshToken = async (user) => {
   const payload = {
     sub: user._id.toString(),
@@ -216,12 +287,7 @@ const loginUser = async ({ email, password }) => {
   const refreshToken = await createRefreshToken(user);
 
   return {
-    user: {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-    },
+    user: buildAuthUserResponse(user),
     accessToken,
     refreshToken,
     message: "Login successful",
@@ -285,7 +351,7 @@ const createEmailVerificationToken = async (userId) => {
 
 const getRegistrationSuccessMessage = (role) => {
   if (role === ROLES.OWNER) {
-    return "Company owner registration successful. Please check your email to verify your account.";
+    return "Company admin registration successful. Please check your email to verify your account.";
   }
 
   return "Candidate registration successful. Please check your email to verify your account.";
@@ -418,6 +484,8 @@ export {
   refreshAccessToken,
   logoutUser,
   logoutAllSessions,
+  uploadProfilePhoto,
+  deleteProfilePhoto,
   forgotPassword,
   resetPassword,
   resendVerificationEmail,

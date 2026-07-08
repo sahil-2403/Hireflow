@@ -45,6 +45,18 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
+    profilePhotoUrl: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    profilePhotoPublicId: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
   {
     timestamps: true,

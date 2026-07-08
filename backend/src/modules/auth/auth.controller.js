@@ -78,6 +78,26 @@ const logoutAllSessions = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, result.message));
 });
 
+const uploadProfilePhoto = asyncHandler(async (req, res) => {
+  const result = await authService.uploadProfilePhoto(req.user.id, req.file);
+
+  return res.status(200).json(
+    new ApiResponse(200, result.message, {
+      user: result.user,
+    }),
+  );
+});
+
+const deleteProfilePhoto = asyncHandler(async (req, res) => {
+  const result = await authService.deleteProfilePhoto(req.user.id);
+
+  return res.status(200).json(
+    new ApiResponse(200, result.message, {
+      user: result.user,
+    }),
+  );
+});
+
 const forgotPassword = asyncHandler(async (req, res) => {
   const result = await authService.forgotPassword(req.body.email);
 
@@ -118,6 +138,8 @@ export {
   refreshAccessToken,
   logoutUser,
   logoutAllSessions,
+  uploadProfilePhoto,
+  deleteProfilePhoto,
   forgotPassword,
   resetPassword,
   resendVerificationEmail,

@@ -61,4 +61,16 @@ const uploadLogoFile = (fileBuffer) => {
   });
 };
 
-export { uploadResumeFile, uploadLogoFile, deleteAsset };
+const uploadProfilePhotoFile = (fileBuffer) => {
+  return uploadBuffer(fileBuffer, {
+    folder: "hireflow/profile-photos",
+    resourceType: "image",
+  });
+};
+
+export {
+  uploadResumeFile,
+  uploadLogoFile,
+  deleteAsset,
+  uploadProfilePhotoFile,
+};

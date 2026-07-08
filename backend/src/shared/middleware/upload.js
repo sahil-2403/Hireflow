@@ -72,4 +72,10 @@ const uploadCompanyLogo = createSingleFileMiddleware({
   maximumSize: 2 * 1024 * 1024,
 });
 
-export { uploadResume, uploadCompanyLogo };
+const uploadProfilePhoto = createSingleFileMiddleware({
+  fieldName: "photo",
+  allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+  maximumSize: 2 * 1024 * 1024,
+});
+
+export { uploadResume, uploadCompanyLogo, uploadProfilePhoto };

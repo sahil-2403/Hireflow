@@ -6,6 +6,7 @@ import ApiResponse from "../../shared/responses/ApiResponse.js";
 import authorize from "../../shared/middleware/authorize.js";
 import { ROLES } from "../../config/constants.js";
 import { authLimiter } from "../../shared/middleware/rateLimiters.js";
+import { uploadProfilePhoto as uploadProfilePhotoFile } from "../../shared/middleware/upload.js";
 
 import {
   registerSchema,
@@ -22,6 +23,8 @@ import {
   refreshAccessToken,
   logoutUser,
   logoutAllSessions,
+  uploadProfilePhoto,
+  deleteProfilePhoto,
   forgotPassword,
   resetPassword,
   resendVerificationEmail,
@@ -237,6 +240,60 @@ router.post("/logout", logoutUser);
  *         description: Authentication required
  */
 router.post("/logout-all", authenticate, logoutAllSessions);
+
+/**
+ * @openapi
+ * /api/v1/auth/me/profile-photo:
+ *   patch:
+ *     tags:
+ *       - Auth
+ *     summary: Upload or replace the current user's profile photo
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - photo
+ *             properties:
+ *               photo:
+ *                 type: string
+ *                 format: binary
+ *                 description: JPG, PNG, or WebP image up to 2 MB
+ *     responses:
+ *       200:
+ *         description: Profile photo uploaded
+ *       400:
+ *         description: Invalid or missing file
+ *       401:
+ *         description: Authentication required
+ */
+router.patch(
+  "/me/profile-photo",
+  authenticate,
+  uploadProfilePhotoFile,
+  uploadProfilePhoto,
+);
+
+/**
+ * @openapi
+ * /api/v1/auth/me/profile-photo:
+ *   delete:
+ *     tags:
+ *       - Auth
+ *     summary: Remove the current user's profile photo
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Profile photo removed
+ *       401:
+ *         description: Authentication required
+ */
+router.delete("/me/profile-photo", authenticate, deleteProfilePhoto);
 
 /**
  * @openapi
