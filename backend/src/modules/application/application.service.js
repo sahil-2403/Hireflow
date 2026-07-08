@@ -3,16 +3,12 @@ import mongoose from "mongoose";
 import Application from "./application.model.js";
 import Candidate from "../candidate/candidate.model.js";
 import Job from "../job/job.model.js";
-import Company from "../company/company.model.js";
-import Recruiter from "../recruiter/recruiter.model.js";
 
 import ApiError from "../../shared/errors/ApiError.js";
 
-import {
-  ROLES,
-  JOB_STATUS,
-  APPLICATION_STATUS,
-} from "../../config/constants.js";
+import { JOB_STATUS, APPLICATION_STATUS } from "../../config/constants.js";
+
+import { getStaffCompany } from "../../shared/utils/companyAccess.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
@@ -62,41 +58,6 @@ const normalizePagination = (query) => {
     limit,
     skip: (page - 1) * limit,
   };
-};
-
-const getStaffCompany = async (userId, role) => {
-  if (role === ROLES.OWNER) {
-    const company = await Company.findOne({
-      ownerId: userId,
-    });
-
-    if (!company) {
-      throw new ApiError(404, "Company profile not found");
-    }
-
-    return company;
-  }
-
-  if (role === ROLES.RECRUITER) {
-    const recruiter = await Recruiter.findOne({
-      userId,
-      isActive: true,
-    });
-
-    if (!recruiter) {
-      throw new ApiError(403, "Active recruiter profile not found");
-    }
-
-    const company = await Company.findById(recruiter.companyId);
-
-    if (!company) {
-      throw new ApiError(404, "Company profile not found");
-    }
-
-    return company;
-  }
-
-  throw new ApiError(403, "You are not allowed to manage applications");
 };
 
 const applyToJob = async (candidateUserId, jobId, applicationData) => {
@@ -214,7 +175,7 @@ const listMyApplications = async (candidateUserId, query) => {
 };
 
 const listManagedApplications = async (userId, role, query) => {
-  const company = await getStaffCompany(userId, role);
+  const company = await getStaffCompany(userId, role, "You are not allowed to manage applications")
 
   const { page, limit, skip } = normalizePagination(query);
 
@@ -296,7 +257,7 @@ const updateApplicationStatus = async (
     throw new ApiError(400, "Invalid application ID");
   }
 
-  const company = await getStaffCompany(userId, role);
+  const company = await getStaffCompany(userId, role, "You are not allowed to manage applications")
 
   const application = await Application.findOne({
     _id: applicationId,
@@ -341,7 +302,7 @@ const getManagedApplicationResume = async (userId, role, applicationId) => {
     throw new ApiError(400, "Invalid application ID");
   }
 
-  const company = await getStaffCompany(userId, role);
+  const company = await getStaffCompany(userId, role, "You are not allowed to manage applications")
 
   const application = await Application.findOne({
     _id: applicationId,

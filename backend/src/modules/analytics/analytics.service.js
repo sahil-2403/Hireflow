@@ -1,56 +1,18 @@
 import mongoose from "mongoose";
 
-import Company from "../company/company.model.js";
-import Recruiter from "../recruiter/recruiter.model.js";
 import Candidate from "../candidate/candidate.model.js";
 import Job from "../job/job.model.js";
 import Application from "../application/application.model.js";
+import Recruiter from "../recruiter/recruiter.model.js";
 
 import ApiError from "../../shared/errors/ApiError.js";
 
-import {
-  ROLES,
-  JOB_STATUS,
-  APPLICATION_STATUS,
-} from "../../config/constants.js";
+import { JOB_STATUS, APPLICATION_STATUS } from "../../config/constants.js";
 
-const getStaffCompany = async (userId, role) => {
-  if (role === ROLES.OWNER) {
-    const company = await Company.findOne({
-      ownerId: userId,
-    });
-
-    if (!company) {
-      throw new ApiError(404, "Company profile not found");
-    }
-
-    return company;
-  }
-
-  if (role === ROLES.RECRUITER) {
-    const recruiter = await Recruiter.findOne({
-      userId,
-      isActive: true,
-    });
-
-    if (!recruiter) {
-      throw new ApiError(403, "Active recruiter profile not found");
-    }
-
-    const company = await Company.findById(recruiter.companyId);
-
-    if (!company) {
-      throw new ApiError(404, "Company profile not found");
-    }
-
-    return company;
-  }
-
-  throw new ApiError(403, "You are not allowed to access company analytics");
-};
+import { getStaffCompany } from "../../shared/utils/companyAccess.js";
 
 const getCompanyOverview = async (userId, role) => {
-  const company = await getStaffCompany(userId, role);
+  const company = await getStaffCompany(userId, role, "You are not allowed to access company analytics")
 
   const [jobSummary, applicationSummary, activeRecruiters, recentApplications] =
     await Promise.all([
@@ -212,7 +174,7 @@ const getCompanyOverview = async (userId, role) => {
 };
 
 const getHiringFunnel = async (userId, role) => {
-  const company = await getStaffCompany(userId, role);
+  const company = await getStaffCompany(userId, role, "You are not allowed to access company analytics")
 
   const groupedStatuses = await Application.aggregate([
     {
@@ -258,7 +220,7 @@ const getHiringFunnel = async (userId, role) => {
 };
 
 const getTopJobs = async (userId, role, requestedLimit) => {
-  const company = await getStaffCompany(userId, role);
+  const company = await getStaffCompany(userId, role, "You are not allowed to access company analytics")
 
   const parsedLimit = Number(requestedLimit);
 

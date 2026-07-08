@@ -1,57 +1,21 @@
 import mongoose from "mongoose";
 
 import Job from "./job.model.js";
-import Company from "../company/company.model.js";
-import Recruiter from "../recruiter/recruiter.model.js";
 
 import ApiError from "../../shared/errors/ApiError.js";
 
 import {
-  ROLES,
   JOB_STATUS,
   EMPLOYMENT_TYPE,
   WORKPLACE_TYPE,
   EXPERIENCE_LEVEL,
 } from "../../config/constants.js";
 
+import { getStaffCompany } from "../../shared/utils/companyAccess.js";
+
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
-
-const getStaffCompany = async (userId, role) => {
-  if (role === ROLES.OWNER) {
-    const company = await Company.findOne({
-      ownerId: userId,
-    });
-
-    if (!company) {
-      throw new ApiError(404, "Company profile not found");
-    }
-
-    return company;
-  }
-
-  if (role === ROLES.RECRUITER) {
-    const recruiter = await Recruiter.findOne({
-      userId,
-      isActive: true,
-    });
-
-    if (!recruiter) {
-      throw new ApiError(403, "Active recruiter profile not found");
-    }
-
-    const company = await Company.findById(recruiter.companyId);
-
-    if (!company) {
-      throw new ApiError(404, "Company profile not found");
-    }
-
-    return company;
-  }
-
-  throw new ApiError(403, "You are not allowed to manage jobs");
-};
 
 const normalizePagination = (query) => {
   const requestedPage = Number(query.page);
@@ -75,7 +39,11 @@ const normalizePagination = (query) => {
 };
 
 const createJob = async (userId, role, jobData) => {
-  const company = await getStaffCompany(userId, role);
+  const company = await getStaffCompany(
+    userId,
+    role,
+    "You are not allowed to manage jobs",
+  );
 
   const job = await Job.create({
     ...jobData,
@@ -94,7 +62,7 @@ const updateJob = async (userId, role, jobId, jobData) => {
     throw new ApiError(400, "Invalid job ID");
   }
 
-  const company = await getStaffCompany(userId, role);
+  const company = await getStaffCompany(userId, role, "You are not allowed to manage jobs")
 
   const existingJob = await Job.findOne({
     _id: jobId,
@@ -133,7 +101,7 @@ const updateJobStatus = async (userId, role, jobId, status) => {
     throw new ApiError(400, "Invalid job ID");
   }
 
-  const company = await getStaffCompany(userId, role);
+  const company = await getStaffCompany(userId, role, "You are not allowed to manage jobs")
 
   const job = await Job.findOneAndUpdate(
     {
@@ -308,7 +276,7 @@ const getPublicJobById = async (jobId) => {
 };
 
 const listManagedJobs = async (userId, role, query) => {
-  const company = await getStaffCompany(userId, role);
+  const company = await getStaffCompany(userId, role, "You are not allowed to manage jobs")
 
   const { page, limit, skip } = normalizePagination(query);
 
@@ -359,7 +327,7 @@ const getManagedJobById = async (userId, role, jobId) => {
     throw new ApiError(400, "Invalid job ID");
   }
 
-  const company = await getStaffCompany(userId, role);
+  const company = await getStaffCompany(userId, role, "You are not allowed to manage jobs")
 
   const job = await Job.findOne({
     _id: jobId,

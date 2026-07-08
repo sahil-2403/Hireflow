@@ -36,7 +36,11 @@ const getRecruiterCompany = async (userId) => {
   return company;
 };
 
-const getStaffCompany = async (userId, role) => {
+const getStaffCompany = async (
+  userId,
+  role,
+  forbiddenMessage = "You are not allowed to access company resources",
+) => {
   if (role === ROLES.OWNER) {
     return getOwnerCompany(userId);
   }
@@ -45,7 +49,7 @@ const getStaffCompany = async (userId, role) => {
     return getRecruiterCompany(userId);
   }
 
-  throw new ApiError(403, "You are not allowed to access company resources");
+  throw new ApiError(403, forbiddenMessage);
 };
 
 export { getOwnerCompany, getRecruiterCompany, getStaffCompany };
