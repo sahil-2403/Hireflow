@@ -175,7 +175,11 @@ const listMyApplications = async (candidateUserId, query) => {
 };
 
 const listManagedApplications = async (userId, role, query) => {
-  const company = await getStaffCompany(userId, role, "You are not allowed to manage applications")
+  const company = await getStaffCompany(
+    userId,
+    role,
+    "You are not allowed to manage applications",
+  );
 
   const { page, limit, skip } = normalizePagination(query);
 
@@ -214,7 +218,7 @@ const listManagedApplications = async (userId, role, query) => {
       })
       .populate({
         path: "candidateUserId",
-        select: "username email",
+        select: "username email profilePhotoUrl",
       })
       .populate({
         path: "reviewedBy",
@@ -257,7 +261,11 @@ const updateApplicationStatus = async (
     throw new ApiError(400, "Invalid application ID");
   }
 
-  const company = await getStaffCompany(userId, role, "You are not allowed to manage applications")
+  const company = await getStaffCompany(
+    userId,
+    role,
+    "You are not allowed to manage applications",
+  );
 
   const application = await Application.findOne({
     _id: applicationId,
@@ -302,7 +310,11 @@ const getManagedApplicationResume = async (userId, role, applicationId) => {
     throw new ApiError(400, "Invalid application ID");
   }
 
-  const company = await getStaffCompany(userId, role, "You are not allowed to manage applications")
+  const company = await getStaffCompany(
+    userId,
+    role,
+    "You are not allowed to manage applications",
+  );
 
   const application = await Application.findOne({
     _id: applicationId,

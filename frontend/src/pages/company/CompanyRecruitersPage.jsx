@@ -16,6 +16,8 @@ import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingErr
 
 import PasswordField from "../../components/common/PasswordField";
 
+import ProfileAvatar from "../../components/common/ProfileAvatar";
+
 import Button from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
@@ -65,10 +67,6 @@ const getRecruiterName = (recruiter) => {
     .join(" ");
 
   return name || getRecruiterUsername(recruiter);
-};
-
-const getRecruiterInitial = (recruiter) => {
-  return getRecruiterName(recruiter).slice(0, 1).toUpperCase();
 };
 
 const RecruiterStatusPill = ({ recruiter }) => {
@@ -310,9 +308,12 @@ const CompanyRecruitersPage = () => {
                         className="grid gap-4 py-5 first:pt-0 last:pb-0 lg:grid-cols-[2fr_0.5fr_auto] lg:items-center"
                       >
                         <div className="flex gap-4">
-                          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-lg font-black text-blue-700 ring-1 ring-blue-100">
-                            {getRecruiterInitial(recruiter)}
-                          </div>
+                          <ProfileAvatar
+                            user={recruiter.userId}
+                            name={getRecruiterName(recruiter)}
+                            size="md"
+                            fallbackClassName="bg-blue-50 text-blue-700"
+                          />
 
                           <div>
                             <p className="font-black text-slate-950">
@@ -335,7 +336,6 @@ const CompanyRecruitersPage = () => {
                           <div className="flex flex-col mr-5 w-full place-items-end self-center">
                             <RecruiterStatusPill recruiter={recruiter} />
                           </div>
-
                         </div>
 
                         <Button

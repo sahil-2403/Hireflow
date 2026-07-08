@@ -129,6 +129,7 @@ const createRecruiter = async (ownerId, recruiterData) => {
         userId: user._id,
         username: user.username,
         email: user.email,
+        profilePhotoUrl: user.profilePhotoUrl,
         firstName: recruiter.firstName,
         lastName: recruiter.lastName,
         jobTitle: recruiter.jobTitle,
@@ -153,7 +154,7 @@ const listRecruiters = async (ownerId) => {
   })
     .populate({
       path: "userId",
-      select: "username email role",
+      select: "username email role profilePhotoUrl",
     })
     .sort({
       createdAt: -1,
@@ -205,7 +206,7 @@ const updateRecruiterStatus = async (ownerId, recruiterId, isActive) => {
 
   await recruiter.populate({
     path: "userId",
-    select: "username email role isActive",
+    select: "username email role isActive profilePhotoUrl",
   });
 
   return {

@@ -20,6 +20,8 @@ import PageHero from "../../components/ui/PageHero";
 
 import CompanySetupRequired from "../../components/company/CompanySetupRequired";
 
+import ProfileAvatar from "../../components/common/ProfileAvatar";
+
 import {
   APPLICATION_STATUS_FILTERS,
   NEXT_APPLICATION_STATUSES,
@@ -443,9 +445,12 @@ const CompanyApplicationsPage = () => {
                   <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr_1fr] lg:items-start">
                     <div>
                       <div className="flex flex-wrap items-center gap-3">
-                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-lg font-black text-blue-700 ring-1 ring-blue-100">
-                          {getCandidateName(candidate).slice(0, 1)}
-                        </div>
+                        <ProfileAvatar
+                          user={application.candidateUserId}
+                          name={getCandidateName(candidate)}
+                          size="md"
+                          fallbackClassName="bg-blue-50 text-blue-700"
+                        />
 
                         <div>
                           <h2 className="text-xl font-black text-slate-950">
