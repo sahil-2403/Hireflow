@@ -19,7 +19,7 @@ const getMyCompany = async (userId, role) => {
   const company = await getStaffCompany(
     userId,
     role,
-    "You are not allowed to access company analytics",
+    "You are not allowed to access company resources",
   );
 
   return company;

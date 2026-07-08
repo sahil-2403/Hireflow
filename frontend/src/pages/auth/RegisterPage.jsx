@@ -52,15 +52,15 @@ const registrationOptions = [
   {
     role: ROLES.OWNER,
     eyebrow: "Hiring for your company?",
-    title: "Register as a company Admin",
-    heroEyebrow: "Company Admin registration",
+    title: "Register as a company admin",
+    heroEyebrow: "Company admin registration",
     heroTitle: "Create your hiring workspace for your company.",
     heroDescription:
       "Register as a company admin first. After email verification, you can create your company profile, post jobs, and invite recruiters.",
     formTitle: "Create your company admin account",
     formDescription:
       "After verifying your email, you can create your company profile and start managing hiring workflows.",
-    submitLabel: "Create company Admin account",
+    submitLabel: "Create company admin account",
     loadingLabel: "Creating admin account...",
     highlights: [
       {
@@ -264,7 +264,7 @@ const RegisterPage = () => {
                     const isSelected = selectedRole === option.role;
 
                     return (
-                      <div classname="flex">
+                      <div className="flex flex-col">
                         <span className="text-[0.7rem] ml-1 font-bold uppercase tracking-wider text-blue-600">
                           {option.eyebrow}
                         </span>

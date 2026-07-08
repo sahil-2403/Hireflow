@@ -8,6 +8,8 @@ import useLogout from "../../hooks/useLogout";
 import { ROLES } from "../../features/auth/auth.constants";
 import { getDashboardPathForRole } from "../../features/auth/auth.utils";
 
+import getRoleDisplayName from "../../utils/getRoleDisplayName";
+
 const Icon = ({ name, className = "h-4 w-4" }) => {
   const icons = {
     dashboard: (
@@ -398,8 +400,8 @@ const PublicNavbar = ({ variant = "public" }) => {
                   {getDisplayName(user)}
                 </p>
 
-                <p className="text-xs capitalize text-slate-500">
-                  {user?.role}
+                <p className="text-xs text-slate-500">
+                  {getRoleDisplayName(user?.role)}
                 </p>
               </div>
             </div>
@@ -455,8 +457,8 @@ const PublicNavbar = ({ variant = "public" }) => {
                     {getDisplayName(user)}
                   </p>
 
-                  <p className="text-xs capitalize text-slate-500">
-                    {user?.role}
+                  <p className="text-xs text-slate-500">
+                    {getRoleDisplayName(user?.role)}
                   </p>
                 </div>
               </div>

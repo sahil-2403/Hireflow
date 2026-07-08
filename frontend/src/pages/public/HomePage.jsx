@@ -189,8 +189,8 @@ const VisualMosaic = () => {
           <h3 className="text-3xl font-black">Clean hiring workflow</h3>
 
           <p className="mt-4 text-sm leading-7 text-slate-300">
-            A practical MERN hiring platform for candidates, recruiters, and
-            company owners.
+            A practical hiring platform for candidates, recruiters, and company
+            admins.
           </p>
         </div>
       </div>
@@ -502,8 +502,8 @@ const HomePage = () => {
           <SectionHeading title="Choose how you want to use HireFlow" />
 
           <div className="mt-10 grid gap-6 lg:grid-cols-2">
-            <article className="rounded-4xl border border-blue-100 bg-blue-50 p-6 shadow-sm sm:p-8">
-              <div className="grid gap-6 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+            <article className="flex rounded-4xl border border-blue-100 bg-blue-50 p-6 shadow-sm sm:p-8 justify-items-center">
+              <div className="grid gap-6 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:justify-items-center">
                 <div className="grid h-16 w-16 place-items-center rounded-3xl bg-white text-3xl text-blue-700 shadow-sm">
                   👤
                 </div>
@@ -529,15 +529,15 @@ const HomePage = () => {
               </div>
             </article>
 
-            <article className="rounded-4xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm sm:p-8">
-              <div className="grid gap-6 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+            <article className="flex rounded-4xl border border-blue-100 bg-blue-50 p-6 shadow-sm sm:p-8 justify-items-center">
+              <div className="grid gap-6 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:self-center">
                 <div className="grid h-16 w-16 place-items-center rounded-3xl bg-white text-3xl text-emerald-700 shadow-sm">
                   💼
                 </div>
 
                 <div>
                   <h3 className="text-2xl font-black text-emerald-700">
-                    Company / Recruiter
+                    Company admin / Recruiter
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -546,9 +546,15 @@ const HomePage = () => {
                   </p>
                 </div>
 
-                <HomeButton to="/login" variant="green">
-                  Login to dashboard
-                </HomeButton>
+                <div className="flex flex-col gap-3">
+                  <HomeButton to="/register" variant="green">
+                    Register company admin
+                  </HomeButton>
+
+                  <HomeButton to="/login" variant="secondary">
+                    Login
+                  </HomeButton>
+                </div>
               </div>
             </article>
           </div>
