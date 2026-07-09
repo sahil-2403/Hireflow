@@ -146,13 +146,6 @@ const CompanyPreviewCard = ({ company }) => {
             Visit website
           </Button>
         )}
-
-        {/* {mode === "create" && (
-          <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
-            Create your company profile first. After that, you can upload a
-            company logo.
-          </div>
-        )} */}
       </CardBody>
     </Card>
   );
