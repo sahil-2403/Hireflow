@@ -299,7 +299,7 @@ const CompanyMyProfilePage = () => {
         eyebrow="My profile"
         title={
           mode === "create"
-            ? "Complete your company profile"
+            ? "Complete your personal profile"
             : "Manage your profile"
         }
         description="Keep your personal company workspace details and profile photo up to date."
