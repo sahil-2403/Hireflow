@@ -11,6 +11,7 @@ import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
 import FormField from "../../components/ui/FormField";
 import PageHero from "../../components/ui/PageHero";
+import CompanyLogo from "../../components/common/CompanyLogo";
 
 const EMPLOYMENT_TYPES = [
   {
@@ -244,10 +245,6 @@ const getJobId = (job) => {
   return job._id || job.id;
 };
 
-const getCompanyInitial = (job) => {
-  return (job.companyId?.name || job.title || "H").slice(0, 1).toUpperCase();
-};
-
 const getPostedLabel = (dateValue) => {
   if (!dateValue) {
     return "Recently posted";
@@ -384,9 +381,11 @@ const JobCard = ({ job }) => {
       <CardBody>
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex gap-4">
-            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-blue-50 text-lg font-black text-blue-700">
-              {getCompanyInitial(job)}
-            </div>
+            <CompanyLogo
+              company={job.companyId}
+              name={job.companyId?.name || job.title}
+              size="lg"
+            />
 
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">

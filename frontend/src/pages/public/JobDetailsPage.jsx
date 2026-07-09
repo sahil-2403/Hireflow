@@ -8,11 +8,14 @@ import { applyToJob } from "../../api/application.api";
 import { ROLES } from "../../features/auth/auth.constants";
 
 import getApiError from "../../utils/getApiError";
+
 import useAuth from "../../hooks/useAuth";
 
 import Button from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
+
+import CompanyLogo from "../../components/common/CompanyLogo";
 
 const formatSalary = (job) => {
   if (!job?.isSalaryVisible) {
@@ -34,10 +37,6 @@ const formatSalary = (job) => {
   }
 
   return `Up to ${currency} ${job.salaryMax}`;
-};
-
-const getCompanyInitial = (job) => {
-  return (job?.companyId?.name || job?.title || "H").slice(0, 1).toUpperCase();
 };
 
 const DetailPill = ({ children }) => {
@@ -193,9 +192,12 @@ const JobDetailsPage = () => {
         <div className="mx-auto max-w-8xl px-6 py-2">
           <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex gap-6">
-              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-blue-600 text-2xl font-black text-white shadow-sm shadow-blue-200">
-                {getCompanyInitial(job)}
-              </div>
+              <CompanyLogo
+                company={job.companyId}
+                name={job.companyId?.name || job.title}
+                size="xl"
+                fallbackClassName="bg-blue-600 text-white shadow-sm shadow-blue-200"
+              />
 
               <div>
                 <p className="px-1 text-sm font-bold text-blue-700">
@@ -441,9 +443,12 @@ const JobDetailsPage = () => {
 
             <CardBody>
               <div className="flex gap-3">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-900 text-sm font-black text-white">
-                  {getCompanyInitial(job)}
-                </div>
+                <CompanyLogo
+                  company={job.companyId}
+                  name={job.companyId?.name || job.title}
+                  size="md"
+                  fallbackClassName="bg-slate-900 text-white"
+                />
 
                 <div>
                   <p className="font-black text-slate-950">
