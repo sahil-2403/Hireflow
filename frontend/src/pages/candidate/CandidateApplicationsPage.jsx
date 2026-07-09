@@ -13,6 +13,8 @@ import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
 import PageHero from "../../components/ui/PageHero";
 
+import CompanyLogo from "../../components/common/CompanyLogo";
+
 const APPLICATION_STATUS_OPTIONS = [
   {
     label: "All",
@@ -184,9 +186,11 @@ const ApplicationRow = ({ application }) => {
   return (
     <article className="grid gap-4 p-5 transition hover:bg-slate-50/80 lg:grid-cols-[1.4fr_1fr_auto_1fr] lg:items-center">
       <div className="flex gap-3">
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-sm font-black text-blue-700">
-          {(application.jobId?.title || "J").slice(0, 1)}
-        </div>
+        <CompanyLogo
+          company={application.companyId}
+          name={application.companyId?.name || application.jobId?.title}
+          size="sm"
+        />
 
         <div className="min-w-0">
           <p className="font-black text-slate-950">
@@ -253,9 +257,14 @@ const ApplicationActivityCard = ({ applications }) => {
             {recentApplications.map((application) => (
               <div key={getApplicationId(application)} className="p-5">
                 <div className="flex gap-3">
-                  <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-blue-50 text-sm">
-                    📬
-                  </div>
+                  <CompanyLogo
+                    company={application.companyId}
+                    name={
+                      application.companyId?.name || application.jobId?.title
+                    }
+                    size="xs"
+                    className="mt-0.5"
+                  />
 
                   <div>
                     <p className="text-sm font-black text-slate-950">
