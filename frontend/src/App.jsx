@@ -29,6 +29,7 @@ import CompanyDashboardPage from "./pages/company/CompanyDashboardPage";
 import CompanyJobsPage from "./pages/company/CompanyJobsPage";
 import CompanyJobFormPage from "./pages/company/CompanyJobFormPage";
 import CompanyApplicationsPage from "./pages/company/CompanyApplicationsPage";
+import CompanyMyProfilePage from "./pages/company/CompanyMyProfilePage";
 import CompanyProfilePage from "./pages/company/CompanyProfilePage";
 import CompanyRecruitersPage from "./pages/company/CompanyRecruitersPage";
 
@@ -91,6 +92,11 @@ const App = () => {
             <Route
               path="/company/dashboard"
               element={<CompanyDashboardPage />}
+            />
+
+            <Route
+              path="/company/my-profile"
+              element={<CompanyMyProfilePage />}
             />
 
             <Route path="/company/jobs" element={<CompanyJobsPage />} />

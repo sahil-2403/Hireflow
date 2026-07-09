@@ -162,6 +162,11 @@ const getDashboardNavLinksByRole = (role) => {
         end: true,
       },
       {
+        label: "Profile",
+        path: "/company/my-profile",
+        icon: "user",
+      },
+      {
         label: "Jobs",
         path: "/company/jobs",
         icon: "briefcase",
@@ -191,6 +196,11 @@ const getDashboardNavLinksByRole = (role) => {
         path: "/company/dashboard",
         icon: "dashboard",
         end: true,
+      },
+      {
+        label: "Profile",
+        path: "/company/my-profile",
+        icon: "user",
       },
       {
         label: "Jobs",
