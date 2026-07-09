@@ -15,6 +15,7 @@ import { companyMemberProfileSchema } from "../../features/companies/companyMemb
 import getApiError from "../../utils/getApiError";
 import getRoleDisplayName from "../../utils/getRoleDisplayName";
 import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
+import isCompanyOwnerProfileMissingError from "../../utils/isCompanyOwnerProfileMissingError";
 
 import useAuth from "../../hooks/useAuth";
 
@@ -224,10 +225,7 @@ const CompanyMyProfilePage = () => {
           return;
         }
 
-        if (
-          normalizedError.statusCode === 404 &&
-          normalizedError.message === "Company owner profile not found"
-        ) {
+        if (isCompanyOwnerProfileMissingError(normalizedError)) {
           setProfile(null);
           setMode("create");
           reset(getDefaultValues());
