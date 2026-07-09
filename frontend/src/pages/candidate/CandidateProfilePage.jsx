@@ -11,8 +11,6 @@ import {
   updateCandidateProfile,
 } from "../../api/candidate.api";
 
-import { deleteProfilePhoto, uploadProfilePhoto } from "../../api/auth.api";
-
 import { candidateProfileSchema } from "../../features/candidates/candidate.schemas";
 
 import { EXPERIENCE_LEVELS } from "../../features/candidates/candidate.constants";
@@ -33,6 +31,8 @@ import FormField from "../../components/ui/FormField";
 import PageHero from "../../components/ui/PageHero";
 
 import ProfileAvatar from "../../components/common/ProfileAvatar";
+
+import ProfilePhotoManager from "../../components/account/ProfilePhotoManager";
 
 const getDefaultValues = (profile = null) => {
   return {
@@ -105,26 +105,6 @@ const getSkillTags = (skillsText) => {
     .slice(0, 10);
 };
 
-const PROFILE_PHOTO_MAX_SIZE = 2 * 1024 * 1024;
-
-const ALLOWED_PROFILE_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
-const validateProfilePhotoFile = (file) => {
-  if (!file) {
-    return "Please select a profile photo first.";
-  }
-
-  if (!ALLOWED_PROFILE_PHOTO_TYPES.includes(file.type)) {
-    return "Only JPG, PNG, or WebP images are allowed.";
-  }
-
-  if (file.size > PROFILE_PHOTO_MAX_SIZE) {
-    return "Profile photo must be 2 MB or smaller.";
-  }
-
-  return "";
-};
-
 const getInputClassName = (hasError = false) => {
   return [
     "w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
@@ -143,195 +123,6 @@ const getTextareaClassName = (hasError = false) => {
       ? "border-red-400 focus:border-red-500 focus:ring-red-50"
       : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
   ].join(" ");
-};
-
-const ProfilePhotoCard = ({ user, updateUser }) => {
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [photoError, setPhotoError] = useState("");
-  const [photoSuccess, setPhotoSuccess] = useState("");
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
-
-  const handlePhotoChange = (event) => {
-    const file = event.target.files?.[0] || null;
-
-    setPhotoSuccess("");
-    setPhotoError("");
-
-    if (!file) {
-      setSelectedPhoto(null);
-      return;
-    }
-
-    const validationError = validateProfilePhotoFile(file);
-
-    if (validationError) {
-      setSelectedPhoto(null);
-      setPhotoError(validationError);
-      event.target.value = "";
-      return;
-    }
-
-    setSelectedPhoto(file);
-  };
-
-  const handleUploadPhoto = async () => {
-    const validationError = validateProfilePhotoFile(selectedPhoto);
-
-    if (validationError) {
-      setPhotoError(validationError);
-      return;
-    }
-
-    try {
-      setIsUploadingPhoto(true);
-      setPhotoError("");
-      setPhotoSuccess("");
-
-      const result = await uploadProfilePhoto(selectedPhoto);
-
-      updateUser(result.data.user);
-
-      setSelectedPhoto(null);
-      setPhotoSuccess(result.message);
-    } catch (error) {
-      const normalizedError = getApiError(error);
-
-      setPhotoError(normalizedError.message);
-    } finally {
-      setIsUploadingPhoto(false);
-    }
-  };
-
-  const handleDeletePhoto = async () => {
-    const confirmed = window.confirm(
-      "Remove your profile photo? Your initials will be shown instead.",
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      setIsDeletingPhoto(true);
-      setPhotoError("");
-      setPhotoSuccess("");
-
-      const result = await deleteProfilePhoto();
-
-      updateUser(result.data.user);
-
-      setSelectedPhoto(null);
-      setPhotoSuccess(result.message);
-    } catch (error) {
-      const normalizedError = getApiError(error);
-
-      setPhotoError(normalizedError.message);
-    } finally {
-      setIsDeletingPhoto(false);
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-          Profile photo
-        </p>
-
-        <h2 className="mt-2 text-xl font-black text-slate-950">Your photo</h2>
-
-        <p className="mt-1 text-sm leading-6 text-slate-600">
-          Upload a clear photo so recruiters can recognize your profile.
-        </p>
-      </CardHeader>
-
-      <CardBody>
-        <div className="flex items-center gap-4">
-          <ProfileAvatar user={user} size="xl" />
-
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-slate-900">
-              {user?.profilePhotoUrl ? "Photo uploaded" : "No photo uploaded"}
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              JPG, PNG, or WebP. Maximum size 2 MB.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5">
-          <label
-            htmlFor="profilePhoto"
-            className="mb-2 block text-sm font-bold text-slate-700"
-          >
-            Choose photo
-          </label>
-
-          <input
-            id="profilePhoto"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handlePhotoChange}
-            className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-blue-700 hover:file:bg-blue-100"
-          />
-
-          {selectedPhoto && (
-            <p className="mt-2 text-sm text-slate-600">
-              Selected file:{" "}
-              <span className="font-bold text-slate-900">
-                {selectedPhoto.name}
-              </span>
-            </p>
-          )}
-        </div>
-
-        {photoError && (
-          <div
-            className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            role="alert"
-          >
-            {photoError}
-          </div>
-        )}
-
-        {photoSuccess && (
-          <div
-            className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-            role="status"
-          >
-            {photoSuccess}
-          </div>
-        )}
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <Button
-            type="button"
-            disabled={isUploadingPhoto || !selectedPhoto}
-            onClick={handleUploadPhoto}
-            fullWidth
-          >
-            {isUploadingPhoto
-              ? "Uploading..."
-              : user?.profilePhotoUrl
-                ? "Change photo"
-                : "Upload photo"}
-          </Button>
-
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={isDeletingPhoto || !user?.profilePhotoUrl}
-            onClick={handleDeletePhoto}
-            fullWidth
-          >
-            {isDeletingPhoto ? "Removing..." : "Remove photo"}
-          </Button>
-        </div>
-      </CardBody>
-    </Card>
-  );
 };
 
 const ProfilePreviewCard = ({ values, completion, user, updateUser }) => {
@@ -404,7 +195,12 @@ const ProfilePreviewCard = ({ values, completion, user, updateUser }) => {
         </CardFooter>
       </Card>
 
-      <ProfilePhotoCard user={user} updateUser={updateUser} />
+      <ProfilePhotoManager
+        user={user}
+        updateUser={updateUser}
+        name={fullName}
+        description="Upload a clear photo so recruiters can recognize your profile."
+      />
 
       <Card>
         <CardHeader>
