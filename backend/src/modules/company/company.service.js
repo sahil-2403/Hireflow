@@ -247,6 +247,24 @@ const uploadCompanyLogo = async (ownerId, file) => {
   };
 };
 
+const deleteCompanyLogo = async (ownerId) => {
+  const company = await getOwnerCompany(ownerId);
+
+  const oldPublicId = company.logoPublicId;
+
+  company.logoUrl = null;
+  company.logoPublicId = null;
+
+  await company.save();
+
+  await deleteAsset(oldPublicId, "image");
+
+  return {
+    company,
+    message: "Company logo removed successfully",
+  };
+};
+
 export {
   getMyCompany,
   createCompany,
@@ -255,4 +273,5 @@ export {
   listRecruiters,
   updateRecruiterStatus,
   uploadCompanyLogo,
+  deleteCompanyLogo,
 };

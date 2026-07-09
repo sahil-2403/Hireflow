@@ -45,6 +45,12 @@ const uploadCompanyLogo = async (logoFile) => {
   return response.data;
 };
 
+const deleteCompanyLogo = async () => {
+  const response = await apiClient.delete("/company/logo");
+
+  return response.data;
+};
+
 const createRecruiter = async (recruiterData) => {
   const response = await apiClient.post("/company/recruiters", recruiterData);
 
@@ -73,6 +79,7 @@ export {
   createCompanyProfile,
   updateCompanyProfile,
   uploadCompanyLogo,
+  deleteCompanyLogo,
   createRecruiter,
   listRecruiters,
   updateRecruiterStatus,

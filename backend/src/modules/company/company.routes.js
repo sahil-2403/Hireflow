@@ -24,6 +24,7 @@ import {
   listRecruiters,
   updateRecruiterStatus,
   uploadCompanyLogo,
+  deleteCompanyLogo,
 } from "./company.controller.js";
 
 const router = express.Router();
@@ -315,5 +316,7 @@ router.patch(
   uploadCompanyLogoFile,
   uploadCompanyLogo,
 );
+
+router.delete("/logo", authenticate, authorize(ROLES.OWNER), deleteCompanyLogo);
 
 export default router;

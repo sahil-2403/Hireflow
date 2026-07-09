@@ -69,6 +69,14 @@ const uploadCompanyLogo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, result.message, result.company));
 });
 
+const deleteCompanyLogo = asyncHandler(async (req, res) => {
+  const result = await companyService.deleteCompanyLogo(req.user.id);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, result.message, result.company));
+});
+
 export {
   createCompany,
   updateCompany,
@@ -77,4 +85,5 @@ export {
   listRecruiters,
   updateRecruiterStatus,
   uploadCompanyLogo,
+  deleteCompanyLogo,
 };

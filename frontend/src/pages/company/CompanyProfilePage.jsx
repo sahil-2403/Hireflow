@@ -10,6 +10,7 @@ import {
   getMyCompany,
   updateCompanyProfile,
   uploadCompanyLogo,
+  deleteCompanyLogo,
 } from "../../api/company.api";
 
 import { companyProfileSchema } from "../../features/companies/company.schemas";
@@ -172,6 +173,8 @@ const CompanyProfilePage = () => {
 
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
+  const [isDeletingLogo, setIsDeletingLogo] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -309,6 +312,34 @@ const CompanyProfilePage = () => {
     }
   };
 
+  const handleDeleteLogo = async () => {
+    const confirmed = window.confirm(
+      "Remove your company logo? Candidates will see your company initial instead.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsDeletingLogo(true);
+      setApiError("");
+      setSuccessMessage("");
+
+      const result = await deleteCompanyLogo();
+
+      setCompany(result.data);
+      setSelectedLogo(null);
+      setSuccessMessage(result.message);
+    } catch (error) {
+      const normalizedError = getApiError(error);
+
+      setApiError(normalizedError.message);
+    } finally {
+      setIsDeletingLogo(false);
+    }
+  };
+
   if (pageStatus === "loading") {
     return (
       <Card>
@@ -429,13 +460,34 @@ const CompanyProfilePage = () => {
                     </div>
 
                     {mode === "edit" && (
-                      <Button
-                        type="button"
-                        disabled={isUploadingLogo || !selectedLogo}
-                        onClick={handleLogoUpload}
-                      >
-                        {isUploadingLogo ? "Uploading..." : "Upload logo"}
-                      </Button>
+                      <div className="flex flex-col gap-3 sm:flex-row">
+                        <Button
+                          type="button"
+                          disabled={
+                            isUploadingLogo || isDeletingLogo || !selectedLogo
+                          }
+                          onClick={handleLogoUpload}
+                        >
+                          {isUploadingLogo
+                            ? "Uploading..."
+                            : company?.logoUrl
+                              ? "Change logo"
+                              : "Upload logo"}
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="danger"
+                          disabled={
+                            isUploadingLogo ||
+                            isDeletingLogo ||
+                            !company?.logoUrl
+                          }
+                          onClick={handleDeleteLogo}
+                        >
+                          {isDeletingLogo ? "Removing..." : "Remove logo"}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
