@@ -7,6 +7,8 @@ import { uploadCompanyLogo as uploadCompanyLogoFile } from "../../shared/middlew
 
 import { ROLES } from "../../config/constants.js";
 
+import companyMemberRouter from "./companyMember.routes.js";
+
 import {
   createCompanySchema,
   updateCompanySchema,
@@ -25,6 +27,8 @@ import {
 } from "./company.controller.js";
 
 const router = express.Router();
+
+router.use("/members", companyMemberRouter);
 
 /**
  * @openapi

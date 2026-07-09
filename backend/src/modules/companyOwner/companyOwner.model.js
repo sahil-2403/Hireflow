@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const recruiterSchema = new mongoose.Schema(
+const companyOwnerSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -14,6 +14,7 @@ const recruiterSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Company",
       required: true,
+      unique: true,
       index: true,
     },
 
@@ -44,28 +45,12 @@ const recruiterSchema = new mongoose.Schema(
       trim: true,
       maxlength: 100,
     },
-
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
   },
   {
     timestamps: true,
   },
 );
 
-recruiterSchema.index({
-  companyId: 1,
-  isActive: 1,
-});
+const CompanyOwner = mongoose.model("CompanyOwner", companyOwnerSchema);
 
-const Recruiter = mongoose.model("Recruiter", recruiterSchema);
-
-export default Recruiter;
+export default CompanyOwner;
