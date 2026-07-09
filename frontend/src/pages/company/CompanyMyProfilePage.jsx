@@ -20,6 +20,8 @@ import isCompanyOwnerProfileMissingError from "../../utils/isCompanyOwnerProfile
 import useAuth from "../../hooks/useAuth";
 
 import ProfileAvatar from "../../components/common/ProfileAvatar";
+import CompanyLogo from "../../components/common/CompanyLogo";
+
 import ProfilePhotoManager from "../../components/account/ProfilePhotoManager";
 
 import Button from "../../components/ui/Button";
@@ -146,6 +148,26 @@ const AccountInfoCard = ({ user, profile }) => {
       </CardHeader>
 
       <CardBody>
+        {profile?.company && (
+          <div className="mb-5 flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <CompanyLogo
+              company={profile.company}
+              size="md"
+              fallbackClassName="bg-slate-900 text-white"
+            />
+
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Company workspace
+              </p>
+
+              <p className="mt-1 truncate text-sm font-black text-slate-950">
+                {profile.company.name}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-3">
           {rows.map((row) => (
             <div

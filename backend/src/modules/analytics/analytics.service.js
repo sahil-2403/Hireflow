@@ -12,7 +12,11 @@ import { JOB_STATUS, APPLICATION_STATUS } from "../../config/constants.js";
 import { getStaffCompany } from "../../shared/utils/companyAccess.js";
 
 const getCompanyOverview = async (userId, role) => {
-  const company = await getStaffCompany(userId, role, "You are not allowed to access company analytics")
+  const company = await getStaffCompany(
+    userId,
+    role,
+    "You are not allowed to access company analytics",
+  );
 
   const [jobSummary, applicationSummary, activeRecruiters, recentApplications] =
     await Promise.all([
@@ -150,6 +154,9 @@ const getCompanyOverview = async (userId, role) => {
     company: {
       id: company._id,
       name: company.name,
+      logoUrl: company.logoUrl ?? null,
+      industry: company.industry,
+      headquarters: company.headquarters,
     },
 
     jobs: jobSummary[0] || {
@@ -174,7 +181,11 @@ const getCompanyOverview = async (userId, role) => {
 };
 
 const getHiringFunnel = async (userId, role) => {
-  const company = await getStaffCompany(userId, role, "You are not allowed to access company analytics")
+  const company = await getStaffCompany(
+    userId,
+    role,
+    "You are not allowed to access company analytics",
+  );
 
   const groupedStatuses = await Application.aggregate([
     {
@@ -220,7 +231,11 @@ const getHiringFunnel = async (userId, role) => {
 };
 
 const getTopJobs = async (userId, role, requestedLimit) => {
-  const company = await getStaffCompany(userId, role, "You are not allowed to access company analytics")
+  const company = await getStaffCompany(
+    userId,
+    role,
+    "You are not allowed to access company analytics",
+  );
 
   const parsedLimit = Number(requestedLimit);
 

@@ -21,7 +21,57 @@ import TopJobsCard from "../../components/company/TopJobsCard";
 import RecentApplicationsCard from "../../components/company/RecentApplicationsCard";
 import CompanySetupRequired from "../../components/company/CompanySetupRequired";
 
+import CompanyLogo from "../../components/common/CompanyLogo";
+
+import { ROLES } from "../../features/auth/auth.constants";
+
+import useAuth from "../../hooks/useAuth";
+
+const CompanyWorkspaceCard = ({ company, canManageCompany = false }) => {
+  if (!company) {
+    return null;
+  }
+
+  return (
+    <Card>
+      <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <CompanyLogo
+            company={company}
+            size="xl"
+            fallbackClassName="bg-blue-600 text-white shadow-sm shadow-blue-200"
+          />
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-blue-600">
+              Workspace
+            </p>
+
+            <h2 className="mt-1 text-2xl font-black text-slate-950">
+              {company.name}
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-600">
+              {company.industry || "Industry not added"}
+              {" · "}
+              {company.headquarters || "Headquarters not added"}
+            </p>
+          </div>
+        </div>
+
+        {canManageCompany && (
+          <Button as={Link} to="/company/profile" variant="secondary">
+            Edit company
+          </Button>
+        )}
+      </CardBody>
+    </Card>
+  );
+};
+
 const CompanyDashboardPage = () => {
+  const { user } = useAuth();
+
   const [overviewState, setOverviewState] = useState({
     status: "loading",
     data: null,
@@ -141,6 +191,10 @@ const CompanyDashboardPage = () => {
   }, []);
 
   const overview = overviewState.data;
+
+  const company = overview?.company;
+
+  const canManageCompany = user?.role === ROLES.OWNER;
 
   const jobs = overview?.jobs ?? {
     totalJobs: 0,
@@ -267,6 +321,11 @@ const CompanyDashboardPage = () => {
 
       {overviewState.status === "success" && (
         <>
+          <CompanyWorkspaceCard
+            company={company}
+            canManageCompany={canManageCompany}
+          />
+
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {metrics.map((metric) => (
               <CompanyMetricCard
