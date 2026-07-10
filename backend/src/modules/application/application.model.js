@@ -26,6 +26,92 @@ const statusHistorySchema = new mongoose.Schema(
   },
 );
 
+const matchSnapshotSchema = new mongoose.Schema(
+  {
+    matchScore: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+    },
+
+    matchLabel: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    confidenceScore: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+    },
+
+    confidenceLevel: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    breakdown: {
+      type: mongoose.Schema.Types.Mixed,
+      default: () => ({}),
+    },
+
+    matchedSkills: {
+      type: [String],
+      default: [],
+    },
+
+    missingSkills: {
+      type: [String],
+      default: [],
+    },
+
+    extraCandidateSkills: {
+      type: [String],
+      default: [],
+    },
+
+    reasons: {
+      type: [String],
+      default: [],
+    },
+
+    warnings: {
+      type: [String],
+      default: [],
+    },
+
+    engineVersion: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    jobSignature: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    candidateSignature: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    calculatedAt: {
+      type: Date,
+      required: true,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
 const applicationSchema = new mongoose.Schema(
   {
     jobId: {
@@ -85,6 +171,12 @@ const applicationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       default: null,
+    },
+
+    matchSnapshot: {
+      type: matchSnapshotSchema,
+      default: null,
+      select: false,
     },
 
     appliedAt: {

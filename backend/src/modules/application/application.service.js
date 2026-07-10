@@ -10,6 +10,8 @@ import { JOB_STATUS, APPLICATION_STATUS } from "../../config/constants.js";
 
 import { getStaffCompany } from "../../shared/utils/companyAccess.js";
 
+import { createApplicationMatchSnapshot } from "./applicationMatch.service.js";
+
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
@@ -95,6 +97,8 @@ const applyToJob = async (candidateUserId, jobId, applicationData) => {
     throw new ApiError(409, "You have already applied to this job");
   }
 
+  const matchSnapshot = createApplicationMatchSnapshot(job, candidate);
+
   try {
     const application = await Application.create({
       jobId: job._id,
@@ -110,10 +114,15 @@ const applyToJob = async (candidateUserId, jobId, applicationData) => {
           changedBy: candidateUserId,
         },
       ],
+      matchSnapshot,
     });
 
+    const applicationResponse = application.toObject();
+
+    delete applicationResponse.matchSnapshot;
+
     return {
-      application,
+      application: applicationResponse,
       message: "Application submitted successfully",
     };
   } catch (error) {
