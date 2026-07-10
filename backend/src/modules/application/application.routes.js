@@ -15,10 +15,12 @@ import {
   applyToJob,
   listMyApplications,
   listManagedApplications,
+  listManagedApplicationJobs,
+  listManagedJobApplications,
+  getManagedJobApplicationDetails,
   updateApplicationStatus,
   viewManagedApplicationResume,
 } from "./application.controller.js";
-
 const router = express.Router();
 
 /**
@@ -141,6 +143,27 @@ router.get(
   authenticate,
   authorize(ROLES.OWNER, ROLES.RECRUITER),
   listManagedApplications,
+);
+
+router.get(
+  "/manage/jobs",
+  authenticate,
+  authorize(ROLES.OWNER, ROLES.RECRUITER),
+  listManagedApplicationJobs,
+);
+
+router.get(
+  "/manage/jobs/:jobId/applications",
+  authenticate,
+  authorize(ROLES.OWNER, ROLES.RECRUITER),
+  listManagedJobApplications,
+);
+
+router.get(
+  "/manage/jobs/:jobId/applications/:applicationId",
+  authenticate,
+  authorize(ROLES.OWNER, ROLES.RECRUITER),
+  getManagedJobApplicationDetails,
 );
 
 router.get(

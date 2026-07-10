@@ -41,6 +41,50 @@ const listManagedApplications = asyncHandler(async (req, res) => {
     );
 });
 
+const listManagedApplicationJobs = asyncHandler(async (req, res) => {
+  const result = await applicationService.listManagedApplicationJobs(
+    req.user.id,
+    req.user.role,
+    req.query,
+  );
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, "Application jobs fetched successfully", result),
+    );
+});
+
+const listManagedJobApplications = asyncHandler(async (req, res) => {
+  const result = await applicationService.listManagedJobApplications(
+    req.user.id,
+    req.user.role,
+    req.params.jobId,
+    req.query,
+  );
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, "Job applications fetched successfully", result),
+    );
+});
+
+const getManagedJobApplicationDetails = asyncHandler(async (req, res) => {
+  const result = await applicationService.getManagedJobApplicationDetails(
+    req.user.id,
+    req.user.role,
+    req.params.jobId,
+    req.params.applicationId,
+  );
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, "Application details fetched successfully", result),
+    );
+});
+
 const updateApplicationStatus = asyncHandler(async (req, res) => {
   const result = await applicationService.updateApplicationStatus(
     req.user.id,
@@ -84,6 +128,9 @@ export {
   applyToJob,
   listMyApplications,
   listManagedApplications,
+  listManagedApplicationJobs,
+  listManagedJobApplications,
+  getManagedJobApplicationDetails,
   updateApplicationStatus,
   viewManagedApplicationResume,
 };
