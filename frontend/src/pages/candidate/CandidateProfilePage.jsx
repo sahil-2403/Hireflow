@@ -13,7 +13,11 @@ import {
 
 import { candidateProfileSchema } from "../../features/candidates/candidate.schemas";
 
-import { EXPERIENCE_LEVELS } from "../../features/candidates/candidate.constants";
+import {
+  EMPLOYMENT_TYPES,
+  EXPERIENCE_LEVELS,
+  WORKPLACE_TYPES,
+} from "../../features/candidates/candidate.constants";
 
 import getApiError from "../../utils/getApiError";
 
@@ -34,6 +38,17 @@ import ProfileAvatar from "../../components/common/ProfileAvatar";
 
 import ProfilePhotoManager from "../../components/account/ProfilePhotoManager";
 
+const convertCommaSeparatedTextToArray = (value) => {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
 const getDefaultValues = (profile = null) => {
   return {
     firstName: profile?.firstName ?? "",
@@ -44,6 +59,18 @@ const getDefaultValues = (profile = null) => {
     skillsText: Array.isArray(profile?.skills) ? profile.skills.join(", ") : "",
     experienceLevel: profile?.experienceLevel ?? "",
     location: profile?.location ?? "",
+    targetJobTitlesText: Array.isArray(profile?.targetJobTitles)
+      ? profile.targetJobTitles.join(", ")
+      : "",
+    preferredLocationsText: Array.isArray(profile?.preferredLocations)
+      ? profile.preferredLocations.join(", ")
+      : "",
+    preferredWorkplaceTypes: Array.isArray(profile?.preferredWorkplaceTypes)
+      ? profile.preferredWorkplaceTypes
+      : [],
+    preferredEmploymentTypes: Array.isArray(profile?.preferredEmploymentTypes)
+      ? profile.preferredEmploymentTypes
+      : [],
     linkedinUrl: profile?.linkedinUrl ?? "",
     githubUrl: profile?.githubUrl ?? "",
     portfolioUrl: profile?.portfolioUrl ?? "",
@@ -51,12 +78,13 @@ const getDefaultValues = (profile = null) => {
 };
 
 const convertFormDataToPayload = (formData) => {
-  const skills = formData.skillsText
-    ? formData.skillsText
-        .split(",")
-        .map((skill) => skill.trim())
-        .filter(Boolean)
-    : [];
+  const skills = convertCommaSeparatedTextToArray(formData.skillsText);
+  const targetJobTitles = convertCommaSeparatedTextToArray(
+    formData.targetJobTitlesText,
+  );
+  const preferredLocations = convertCommaSeparatedTextToArray(
+    formData.preferredLocationsText,
+  );
 
   return {
     firstName: formData.firstName,
@@ -67,9 +95,44 @@ const convertFormDataToPayload = (formData) => {
     skills,
     experienceLevel: formData.experienceLevel,
     location: formData.location,
+    targetJobTitles,
+    preferredLocations,
+    preferredWorkplaceTypes: formData.preferredWorkplaceTypes ?? [],
+    preferredEmploymentTypes: formData.preferredEmploymentTypes ?? [],
     linkedinUrl: formData.linkedinUrl || null,
     githubUrl: formData.githubUrl || null,
     portfolioUrl: formData.portfolioUrl || null,
+  };
+};
+
+const getRecommendationAccuracy = (values) => {
+  const completedPreferences = [
+    Boolean(values.targetJobTitlesText?.trim()),
+    Boolean(values.preferredLocationsText?.trim()),
+    values.preferredWorkplaceTypes?.length > 0,
+    values.preferredEmploymentTypes?.length > 0,
+  ].filter(Boolean).length;
+
+  if (completedPreferences >= 3) {
+    return {
+      label: "Strong",
+      description:
+        "Your preferences are detailed enough for more accurate job matches.",
+    };
+  }
+
+  if (completedPreferences >= 1) {
+    return {
+      label: "Good",
+      description:
+        "Add more preferences to improve your future job recommendations.",
+    };
+  }
+
+  return {
+    label: "Basic",
+    description:
+      "Add job preferences to help HireFlow recommend better matching jobs.",
   };
 };
 
@@ -125,7 +188,35 @@ const getTextareaClassName = (hasError = false) => {
   ].join(" ");
 };
 
-const ProfilePreviewCard = ({ values, completion, user, updateUser }) => {
+const CheckboxGroup = ({ options, register, name }) => {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {options.map((option) => (
+        <label
+          key={option.value}
+          className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
+        >
+          <input
+            type="checkbox"
+            value={option.value}
+            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            {...register(name)}
+          />
+
+          <span>{option.label}</span>
+        </label>
+      ))}
+    </div>
+  );
+};
+
+const ProfilePreviewCard = ({
+  values,
+  completion,
+  recommendationAccuracy,
+  user,
+  updateUser,
+}) => {
   const fullName =
     [values.firstName, values.lastName].filter(Boolean).join(" ") ||
     "Your name";
@@ -201,6 +292,35 @@ const ProfilePreviewCard = ({ values, completion, user, updateUser }) => {
         name={fullName}
         description="Upload a clear photo so recruiters can recognize your profile."
       />
+
+      <Card>
+        <CardHeader>
+          <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
+            Matching
+          </p>
+
+          <h2 className="mt-2 text-xl font-black text-slate-950">
+            Recommendation accuracy
+          </h2>
+        </CardHeader>
+
+        <CardBody>
+          <div className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-100">
+            <p className="text-sm font-black text-emerald-700">
+              {recommendationAccuracy.label} accuracy
+            </p>
+
+            <p className="mt-2 text-sm leading-6 text-emerald-800">
+              {recommendationAccuracy.description}
+            </p>
+          </div>
+
+          <p className="mt-4 text-xs leading-5 text-slate-500">
+            Job preferences are optional, but completing them will help future
+            match scores and recommendations become more accurate.
+          </p>
+        </CardBody>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -311,6 +431,10 @@ const CandidateProfilePage = () => {
     return getProfileCompletion(watchedValues);
   }, [watchedValues]);
 
+  const recommendationAccuracy = useMemo(() => {
+    return getRecommendationAccuracy(watchedValues);
+  }, [watchedValues]);
+
   useEffect(() => {
     let shouldIgnore = false;
 
@@ -412,6 +536,7 @@ const CandidateProfilePage = () => {
         <ProfilePreviewCard
           values={watchedValues}
           completion={completion}
+          recommendationAccuracy={recommendationAccuracy}
           user={user}
           updateUser={updateUser}
         />
@@ -585,6 +710,92 @@ const CandidateProfilePage = () => {
                     {...register("summary")}
                   />
                 </FormField>
+              </div>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                Job preferences
+              </p>
+
+              <h2 className="mt-1 text-xl font-black text-slate-950">
+                Roles you are looking for
+              </h2>
+
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                These optional details will help HireFlow recommend better jobs
+                and calculate more accurate match scores.
+              </p>
+            </CardHeader>
+
+            <CardBody>
+              <div className="grid gap-5">
+                <FormField
+                  label="Target job titles"
+                  htmlFor="targetJobTitlesText"
+                  error={errors.targetJobTitlesText?.message}
+                  hint="Optional. Separate titles with commas."
+                >
+                  <input
+                    id="targetJobTitlesText"
+                    type="text"
+                    placeholder="Frontend Developer, MERN Stack Developer, React Developer"
+                    className={getInputClassName(
+                      Boolean(errors.targetJobTitlesText),
+                    )}
+                    {...register("targetJobTitlesText")}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Preferred locations"
+                  htmlFor="preferredLocationsText"
+                  error={errors.preferredLocationsText?.message}
+                  hint="Optional. Add cities or Remote, separated by commas."
+                >
+                  <input
+                    id="preferredLocationsText"
+                    type="text"
+                    placeholder="Pune, Mumbai, Remote"
+                    className={getInputClassName(
+                      Boolean(errors.preferredLocationsText),
+                    )}
+                    {...register("preferredLocationsText")}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Preferred workplace types"
+                  htmlFor="preferredWorkplaceTypes"
+                  error={errors.preferredWorkplaceTypes?.message}
+                  hint="Optional. Choose all that apply."
+                >
+                  <CheckboxGroup
+                    options={WORKPLACE_TYPES}
+                    register={register}
+                    name="preferredWorkplaceTypes"
+                  />
+                </FormField>
+
+                <FormField
+                  label="Preferred employment types"
+                  htmlFor="preferredEmploymentTypes"
+                  error={errors.preferredEmploymentTypes?.message}
+                  hint="Optional. Choose all that apply."
+                >
+                  <CheckboxGroup
+                    options={EMPLOYMENT_TYPES}
+                    register={register}
+                    name="preferredEmploymentTypes"
+                  />
+                </FormField>
+
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+                  Complete your job preferences to get more accurate future job
+                  recommendations and match scores.
+                </div>
               </div>
             </CardBody>
           </Card>

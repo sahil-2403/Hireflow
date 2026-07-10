@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import { EXPERIENCE_LEVEL } from "../../config/constants.js";
+import {
+  EMPLOYMENT_TYPE,
+  EXPERIENCE_LEVEL,
+  WORKPLACE_TYPE,
+} from "../../config/constants.js";
 
 const optionalText = (maximum) =>
   z
@@ -20,6 +24,22 @@ const skillsSchema = z
     ...new Set(values.map((value) => value.toLowerCase())),
   ]);
 
+const optionalTextArray = (maximumItems, maximumLength = 100) =>
+  z
+    .array(z.string().trim().min(1).max(maximumLength))
+    .max(maximumItems)
+    .default([])
+    .transform((values) => [
+      ...new Set(values.map((value) => value.toLowerCase())),
+    ]);
+
+const optionalEnumArray = (allowedValues, maximumItems) =>
+  z
+    .array(z.enum(allowedValues))
+    .max(maximumItems)
+    .default([])
+    .transform((values) => [...new Set(values)]);
+
 const candidateFields = {
   firstName: z.string().trim().min(1).max(50),
   lastName: z.string().trim().min(1).max(50),
@@ -33,6 +53,20 @@ const candidateFields = {
   experienceLevel: z.enum(Object.values(EXPERIENCE_LEVEL)),
 
   location: z.string().trim().min(2, "Location is required").max(200),
+
+  targetJobTitles: optionalTextArray(10, 100),
+
+  preferredLocations: optionalTextArray(10, 100),
+
+  preferredWorkplaceTypes: optionalEnumArray(
+    Object.values(WORKPLACE_TYPE),
+    Object.values(WORKPLACE_TYPE).length,
+  ),
+
+  preferredEmploymentTypes: optionalEnumArray(
+    Object.values(EMPLOYMENT_TYPE),
+    Object.values(EMPLOYMENT_TYPE).length,
+  ),
 
   linkedinUrl: optionalUrl,
   githubUrl: optionalUrl,

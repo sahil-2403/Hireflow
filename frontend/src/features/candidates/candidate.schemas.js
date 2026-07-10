@@ -66,6 +66,28 @@ const candidateProfileSchema = z.object({
     .min(2, "Location is required")
     .max(200, "Location cannot exceed 200 characters"),
 
+  targetJobTitlesText: z
+    .string()
+    .trim()
+    .max(500, "Target job titles cannot exceed 500 characters")
+    .optional(),
+
+  preferredLocationsText: z
+    .string()
+    .trim()
+    .max(500, "Preferred locations cannot exceed 500 characters")
+    .optional(),
+
+  preferredWorkplaceTypes: z
+    .array(z.enum(["onsite", "remote", "hybrid"]))
+    .optional()
+    .default([]),
+
+  preferredEmploymentTypes: z
+    .array(z.enum(["full-time", "part-time", "contract", "internship"]))
+    .optional()
+    .default([]),
+
   linkedinUrl: optionalUrl,
   githubUrl: optionalUrl,
   portfolioUrl: optionalUrl,

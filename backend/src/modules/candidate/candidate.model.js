@@ -66,6 +66,28 @@ const candidateSchema = new mongoose.Schema(
       maxlength: 200,
     },
 
+    targetJobTitles: {
+      type: [String],
+      default: [],
+      index: true,
+    },
+
+    preferredLocations: {
+      type: [String],
+      default: [],
+      index: true,
+    },
+
+    preferredWorkplaceTypes: {
+      type: [String],
+      default: [],
+    },
+
+    preferredEmploymentTypes: {
+      type: [String],
+      default: [],
+    },
+
     resumeUrl: {
       type: String,
       default: null,
@@ -111,6 +133,8 @@ candidateSchema.index({
   lastName: "text",
   headline: "text",
   skills: "text",
+  targetJobTitles: "text",
+  preferredLocations: "text",
 });
 
 const Candidate = mongoose.model("Candidate", candidateSchema);
