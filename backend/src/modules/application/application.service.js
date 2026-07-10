@@ -10,11 +10,67 @@ import { JOB_STATUS, APPLICATION_STATUS } from "../../config/constants.js";
 
 import { getStaffCompany } from "../../shared/utils/companyAccess.js";
 
-import { createApplicationMatchSnapshot } from "./applicationMatch.service.js";
+import {
+  buildApplicationMatchResponse,
+  createApplicationMatchSnapshot,
+  shouldRefreshApplicationMatchSnapshot,
+} from "./applicationMatch.service.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
+
+const JOB_MATCH_DEPENDENCY_FIELDS = [
+  "title",
+  "description",
+  "requirements",
+  "skills",
+  "location",
+  "employmentType",
+  "workplaceType",
+  "experienceLevel",
+  "status",
+].join(" ");
+
+const CANDIDATE_MATCH_DEPENDENCY_FIELDS = [
+  "headline",
+  "summary",
+  "skills",
+  "experienceLevel",
+  "location",
+  "resumeUrl",
+  "linkedinUrl",
+  "githubUrl",
+  "portfolioUrl",
+  "targetJobTitles",
+  "preferredLocations",
+  "preferredWorkplaceTypes",
+  "preferredEmploymentTypes",
+].join(" ");
+
+const MANAGED_APPLICATION_POPULATE_OPTIONS = [
+  {
+    path: "jobId",
+    select: "title status",
+  },
+  {
+    path: "candidateId",
+    select:
+      "firstName lastName headline skills experienceLevel location resumeUrl",
+  },
+  {
+    path: "candidateUserId",
+    select: "username email profilePhotoUrl",
+  },
+  {
+    path: "reviewedBy",
+    select: "username email role",
+  },
+  {
+    path: "statusHistory.changedBy",
+    select: "username email role",
+  },
+];
 
 const STATUS_TRANSITIONS = {
   [APPLICATION_STATUS.APPLIED]: [
@@ -60,6 +116,105 @@ const normalizePagination = (query) => {
     limit,
     skip: (page - 1) * limit,
   };
+};
+
+const getIdKey = (value) => {
+  const id = value?._id ?? value;
+
+  return id ? String(id) : null;
+};
+
+const getUniqueReferenceIds = (applications, fieldName) => {
+  return [
+    ...new Set(
+      applications
+        .map((application) => getIdKey(application[fieldName]))
+        .filter(Boolean),
+    ),
+  ];
+};
+
+const buildDocumentMap = (documents) => {
+  return new Map(documents.map((document) => [String(document._id), document]));
+};
+
+const attachManagedApplicationMatches = async (applications) => {
+  if (applications.length === 0) {
+    return applications;
+  }
+
+  const jobIds = getUniqueReferenceIds(applications, "jobId");
+  const candidateIds = getUniqueReferenceIds(applications, "candidateId");
+
+  const [jobs, candidates] = await Promise.all([
+    jobIds.length > 0
+      ? Job.find({
+          _id: { $in: jobIds },
+        })
+          .select(JOB_MATCH_DEPENDENCY_FIELDS)
+          .lean()
+      : [],
+
+    candidateIds.length > 0
+      ? Candidate.find({
+          _id: { $in: candidateIds },
+        })
+          .select(CANDIDATE_MATCH_DEPENDENCY_FIELDS)
+          .lean()
+      : [],
+  ]);
+
+  const jobsById = buildDocumentMap(jobs);
+  const candidatesById = buildDocumentMap(candidates);
+  const snapshotUpdates = [];
+
+  const applicationsWithMatches = applications.map((application) => {
+    const job = jobsById.get(getIdKey(application.jobId));
+    const candidate = candidatesById.get(getIdKey(application.candidateId));
+
+    let snapshot = application.matchSnapshot ?? null;
+
+    if (
+      job &&
+      candidate &&
+      shouldRefreshApplicationMatchSnapshot(snapshot, job, candidate)
+    ) {
+      snapshot = createApplicationMatchSnapshot(job, candidate);
+
+      snapshotUpdates.push({
+        updateOne: {
+          filter: {
+            _id: application._id,
+          },
+          update: {
+            $set: {
+              matchSnapshot: snapshot,
+            },
+          },
+        },
+      });
+    }
+
+    const applicationResponse = {
+      ...application,
+      match: buildApplicationMatchResponse(snapshot),
+    };
+
+    delete applicationResponse.matchSnapshot;
+
+    return applicationResponse;
+  });
+
+  if (snapshotUpdates.length > 0) {
+    await Application.bulkWrite(snapshotUpdates, {
+      ordered: false,
+    });
+  }
+
+  return Application.populate(
+    applicationsWithMatches,
+    MANAGED_APPLICATION_POPULATE_OPTIONS,
+  );
 };
 
 const applyToJob = async (candidateUserId, jobId, applicationData) => {
@@ -216,27 +371,7 @@ const listManagedApplications = async (userId, role, query) => {
 
   const [applications, total] = await Promise.all([
     Application.find(filters)
-      .populate({
-        path: "jobId",
-        select: "title status",
-      })
-      .populate({
-        path: "candidateId",
-        select:
-          "firstName lastName headline skills experienceLevel location resumeUrl",
-      })
-      .populate({
-        path: "candidateUserId",
-        select: "username email profilePhotoUrl",
-      })
-      .populate({
-        path: "reviewedBy",
-        select: "username email role",
-      })
-      .populate({
-        path: "statusHistory.changedBy",
-        select: "username email role",
-      })
+      .select("+matchSnapshot")
       .sort({
         appliedAt: sortOrder,
       })
@@ -247,8 +382,11 @@ const listManagedApplications = async (userId, role, query) => {
     Application.countDocuments(filters),
   ]);
 
+  const applicationsWithMatches =
+    await attachManagedApplicationMatches(applications);
+
   return {
-    applications,
+    applications: applicationsWithMatches,
     pagination: {
       page,
       limit,
