@@ -435,6 +435,15 @@ const CompanyJobsPage = () => {
                 <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
                   <Button
                     as={Link}
+                    to={`/company/applications/${job._id}`}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    View applications
+                  </Button>
+
+                  <Button
+                    as={Link}
                     to={`/company/jobs/${job._id}/edit`}
                     variant="secondary"
                     size="sm"

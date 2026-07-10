@@ -25,6 +25,33 @@ const listManagedApplications = async (params = {}) => {
   return response.data;
 };
 
+const listManagedApplicationJobs = async (params = {}) => {
+  const response = await apiClient.get("/applications/manage/jobs", {
+    params,
+  });
+
+  return response.data;
+};
+
+const listManagedJobApplications = async (jobId, params = {}) => {
+  const response = await apiClient.get(
+    `/applications/manage/jobs/${jobId}/applications`,
+    {
+      params,
+    },
+  );
+
+  return response.data;
+};
+
+const getManagedJobApplicationDetails = async (jobId, applicationId) => {
+  const response = await apiClient.get(
+    `/applications/manage/jobs/${jobId}/applications/${applicationId}`,
+  );
+
+  return response.data;
+};
+
 const updateManagedApplicationStatus = async (applicationId, status) => {
   const response = await apiClient.patch(
     `/applications/${applicationId}/status`,
@@ -51,6 +78,9 @@ export {
   listMyApplications,
   applyToJob,
   listManagedApplications,
+  listManagedApplicationJobs,
+  listManagedJobApplications,
+  getManagedJobApplicationDetails,
   updateManagedApplicationStatus,
   viewManagedApplicationResume,
 };

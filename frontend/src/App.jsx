@@ -29,6 +29,8 @@ import CompanyDashboardPage from "./pages/company/CompanyDashboardPage";
 import CompanyJobsPage from "./pages/company/CompanyJobsPage";
 import CompanyJobFormPage from "./pages/company/CompanyJobFormPage";
 import CompanyApplicationsPage from "./pages/company/CompanyApplicationsPage";
+import CompanyJobApplicationsPage from "./pages/company/CompanyJobApplicationsPage";
+import CompanyApplicationDetailsPage from "./pages/company/CompanyApplicationDetailsPage";
 import CompanyMyProfilePage from "./pages/company/CompanyMyProfilePage";
 import CompanyProfilePage from "./pages/company/CompanyProfilePage";
 import CompanyRecruitersPage from "./pages/company/CompanyRecruitersPage";
@@ -111,6 +113,16 @@ const App = () => {
             <Route
               path="/company/applications"
               element={<CompanyApplicationsPage />}
+            />
+
+            <Route
+              path="/company/applications/:jobId"
+              element={<CompanyJobApplicationsPage />}
+            />
+
+            <Route
+              path="/company/applications/:jobId/:applicationId"
+              element={<CompanyApplicationDetailsPage />}
             />
 
             <Route element={<RoleRoute allowedRoles={[ROLES.OWNER]} />}>
