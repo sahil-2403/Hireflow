@@ -9,47 +9,21 @@ import { getRecommendedJobMatch } from "../../api/recommendation.api";
 import { ROLES } from "../../features/auth/auth.constants";
 
 import getApiError from "../../utils/getApiError";
+import formatSalary from "../../utils/formatSalary";
 
 import useAuth from "../../hooks/useAuth";
 
 import Button from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
+import Alert from "../../components/ui/Alert";
+import Pill from "../../components/ui/Pill";
+import TextareaInput from "../../components/ui/TextareaInput";
 
 import MatchScoreBadge from "../../components/application/MatchScoreBadge";
 import SkillMatchList from "../../components/application/SkillMatchList";
 
 import CompanyLogo from "../../components/common/CompanyLogo";
-
-const formatSalary = (job) => {
-  if (!job?.isSalaryVisible) {
-    return "Salary not disclosed";
-  }
-
-  if (job.salaryMin == null && job.salaryMax == null) {
-    return "Salary not disclosed";
-  }
-
-  const currency = job.salaryCurrency || "INR";
-
-  if (job.salaryMin != null && job.salaryMax != null) {
-    return `${currency} ${job.salaryMin} - ${job.salaryMax}`;
-  }
-
-  if (job.salaryMin != null) {
-    return `${currency} ${job.salaryMin}+`;
-  }
-
-  return `Up to ${currency} ${job.salaryMax}`;
-};
-
-const DetailPill = ({ children }) => {
-  return (
-    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold capitalize text-slate-700">
-      {children}
-    </span>
-  );
-};
 
 const SectionList = ({ items }) => {
   return (
@@ -87,14 +61,7 @@ const CandidateMatchCard = ({ status, matchData, errorMessage }) => {
           <p className="text-sm text-slate-600">Calculating match...</p>
         )}
 
-        {status === "error" && (
-          <div
-            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            role="alert"
-          >
-            {errorMessage}
-          </div>
-        )}
+        {status === "error" && <Alert variant="error">{errorMessage}</Alert>}
 
         {status === "success" && match && (
           <div className="grid gap-5">
@@ -355,12 +322,18 @@ const JobDetailsPage = () => {
                 </h1>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <DetailPill>
+                  <Pill variant="slate" className="ring-0">
                     📍 {job.location || "Location unavailable"}
-                  </DetailPill>
-                  <DetailPill>🏢 {job.workplaceType}</DetailPill>
-                  <DetailPill>💼 {job.employmentType}</DetailPill>
-                  <DetailPill>⭐ {job.experienceLevel}</DetailPill>
+                  </Pill>
+                  <Pill variant="slate" className="ring-0">
+                    🏢 {job.workplaceType}
+                  </Pill>
+                  <Pill variant="slate" className="ring-0">
+                    💼 {job.employmentType}
+                  </Pill>
+                  <Pill variant="slate" className="ring-0">
+                    ⭐ {job.experienceLevel}
+                  </Pill>
                 </div>
               </div>
             </div>
@@ -529,46 +502,33 @@ const JobDetailsPage = () => {
               )}
 
               {isCompanyUser && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+                <Alert variant="warning">
                   Company users cannot apply to jobs. Login as a candidate to
                   apply.
-                </div>
+                </Alert>
               )}
 
               {canApply && (
                 <form onSubmit={handleApply}>
                   {applyMessage && (
-                    <div
-                      className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-                      role="status"
-                    >
+                    <Alert variant="success" className="mb-4">
                       {applyMessage}
-                    </div>
+                    </Alert>
                   )}
 
                   {applyError && (
-                    <div
-                      className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                      role="alert"
-                    >
+                    <Alert variant="error" className="mb-4">
                       {applyError}
-                    </div>
+                    </Alert>
                   )}
 
-                  <label
-                    htmlFor="coverLetter"
-                    className="mb-2 block text-sm font-bold text-slate-700"
-                  >
-                    Cover letter
-                  </label>
-
-                  <textarea
+                  <TextareaInput
                     id="coverLetter"
+                    label="Cover letter"
                     rows={7}
                     value={coverLetter}
                     onChange={(event) => setCoverLetter(event.target.value)}
                     placeholder="Optional cover letter..."
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
                   />
 
                   <p className="mt-1 text-xs text-slate-500">

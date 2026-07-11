@@ -6,12 +6,24 @@ import { listPublicJobs } from "../../api/job.api";
 import { listRecommendedJobs } from "../../api/recommendation.api";
 
 import getApiError from "../../utils/getApiError";
+import formatSalary from "../../utils/formatSalary";
+import { formatRelativePostedDate } from "../../utils/formatDate";
+import {
+  createSortValue,
+  getOptionLabel,
+  getSortOptionByFields,
+  getValidOptionValue,
+} from "../../utils/options";
 
 import Button from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
-import FormField from "../../components/ui/FormField";
 import PageHero from "../../components/ui/PageHero";
+import FilterChips from "../../components/ui/FilterChips";
+import Pill from "../../components/ui/Pill";
+import SelectInput from "../../components/ui/SelectInput";
+import TextInput from "../../components/ui/TextInput";
+
 import CompanyLogo from "../../components/common/CompanyLogo";
 
 import MatchScoreBadge from "../../components/application/MatchScoreBadge";
@@ -142,33 +154,15 @@ const DEFAULT_FILTERS = {
   recommended: false,
 };
 
-const getInputClassName = () => {
-  return [
-    "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition",
-    "placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50",
-  ].join(" ");
-};
-
-const getSelectClassName = () => {
-  return [
-    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none transition",
-    "focus:border-blue-500 focus:ring-4 focus:ring-blue-50",
-  ].join(" ");
-};
-
-const getValidOptionValue = (options, value) => {
-  const isValid = options.some((option) => option.value === value);
-
-  return isValid ? value : "";
-};
-
 const getSortOptionValue = (filters) => {
-  const sortOption = SORT_OPTIONS.find((option) => {
-    return option.sortBy === filters.sortBy && option.order === filters.order;
-  });
+  const fallbackValue = createSortValue(
+    DEFAULT_FILTERS.sortBy,
+    DEFAULT_FILTERS.order,
+  );
 
   return (
-    sortOption?.value || DEFAULT_FILTERS.sortBy + ":" + DEFAULT_FILTERS.order
+    getSortOptionByFields(SORT_OPTIONS, filters.sortBy, filters.order)?.value ||
+    fallbackValue
   );
 };
 
@@ -245,70 +239,15 @@ const createSearchParamsFromFilters = (filters, page = 1) => {
   return params;
 };
 
-const formatSalary = (job) => {
-  if (!job.isSalaryVisible) {
-    return "Salary not disclosed";
-  }
-
-  if (job.salaryMin == null && job.salaryMax == null) {
-    return "Salary not disclosed";
-  }
-
-  const currency = job.salaryCurrency || "INR";
-
-  if (job.salaryMin != null && job.salaryMax != null) {
-    return `${currency} ${job.salaryMin} - ${job.salaryMax}`;
-  }
-
-  if (job.salaryMin != null) {
-    return `${currency} ${job.salaryMin}+`;
-  }
-
-  return `Up to ${currency} ${job.salaryMax}`;
-};
-
 const getJobId = (job) => {
   return job._id || job.id;
 };
 
-const getPostedLabel = (dateValue) => {
-  if (!dateValue) {
-    return "Recently posted";
-  }
-
-  const createdAt = new Date(dateValue);
-  const now = new Date();
-
-  const diffInMs = now.getTime() - createdAt.getTime();
-  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-  if (diffInDays <= 0) {
-    return "Posted today";
-  }
-
-  if (diffInDays === 1) {
-    return "Posted yesterday";
-  }
-
-  if (diffInDays < 7) {
-    return `Posted ${diffInDays} days ago`;
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-  }).format(createdAt);
-};
-
-const getOptionLabel = (options, value) => {
-  return options.find((option) => option.value === value)?.label || value;
-};
-
 const getSortLabel = (filters) => {
-  const sortOption = SORT_OPTIONS.find((option) => {
-    return option.sortBy === filters.sortBy && option.order === filters.order;
-  });
-
-  return sortOption?.label || "Newest first";
+  return (
+    getSortOptionByFields(SORT_OPTIONS, filters.sortBy, filters.order)?.label ||
+    "Newest first"
+  );
 };
 
 const getActiveFilterChips = (filters) => {
@@ -366,45 +305,6 @@ const getActiveFilterChips = (filters) => {
   return chips;
 };
 
-const FilterSelect = ({ id, label, name, value, onChange, options }) => {
-  return (
-    <FormField label={label} htmlFor={id}>
-      <select
-        id={id}
-        name={name}
-        value={value}
-        onChange={onChange}
-        className={getSelectClassName()}
-      >
-        {options.map((option) => (
-          <option key={option.label} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </FormField>
-  );
-};
-
-const JobMetaPill = ({ children }) => {
-  return (
-    <span className="rounded-full bg-slate-100 px-3 py-1 capitalize">
-      {children}
-    </span>
-  );
-};
-
-const SkillPill = ({ children, variant }) => {
-  const className =
-    variant === "blue"
-      ? "rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100"
-      : variant === "green"
-        ? "rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-green-100"
-        : "rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600";
-
-  return <span className={className}>{children}</span>;
-};
-
 const JobCard = ({ job, showMatch = false }) => {
   const jobId = getJobId(job);
 
@@ -442,18 +342,18 @@ const JobCard = ({ job, showMatch = false }) => {
               </p>
 
               <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                <JobMetaPill>
+                <Pill variant="slate" className="ring-0">
                   📍 {job.location || "Location unavailable"}
-                </JobMetaPill>
-                <JobMetaPill>
+                </Pill>
+                <Pill variant="slate" className="ring-0">
                   💼 {job.employmentType || "Employment unavailable"}
-                </JobMetaPill>
-                <JobMetaPill>
+                </Pill>
+                <Pill variant="slate" className="ring-0">
                   🏢 {job.workplaceType || "Workplace unavailable"}
-                </JobMetaPill>
-                <JobMetaPill>
+                </Pill>
+                <Pill variant="slate" className="ring-0">
                   ⭐ {job.experienceLevel || "Level unavailable"}
-                </JobMetaPill>
+                </Pill>
               </div>
 
               <p className="mt-4 text-sm font-black text-slate-900">
@@ -463,13 +363,13 @@ const JobCard = ({ job, showMatch = false }) => {
               {job.skills?.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {job.skills.slice(0, 6).map((skill) => (
-                    <SkillPill key={skill} variant="blue">
+                    <Pill key={skill} variant="blue">
                       {skill}
-                    </SkillPill>
+                    </Pill>
                   ))}
 
                   {job.skills.length > 6 && (
-                    <SkillPill>+{job.skills.length - 6}</SkillPill>
+                    <Pill>+{job.skills.length - 6}</Pill>
                   )}
                 </div>
               )}
@@ -482,15 +382,13 @@ const JobCard = ({ job, showMatch = false }) => {
 
                   <div className="mt-2 flex flex-wrap gap-2">
                     {job.match.matchedSkills.slice(0, 4).map((skill) => (
-                      <SkillPill key={skill} variant="green">
+                      <Pill key={skill} variant="green">
                         {skill}
-                      </SkillPill>
+                      </Pill>
                     ))}
 
                     {job.match.matchedSkills.length > 4 && (
-                      <SkillPill>
-                        +{job.match.matchedSkills.length - 4}
-                      </SkillPill>
+                      <Pill>+{job.match.matchedSkills.length - 4}</Pill>
                     )}
                   </div>
                 </div>
@@ -500,7 +398,7 @@ const JobCard = ({ job, showMatch = false }) => {
 
           <div className="flex shrink-0 flex-col gap-3 lg:items-end">
             <p className="text-xs font-semibold text-slate-500">
-              {getPostedLabel(job.createdAt)}
+              {formatRelativePostedDate(job.createdAt)}
             </p>
 
             <Button as={Link} to={`/jobs/${jobId}`}>
@@ -683,27 +581,23 @@ const JobsSearchControls = ({
       <CardBody>
         <form onSubmit={handleSearchSubmit}>
           <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr_auto_auto] lg:items-end">
-            <FormField label="What job are you looking for?" htmlFor="search">
-              <input
-                id="search"
-                type="search"
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Frontend Developer, React, Node.js"
-                className={getInputClassName()}
-              />
-            </FormField>
+            <TextInput
+              id="search"
+              type="search"
+              label="What job are you looking for?"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Frontend Developer, React, Node.js"
+            />
 
-            <FormField label="Location" htmlFor="location">
-              <input
-                id="location"
-                type="search"
-                value={locationInput}
-                onChange={(event) => setLocationInput(event.target.value)}
-                placeholder="Pune, Mumbai, Remote"
-                className={getInputClassName()}
-              />
-            </FormField>
+            <TextInput
+              id="location"
+              type="search"
+              label="Location"
+              value={locationInput}
+              onChange={(event) => setLocationInput(event.target.value)}
+              placeholder="Pune, Mumbai, Remote"
+            />
 
             <Button type="submit" size="lg">
               Search
@@ -728,7 +622,7 @@ const JobsSearchControls = ({
         {isFiltersOpen && (
           <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <FilterSelect
+              <SelectInput
                 id="employmentType"
                 label="Employment"
                 name="employmentType"
@@ -737,7 +631,7 @@ const JobsSearchControls = ({
                 options={EMPLOYMENT_TYPES}
               />
 
-              <FilterSelect
+              <SelectInput
                 id="workplaceType"
                 label="Workplace"
                 name="workplaceType"
@@ -746,7 +640,7 @@ const JobsSearchControls = ({
                 options={WORKPLACE_TYPES}
               />
 
-              <FilterSelect
+              <SelectInput
                 id="experienceLevel"
                 label="Experience"
                 name="experienceLevel"
@@ -755,7 +649,7 @@ const JobsSearchControls = ({
                 options={EXPERIENCE_LEVELS}
               />
 
-              <FilterSelect
+              <SelectInput
                 id="sort"
                 label="Sort"
                 name="sort"
@@ -781,32 +675,12 @@ const JobsSearchControls = ({
           </div>
         )}
 
-        {activeFilterChips.length > 0 && (
-          <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-5">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Active filters:
-            </span>
-
-            {activeFilterChips.map((chip) => (
-              <button
-                key={chip.key}
-                type="button"
-                onClick={() => onRemoveFilter(chip.key)}
-                className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
-              >
-                {chip.label} ×
-              </button>
-            ))}
-
-            <button
-              type="button"
-              onClick={handleClearFilters}
-              className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
-            >
-              Clear all
-            </button>
-          </div>
-        )}
+        <FilterChips
+          chips={activeFilterChips}
+          onRemove={onRemoveFilter}
+          onClear={handleClearFilters}
+          className="mt-5"
+        />
       </CardBody>
     </Card>
   );
