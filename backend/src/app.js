@@ -11,6 +11,7 @@ import jobRouter from "./modules/job/job.routes.js";
 import candidateRouter from "./modules/candidate/candidate.routes.js";
 import applicationRouter from "./modules/application/application.routes.js";
 import analyticsRouter from "./modules/analytics/analytics.routes.js";
+import recommendationRouter from "./modules/recommendation/recommendation.routes.js";
 
 import swaggerSpec from "./config/swagger.js";
 
@@ -106,6 +107,7 @@ app.use("/api/v1/jobs", jobRouter);
 app.use("/api/v1/candidates", candidateRouter);
 app.use("/api/v1/applications", applicationRouter);
 app.use("/api/v1/analytics", analyticsRouter);
+app.use("/api/v1/recommendations", recommendationRouter);
 
 app.use(notFound);
 app.use(errorHandler);

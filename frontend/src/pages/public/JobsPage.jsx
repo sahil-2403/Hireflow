@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { listPublicJobs } from "../../api/job.api";
+import { listRecommendedJobs } from "../../api/recommendation.api";
 
 import getApiError from "../../utils/getApiError";
 
@@ -12,6 +13,12 @@ import EmptyState from "../../components/ui/EmptyState";
 import FormField from "../../components/ui/FormField";
 import PageHero from "../../components/ui/PageHero";
 import CompanyLogo from "../../components/common/CompanyLogo";
+
+import MatchScoreBadge from "../../components/application/MatchScoreBadge";
+
+import { ROLES } from "../../features/auth/auth.constants";
+
+import useAuth from "../../hooks/useAuth";
 
 const EMPLOYMENT_TYPES = [
   {
@@ -80,6 +87,13 @@ const EXPERIENCE_LEVELS = [
 
 const SORT_OPTIONS = [
   {
+    label: "Best match first",
+    sortBy: "matchScore",
+    order: "desc",
+    value: "matchScore:desc",
+    recommendedOnly: true,
+  },
+  {
     label: "Newest first",
     sortBy: "createdAt",
     order: "desc",
@@ -125,6 +139,7 @@ const DEFAULT_FILTERS = {
   experienceLevel: "",
   sortBy: "createdAt",
   order: "desc",
+  recommended: false,
 };
 
 const getInputClassName = () => {
@@ -152,7 +167,9 @@ const getSortOptionValue = (filters) => {
     return option.sortBy === filters.sortBy && option.order === filters.order;
   });
 
-  return sortOption?.value || "createdAt:desc";
+  return (
+    sortOption?.value || DEFAULT_FILTERS.sortBy + ":" + DEFAULT_FILTERS.order
+  );
 };
 
 const getFiltersFromSearchParams = (searchParams) => {
@@ -180,6 +197,7 @@ const getFiltersFromSearchParams = (searchParams) => {
     ),
     sortBy: isValidSort ? sortBy : DEFAULT_FILTERS.sortBy,
     order: isValidSort ? order : DEFAULT_FILTERS.order,
+    recommended: searchParams.get("recommended") === "true",
   };
 };
 
@@ -198,6 +216,14 @@ const createSearchParamsFromFilters = (filters, page = 1) => {
 
   Object.entries(filters).forEach(([key, value]) => {
     if (!value) {
+      return;
+    }
+
+    if (key === "recommended") {
+      if (value) {
+        params.set("recommended", "true");
+      }
+
       return;
     }
 
@@ -288,6 +314,13 @@ const getSortLabel = (filters) => {
 const getActiveFilterChips = (filters) => {
   const chips = [];
 
+  if (filters.recommended) {
+    chips.push({
+      key: "recommended",
+      label: "Suggested jobs",
+    });
+  }
+
   if (filters.search) {
     chips.push({
       key: "search",
@@ -361,16 +394,18 @@ const JobMetaPill = ({ children }) => {
   );
 };
 
-const SkillPill = ({ children, variant = "blue" }) => {
+const SkillPill = ({ children, variant }) => {
   const className =
     variant === "blue"
       ? "rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100"
-      : "rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600";
+      : variant === "green"
+        ? "rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-green-100"
+        : "rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600";
 
   return <span className={className}>{children}</span>;
 };
 
-const JobCard = ({ job }) => {
+const JobCard = ({ job, showMatch = false }) => {
   const jobId = getJobId(job);
 
   return (
@@ -396,6 +431,10 @@ const JobCard = ({ job }) => {
                 <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100">
                   Open
                 </span>
+
+                {showMatch && job.match && (
+                  <MatchScoreBadge match={job.match} size="sm" />
+                )}
               </div>
 
               <p className="mt-1 text-sm font-bold text-slate-700">
@@ -424,14 +463,36 @@ const JobCard = ({ job }) => {
               {job.skills?.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {job.skills.slice(0, 6).map((skill) => (
-                    <SkillPill key={skill}>{skill}</SkillPill>
+                    <SkillPill key={skill} variant="blue">
+                      {skill}
+                    </SkillPill>
                   ))}
 
                   {job.skills.length > 6 && (
-                    <SkillPill variant="slate">
-                      +{job.skills.length - 6}
-                    </SkillPill>
+                    <SkillPill>+{job.skills.length - 6}</SkillPill>
                   )}
+                </div>
+              )}
+
+              {showMatch && job.match?.matchedSkills?.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Matched skills
+                  </p>
+
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {job.match.matchedSkills.slice(0, 4).map((skill) => (
+                      <SkillPill key={skill} variant="green">
+                        {skill}
+                      </SkillPill>
+                    ))}
+
+                    {job.match.matchedSkills.length > 4 && (
+                      <SkillPill>
+                        +{job.match.matchedSkills.length - 4}
+                      </SkillPill>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -545,6 +606,7 @@ const SearchTipsCard = () => {
 
 const JobsSearchControls = ({
   filters,
+  sortOptions,
   activeAdvancedFilterCount,
   activeFilterChips,
   onApplyFilters,
@@ -699,7 +761,7 @@ const JobsSearchControls = ({
                 name="sort"
                 value={getSortOptionValue(draftFilters)}
                 onChange={handleDraftFilterChange}
-                options={SORT_OPTIONS}
+                options={sortOptions}
               />
             </div>
 
@@ -753,6 +815,8 @@ const JobsSearchControls = ({
 const JobsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const { isAuthenticated, user } = useAuth();
+
   const searchParamsString = searchParams.toString();
 
   const filters = useMemo(() => {
@@ -762,6 +826,15 @@ const JobsPage = () => {
   const page = useMemo(() => {
     return getPageFromSearchParams(new URLSearchParams(searchParamsString));
   }, [searchParamsString]);
+
+  const canUseRecommendations =
+    isAuthenticated && user?.role === ROLES.CANDIDATE;
+
+  const isRecommendedMode = filters.recommended && canUseRecommendations;
+
+  const sortOptions = isRecommendedMode
+    ? SORT_OPTIONS
+    : SORT_OPTIONS.filter((option) => !option.recommendedOnly);
 
   const [status, setStatus] = useState("loading");
 
@@ -792,7 +865,9 @@ const JobsPage = () => {
           params[key] = value;
         });
 
-        const result = await listPublicJobs(params);
+        const result = isRecommendedMode
+          ? await listRecommendedJobs(params)
+          : await listPublicJobs(params);
 
         if (shouldIgnore) {
           return;
@@ -818,14 +893,17 @@ const JobsPage = () => {
     return () => {
       shouldIgnore = true;
     };
-  }, [filters, page]);
+  }, [filters, page, isRecommendedMode]);
 
   const updateUrlFilters = (nextFilters, nextPage = 1) => {
     setSearchParams(createSearchParamsFromFilters(nextFilters, nextPage));
   };
 
   const handleApplyFilters = (nextFilters) => {
-    updateUrlFilters(nextFilters);
+    updateUrlFilters({
+      ...nextFilters,
+      recommended: isRecommendedMode,
+    });
   };
 
   const handleClearFilters = () => {
@@ -836,6 +914,17 @@ const JobsPage = () => {
     if (filterKey === "sort") {
       updateUrlFilters({
         ...filters,
+        sortBy: DEFAULT_FILTERS.sortBy,
+        order: DEFAULT_FILTERS.order,
+      });
+
+      return;
+    }
+
+    if (filterKey === "recommended") {
+      updateUrlFilters({
+        ...filters,
+        recommended: false,
         sortBy: DEFAULT_FILTERS.sortBy,
         order: DEFAULT_FILTERS.order,
       });
@@ -871,14 +960,41 @@ const JobsPage = () => {
   return (
     <div className="mx-auto grid max-w-375 gap-6">
       <PageHero
-        eyebrow="Public jobs"
-        title="Browse jobs"
-        description="Search your preferred job by role, location, or skill."
+        eyebrow={isRecommendedMode ? "Suggested jobs" : "Public jobs"}
+        title={
+          isRecommendedMode ? "Jobs matched to your profile" : "Browse jobs"
+        }
+        description={
+          isRecommendedMode
+            ? "Open roles ranked using your skills, target roles, and job preferences."
+            : "Search your preferred job by role, location, or skill."
+        }
       />
+
+      {filters.recommended && !canUseRecommendations && (
+        <Card>
+          <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-bold text-slate-950">
+                Login as a candidate to see suggested jobs.
+              </p>
+
+              <p className="mt-1 text-sm text-slate-600">
+                Guests and company users can still browse public jobs normally.
+              </p>
+            </div>
+
+            <Button as={Link} to="/login">
+              Login
+            </Button>
+          </CardBody>
+        </Card>
+      )}
 
       <JobsSearchControls
         key={searchParamsString}
         filters={filters}
+        sortOptions={sortOptions}
         activeAdvancedFilterCount={activeAdvancedFilterCount}
         activeFilterChips={activeFilterChips}
         onApplyFilters={handleApplyFilters}
@@ -941,7 +1057,11 @@ const JobsPage = () => {
             <>
               <div className="grid gap-4">
                 {jobs.map((job) => (
-                  <JobCard key={getJobId(job)} job={job} />
+                  <JobCard
+                    key={getJobId(job)}
+                    job={job}
+                    showMatch={isRecommendedMode}
+                  />
                 ))}
               </div>
 

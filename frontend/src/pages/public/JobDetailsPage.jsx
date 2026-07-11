@@ -4,6 +4,7 @@ import { Link, NavLink, useParams } from "react-router-dom";
 
 import { getPublicJobById } from "../../api/job.api";
 import { applyToJob } from "../../api/application.api";
+import { getRecommendedJobMatch } from "../../api/recommendation.api";
 
 import { ROLES } from "../../features/auth/auth.constants";
 
@@ -14,6 +15,9 @@ import useAuth from "../../hooks/useAuth";
 import Button from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
+
+import MatchScoreBadge from "../../components/application/MatchScoreBadge";
+import SkillMatchList from "../../components/application/SkillMatchList";
 
 import CompanyLogo from "../../components/common/CompanyLogo";
 
@@ -63,6 +67,88 @@ const SectionList = ({ items }) => {
   );
 };
 
+const CandidateMatchCard = ({ status, matchData, errorMessage }) => {
+  const match = matchData?.match;
+
+  return (
+    <Card>
+      <CardHeader>
+        <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+          Your match
+        </p>
+
+        <h2 className="mt-1 text-xl font-black text-slate-950">
+          Profile fit for this role
+        </h2>
+      </CardHeader>
+
+      <CardBody>
+        {status === "loading" && (
+          <p className="text-sm text-slate-600">Calculating match...</p>
+        )}
+
+        {status === "error" && (
+          <div
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert"
+          >
+            {errorMessage}
+          </div>
+        )}
+
+        {status === "success" && match && (
+          <div className="grid gap-5">
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                Match score
+              </p>
+
+              <MatchScoreBadge match={match} size="lg" />
+
+              <p className="mt-2 text-xs font-semibold text-slate-500">
+                Confidence:{" "}
+                <span className="text-slate-800">
+                  {match.confidenceLevel || "Not available"}
+                </span>
+              </p>
+            </div>
+
+            <SkillMatchList
+              title="Matched skills"
+              skills={match.matchedSkills || []}
+              emptyMessage="No matched skills yet."
+              variant="matched"
+              limit={5}
+            />
+
+            <SkillMatchList
+              title="Missing skills"
+              skills={match.missingSkills || []}
+              emptyMessage="No missing skills listed."
+              variant="missing"
+              limit={5}
+            />
+
+            {match.reasons?.length > 0 && (
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Why this score
+                </p>
+
+                <ul className="mt-3 grid gap-2 text-sm leading-6 text-slate-700">
+                  {match.reasons.slice(0, 3).map((reason) => (
+                    <li key={reason}>• {reason}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+};
+
 const JobDetailsPage = () => {
   const { jobId } = useParams();
 
@@ -71,6 +157,12 @@ const JobDetailsPage = () => {
   const [status, setStatus] = useState("loading");
 
   const [job, setJob] = useState(null);
+
+  const [matchState, setMatchState] = useState({
+    status: "idle",
+    data: null,
+    errorMessage: "",
+  });
 
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -118,6 +210,60 @@ const JobDetailsPage = () => {
       shouldIgnore = true;
     };
   }, [jobId]);
+
+  useEffect(() => {
+    let shouldIgnore = false;
+
+    const fetchMatch = async () => {
+      if (!isAuthenticated || user?.role !== ROLES.CANDIDATE) {
+        setMatchState({
+          status: "idle",
+          data: null,
+          errorMessage: "",
+        });
+
+        return;
+      }
+
+      try {
+        setMatchState({
+          status: "loading",
+          data: null,
+          errorMessage: "",
+        });
+
+        const result = await getRecommendedJobMatch(jobId);
+
+        if (shouldIgnore) {
+          return;
+        }
+
+        setMatchState({
+          status: "success",
+          data: result.data,
+          errorMessage: "",
+        });
+      } catch (error) {
+        if (shouldIgnore) {
+          return;
+        }
+
+        const normalizedError = getApiError(error);
+
+        setMatchState({
+          status: "error",
+          data: null,
+          errorMessage: normalizedError.message,
+        });
+      }
+    };
+
+    fetchMatch();
+
+    return () => {
+      shouldIgnore = true;
+    };
+  }, [jobId, isAuthenticated, user?.role]);
 
   const handleApply = async (event) => {
     event.preventDefault();
@@ -317,6 +463,36 @@ const JobDetailsPage = () => {
         </div>
 
         <aside className="grid gap-6 self-start lg:sticky lg:top-24">
+          {canApply && (
+            <CandidateMatchCard
+              status={matchState.status}
+              matchData={matchState.data}
+              errorMessage={matchState.errorMessage}
+            />
+          )}
+
+          {!isAuthenticated && (
+            <Card>
+              <CardBody>
+                <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+                  Your match
+                </p>
+
+                <h2 className="mt-2 text-lg font-black text-slate-950">
+                  See how this role fits you
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Login as a candidate to view your match score for this job.
+                </p>
+
+                <Button as={Link} to="/login" className="mt-5" fullWidth>
+                  Login
+                </Button>
+              </CardBody>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">

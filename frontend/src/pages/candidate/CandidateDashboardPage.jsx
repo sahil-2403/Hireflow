@@ -60,24 +60,30 @@ const CandidateJobSearchCard = () => {
   return (
     <Card className="flex min-h-full flex-col">
       <CardBody className="flex flex-1 flex-col">
-        <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-amber-50 text-xl">
-          🔎
+        <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-blue-50 text-xl">
+          🎯
         </div>
 
-        <p className="text-sm font-semibold uppercase tracking-wider text-amber-600">
-          Job search
+        <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+          Suggested jobs
         </p>
 
-        <h2 className="mt-2 text-xl font-black text-slate-950">Browse jobs</h2>
+        <h2 className="mt-2 text-xl font-black text-slate-950">
+          Find roles that fit your profile
+        </h2>
 
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Explore open roles and apply when your profile and resume are ready.
+          See open jobs ranked by skill overlap and your preferences.
         </p>
       </CardBody>
 
       <div className="border-t border-slate-100 bg-slate-50/80 p-4">
-        <Button as={Link} to="/jobs" fullWidth>
-          Browse jobs
+        <Button
+          as={Link}
+          to="/jobs?recommended=true&sortBy=matchScore&order=desc"
+          fullWidth
+        >
+          View suggested jobs
         </Button>
       </div>
     </Card>
