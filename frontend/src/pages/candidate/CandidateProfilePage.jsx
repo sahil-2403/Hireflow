@@ -33,6 +33,11 @@ import {
 import EmptyState from "../../components/ui/EmptyState";
 import FormField from "../../components/ui/FormField";
 import PageHero from "../../components/ui/PageHero";
+import Alert from "../../components/ui/Alert";
+import Pill from "../../components/ui/Pill";
+import SelectInput from "../../components/ui/SelectInput";
+import TextInput from "../../components/ui/TextInput";
+import TextareaInput from "../../components/ui/TextareaInput";
 
 import ProfileAvatar from "../../components/common/ProfileAvatar";
 
@@ -166,26 +171,6 @@ const getSkillTags = (skillsText) => {
     .map((skill) => skill.trim())
     .filter(Boolean)
     .slice(0, 10);
-};
-
-const getInputClassName = (hasError = false) => {
-  return [
-    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
-    "placeholder:text-slate-400 focus:ring-4",
-    hasError
-      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
-      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
-  ].join(" ");
-};
-
-const getTextareaClassName = (hasError = false) => {
-  return [
-    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm leading-6 text-slate-900 outline-none transition",
-    "placeholder:text-slate-400 focus:ring-4",
-    hasError
-      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
-      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
-  ].join(" ");
 };
 
 const CheckboxGroup = ({ options, register, name }) => {
@@ -337,12 +322,9 @@ const ProfilePreviewCard = ({
           {skills.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {skills.map((skill) => (
-                <span
-                  key={skill}
-                  className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100"
-                >
+                <Pill key={skill} variant="blue">
                   {skill}
-                </span>
+                </Pill>
               ))}
             </div>
           ) : (
@@ -542,14 +524,7 @@ const CandidateProfilePage = () => {
         />
 
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
-          {apiError && (
-            <div
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-              role="alert"
-            >
-              {apiError}
-            </div>
-          )}
+          {apiError && <Alert variant="error">{apiError}</Alert>}
 
           <Card>
             <CardHeader>
@@ -568,61 +543,41 @@ const CandidateProfilePage = () => {
 
             <CardBody>
               <div className="grid gap-5 sm:grid-cols-2">
-                <FormField
+                <TextInput
+                  id="firstName"
+                  type="text"
                   label="First name"
-                  htmlFor="firstName"
                   error={errors.firstName?.message}
-                >
-                  <input
-                    id="firstName"
-                    type="text"
-                    className={getInputClassName(Boolean(errors.firstName))}
-                    {...register("firstName")}
-                  />
-                </FormField>
+                  {...register("firstName")}
+                />
 
-                <FormField
+                <TextInput
+                  id="lastName"
+                  type="text"
                   label="Last name"
-                  htmlFor="lastName"
                   error={errors.lastName?.message}
-                >
-                  <input
-                    id="lastName"
-                    type="text"
-                    className={getInputClassName(Boolean(errors.lastName))}
-                    {...register("lastName")}
-                  />
-                </FormField>
+                  {...register("lastName")}
+                />
 
-                <FormField
+                <TextInput
+                  id="phone"
+                  type="text"
                   label="Phone"
-                  htmlFor="phone"
-                  error={errors.phone?.message}
+                  placeholder="+91 98765 43210"
                   hint="Optional. Example: +91 98765 43210"
-                >
-                  <input
-                    id="phone"
-                    type="text"
-                    placeholder="+91 98765 43210"
-                    className={getInputClassName(Boolean(errors.phone))}
-                    {...register("phone")}
-                  />
-                </FormField>
+                  error={errors.phone?.message}
+                  {...register("phone")}
+                />
 
-                <FormField
+                <TextInput
+                  id="location"
+                  type="text"
                   label="Location"
-                  htmlFor="location"
-                  error={errors.location?.message}
+                  placeholder="Example: Pune, India"
                   hint="Example: Pune, India"
-                >
-                  <input
-                    id="location"
-                    type="text"
-                    placeholder="Example: Pune, India"
-                    className={getInputClassName(Boolean(errors.location))}
-                    {...register("location")}
-                  />
-                </FormField>
+                  error={errors.location?.message}
+                  {...register("location")}
+                />
               </div>
             </CardBody>
           </Card>
@@ -644,72 +599,44 @@ const CandidateProfilePage = () => {
 
             <CardBody>
               <div className="grid gap-5">
-                <FormField
+                <TextInput
+                  id="headline"
+                  type="text"
                   label="Headline"
-                  htmlFor="headline"
-                  error={errors.headline?.message}
+                  placeholder="Example: MERN Stack Developer"
                   hint="Example: MERN Stack Developer"
-                >
-                  <input
-                    id="headline"
-                    type="text"
-                    placeholder="Example: MERN Stack Developer"
-                    className={getInputClassName(Boolean(errors.headline))}
-                    {...register("headline")}
-                  />
-                </FormField>
+                  error={errors.headline?.message}
+                  {...register("headline")}
+                />
 
-                <FormField
+                <SelectInput
+                  id="experienceLevel"
                   label="Experience level"
-                  htmlFor="experienceLevel"
+                  placeholder="Select experience level"
+                  options={EXPERIENCE_LEVELS}
                   error={errors.experienceLevel?.message}
-                >
-                  <select
-                    id="experienceLevel"
-                    className={getInputClassName(
-                      Boolean(errors.experienceLevel),
-                    )}
-                    {...register("experienceLevel")}
-                  >
-                    <option value="">Select experience level</option>
+                  {...register("experienceLevel")}
+                />
 
-                    {EXPERIENCE_LEVELS.map((level) => (
-                      <option key={level.value} value={level.value}>
-                        {level.label}
-                      </option>
-                    ))}
-                  </select>
-                </FormField>
-
-                <FormField
+                <TextInput
+                  id="skillsText"
+                  type="text"
                   label="Skills"
-                  htmlFor="skillsText"
-                  error={errors.skillsText?.message}
+                  placeholder="React, Node.js, MongoDB"
                   hint="Separate skills with commas. Example: React, Node.js, MongoDB"
-                >
-                  <input
-                    id="skillsText"
-                    type="text"
-                    placeholder="React, Node.js, MongoDB"
-                    className={getInputClassName(Boolean(errors.skillsText))}
-                    {...register("skillsText")}
-                  />
-                </FormField>
+                  error={errors.skillsText?.message}
+                  {...register("skillsText")}
+                />
 
-                <FormField
+                <TextareaInput
+                  id="summary"
                   label="Summary"
-                  htmlFor="summary"
-                  error={errors.summary?.message}
+                  rows={5}
+                  placeholder="Write a short summary about your background, skills, projects, and career goals."
                   hint="Optional. Keep it short, practical, and recruiter-friendly."
-                >
-                  <textarea
-                    id="summary"
-                    rows={5}
-                    placeholder="Write a short summary about your background, skills, projects, and career goals."
-                    className={getTextareaClassName(Boolean(errors.summary))}
-                    {...register("summary")}
-                  />
-                </FormField>
+                  error={errors.summary?.message}
+                  {...register("summary")}
+                />
               </div>
             </CardBody>
           </Card>
@@ -732,39 +659,25 @@ const CandidateProfilePage = () => {
 
             <CardBody>
               <div className="grid gap-5">
-                <FormField
+                <TextInput
+                  id="targetJobTitlesText"
+                  type="text"
                   label="Target job titles"
-                  htmlFor="targetJobTitlesText"
-                  error={errors.targetJobTitlesText?.message}
+                  placeholder="Frontend Developer, MERN Stack Developer, React Developer"
                   hint="Optional. Separate titles with commas."
-                >
-                  <input
-                    id="targetJobTitlesText"
-                    type="text"
-                    placeholder="Frontend Developer, MERN Stack Developer, React Developer"
-                    className={getInputClassName(
-                      Boolean(errors.targetJobTitlesText),
-                    )}
-                    {...register("targetJobTitlesText")}
-                  />
-                </FormField>
+                  error={errors.targetJobTitlesText?.message}
+                  {...register("targetJobTitlesText")}
+                />
 
-                <FormField
+                <TextInput
+                  id="preferredLocationsText"
+                  type="text"
                   label="Preferred locations"
-                  htmlFor="preferredLocationsText"
-                  error={errors.preferredLocationsText?.message}
+                  placeholder="Pune, Mumbai, Remote"
                   hint="Optional. Add cities or Remote, separated by commas."
-                >
-                  <input
-                    id="preferredLocationsText"
-                    type="text"
-                    placeholder="Pune, Mumbai, Remote"
-                    className={getInputClassName(
-                      Boolean(errors.preferredLocationsText),
-                    )}
-                    {...register("preferredLocationsText")}
-                  />
-                </FormField>
+                  error={errors.preferredLocationsText?.message}
+                  {...register("preferredLocationsText")}
+                />
 
                 <FormField
                   label="Preferred workplace types"
@@ -792,10 +705,10 @@ const CandidateProfilePage = () => {
                   />
                 </FormField>
 
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+                <Alert variant="warning">
                   Complete your job preferences to get more accurate future job
                   recommendations and match scores.
-                </div>
+                </Alert>
               </div>
             </CardBody>
           </Card>
@@ -817,53 +730,36 @@ const CandidateProfilePage = () => {
 
             <CardBody>
               <div className="grid gap-5 sm:grid-cols-2">
-                <FormField
+                <TextInput
+                  id="linkedinUrl"
+                  type="url"
                   label="LinkedIn URL"
-                  htmlFor="linkedinUrl"
-                  error={errors.linkedinUrl?.message}
+                  placeholder="https://linkedin.com/in/username"
                   hint="Optional. Example: https://linkedin.com/in/username"
-                >
-                  <input
-                    id="linkedinUrl"
-                    type="url"
-                    placeholder="https://linkedin.com/in/username"
-                    className={getInputClassName(Boolean(errors.linkedinUrl))}
-                    {...register("linkedinUrl")}
-                  />
-                </FormField>
+                  error={errors.linkedinUrl?.message}
+                  {...register("linkedinUrl")}
+                />
 
-                <FormField
+                <TextInput
+                  id="githubUrl"
+                  type="url"
                   label="GitHub URL"
-                  htmlFor="githubUrl"
-                  error={errors.githubUrl?.message}
+                  placeholder="https://github.com/username"
                   hint="Optional. Example: https://github.com/username"
-                >
-                  <input
-                    id="githubUrl"
-                    type="url"
-                    placeholder="https://github.com/username"
-                    className={getInputClassName(Boolean(errors.githubUrl))}
-                    {...register("githubUrl")}
-                  />
-                </FormField>
+                  error={errors.githubUrl?.message}
+                  {...register("githubUrl")}
+                />
 
                 <div className="sm:col-span-2">
-                  <FormField
+                  <TextInput
+                    id="portfolioUrl"
+                    type="url"
                     label="Portfolio URL"
-                    htmlFor="portfolioUrl"
-                    error={errors.portfolioUrl?.message}
+                    placeholder="https://yourportfolio.com"
                     hint="Optional. Example: https://yourportfolio.com"
-                  >
-                    <input
-                      id="portfolioUrl"
-                      type="url"
-                      placeholder="https://yourportfolio.com"
-                      className={getInputClassName(
-                        Boolean(errors.portfolioUrl),
-                      )}
-                      {...register("portfolioUrl")}
-                    />
-                  </FormField>
+                    error={errors.portfolioUrl?.message}
+                    {...register("portfolioUrl")}
+                  />
                 </div>
               </div>
             </CardBody>
