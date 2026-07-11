@@ -39,6 +39,24 @@ const getTopJobs = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Top jobs fetched successfully", jobs));
 });
 
+const getTopApplicantsByLatestJobs = asyncHandler(async (req, res) => {
+  const result = await analyticsService.getTopApplicantsByLatestJobs(
+    req.user.id,
+    req.user.role,
+    req.query.limit,
+  );
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        "Top applicants by latest jobs fetched successfully",
+        result,
+      ),
+    );
+});
+
 const getCandidateOverview = asyncHandler(async (req, res) => {
   const result = await analyticsService.getCandidateOverview(req.user.id);
 
@@ -53,5 +71,6 @@ export {
   getCompanyOverview,
   getHiringFunnel,
   getTopJobs,
+  getTopApplicantsByLatestJobs,
   getCandidateOverview,
 };

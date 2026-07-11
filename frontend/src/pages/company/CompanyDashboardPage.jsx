@@ -6,6 +6,7 @@ import {
   getCompanyHiringFunnel,
   getCompanyOverview,
   getCompanyTopJobs,
+  getCompanyTopApplicants,
 } from "../../api/analytics.api";
 
 import getApiError from "../../utils/getApiError";
@@ -20,6 +21,7 @@ import HiringFunnelCard from "../../components/company/HiringFunnelCard";
 import TopJobsCard from "../../components/company/TopJobsCard";
 import RecentApplicationsCard from "../../components/company/RecentApplicationsCard";
 import CompanySetupRequired from "../../components/company/CompanySetupRequired";
+import TopApplicantsByJobCard from "../../components/company/TopApplicantsByJobCard";
 
 import CompanyLogo from "../../components/common/CompanyLogo";
 
@@ -87,6 +89,12 @@ const CompanyDashboardPage = () => {
   const [topJobsState, setTopJobsState] = useState({
     status: "loading",
     jobs: [],
+    errorMessage: "",
+  });
+
+  const [topApplicantsState, setTopApplicantsState] = useState({
+    status: "loading",
+    applicants: [],
     errorMessage: "",
   });
 
@@ -181,9 +189,40 @@ const CompanyDashboardPage = () => {
       }
     };
 
+    const fetchTopApplicants = async () => {
+      try {
+        const result = await getCompanyTopApplicants({
+          limit: 5,
+        });
+
+        if (shouldIgnore) {
+          return;
+        }
+
+        setTopApplicantsState({
+          status: "success",
+          applicants: result.data ?? [],
+          errorMessage: "",
+        });
+      } catch (error) {
+        if (shouldIgnore) {
+          return;
+        }
+
+        const normalizedError = getApiError(error);
+
+        setTopApplicantsState({
+          status: "error",
+          applicants: [],
+          errorMessage: normalizedError.message,
+        });
+      }
+    };
+
     fetchOverview();
     fetchFunnel();
     fetchTopJobs();
+    fetchTopApplicants();
 
     return () => {
       shouldIgnore = true;
@@ -352,6 +391,12 @@ const CompanyDashboardPage = () => {
               errorMessage={topJobsState.errorMessage}
             />
           </div>
+
+          <TopApplicantsByJobCard
+            status={topApplicantsState.status}
+            applicants={topApplicantsState.applicants}
+            errorMessage={topApplicantsState.errorMessage}
+          />
 
           <RecentApplicationsCard applications={recentApplications} />
         </>

@@ -20,4 +20,17 @@ const getCompanyTopJobs = async (params = {}) => {
   return response.data;
 };
 
-export { getCompanyOverview, getCompanyHiringFunnel, getCompanyTopJobs };
+const getCompanyTopApplicants = async (params = {}) => {
+  const response = await apiClient.get("/analytics/company/top-applicants", {
+    params,
+  });
+
+  return response.data;
+};
+
+export {
+  getCompanyOverview,
+  getCompanyHiringFunnel,
+  getCompanyTopJobs,
+  getCompanyTopApplicants,
+};

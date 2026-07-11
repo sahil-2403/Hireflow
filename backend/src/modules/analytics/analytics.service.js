@@ -306,6 +306,166 @@ const getTopJobs = async (userId, role, requestedLimit) => {
   return jobs;
 };
 
+const getTopApplicantsByLatestJobs = async (userId, role, requestedLimit) => {
+  const company = await getStaffCompany(
+    userId,
+    role,
+    "You are not allowed to access company analytics",
+  );
+
+  const parsedLimit = Number(requestedLimit);
+
+  const limit =
+    Number.isInteger(parsedLimit) && parsedLimit > 0
+      ? Math.min(parsedLimit, 10)
+      : 5;
+
+  const latestJobsWithApplications = await Job.aggregate([
+    {
+      $match: {
+        companyId: company._id,
+      },
+    },
+    {
+      $lookup: {
+        from: "applications",
+        localField: "_id",
+        foreignField: "jobId",
+        as: "applications",
+      },
+    },
+    {
+      $addFields: {
+        applicationCount: {
+          $size: "$applications",
+        },
+      },
+    },
+    {
+      $match: {
+        applicationCount: {
+          $gt: 0,
+        },
+      },
+    },
+    {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+    {
+      $limit: limit,
+    },
+    {
+      $project: {
+        title: 1,
+        status: 1,
+        location: 1,
+        createdAt: 1,
+      },
+    },
+  ]);
+
+  const jobIds = latestJobsWithApplications.map((job) => job._id);
+
+  if (jobIds.length === 0) {
+    return [];
+  }
+
+  const applications = await Application.find({
+    companyId: company._id,
+    jobId: {
+      $in: jobIds,
+    },
+  })
+    .select("+matchSnapshot status appliedAt jobId candidateId candidateUserId")
+    .populate({
+      path: "candidateId",
+      select: "firstName lastName headline location",
+    })
+    .populate({
+      path: "candidateUserId",
+      select: "username email profilePhotoUrl",
+    })
+    .lean();
+
+  const applicationsByJobId = new Map();
+
+  applications.forEach((application) => {
+    const jobId = String(application.jobId);
+
+    const existingApplication = applicationsByJobId.get(jobId);
+
+    const currentScore = application.matchSnapshot?.matchScore ?? -1;
+
+    const existingScore = existingApplication?.matchSnapshot?.matchScore ?? -1;
+
+    const shouldReplace =
+      !existingApplication ||
+      currentScore > existingScore ||
+      (currentScore === existingScore &&
+        new Date(application.appliedAt || 0) >
+          new Date(existingApplication.appliedAt || 0));
+
+    if (shouldReplace) {
+      applicationsByJobId.set(jobId, application);
+    }
+  });
+
+  return latestJobsWithApplications
+    .map((job) => {
+      const topApplication = applicationsByJobId.get(String(job._id));
+
+      if (!topApplication) {
+        return null;
+      }
+
+      return {
+        job: {
+          _id: job._id,
+          title: job.title,
+          status: job.status,
+          location: job.location,
+          createdAt: job.createdAt,
+        },
+
+        topApplicant: {
+          applicationId: topApplication._id,
+          status: topApplication.status,
+          appliedAt: topApplication.appliedAt,
+
+          candidate: topApplication.candidateId
+            ? {
+                _id: topApplication.candidateId._id,
+                firstName: topApplication.candidateId.firstName,
+                lastName: topApplication.candidateId.lastName,
+                headline: topApplication.candidateId.headline,
+                location: topApplication.candidateId.location,
+              }
+            : null,
+
+          candidateUser: topApplication.candidateUserId
+            ? {
+                _id: topApplication.candidateUserId._id,
+                username: topApplication.candidateUserId.username,
+                email: topApplication.candidateUserId.email,
+                profilePhotoUrl: topApplication.candidateUserId.profilePhotoUrl,
+              }
+            : null,
+
+          match: topApplication.matchSnapshot
+            ? {
+                matchScore: topApplication.matchSnapshot.matchScore,
+                matchLabel: topApplication.matchSnapshot.matchLabel,
+                confidenceLevel: topApplication.matchSnapshot.confidenceLevel,
+              }
+            : null,
+        },
+      };
+    })
+    .filter(Boolean);
+};
+
 const getCandidateOverview = async (userId) => {
   const candidate = await Candidate.findOne({
     userId,
@@ -415,5 +575,6 @@ export {
   getCompanyOverview,
   getHiringFunnel,
   getTopJobs,
+  getTopApplicantsByLatestJobs,
   getCandidateOverview,
 };

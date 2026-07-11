@@ -9,6 +9,7 @@ import {
   getCompanyOverview,
   getHiringFunnel,
   getTopJobs,
+  getTopApplicantsByLatestJobs,
   getCandidateOverview,
 } from "./analytics.controller.js";
 
@@ -81,6 +82,13 @@ router.get(
   authenticate,
   authorize(ROLES.OWNER, ROLES.RECRUITER),
   getTopJobs,
+);
+
+router.get(
+  "/company/top-applicants",
+  authenticate,
+  authorize(ROLES.OWNER, ROLES.RECRUITER),
+  getTopApplicantsByLatestJobs,
 );
 
 /**
