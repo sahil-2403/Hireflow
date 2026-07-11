@@ -21,7 +21,9 @@ import ProfileAvatar from "../../components/common/ProfileAvatar";
 import Button from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
-import FormField from "../../components/ui/FormField";
+import Alert from "../../components/ui/Alert";
+import Pill from "../../components/ui/Pill";
+import TextInput from "../../components/ui/TextInput";
 import PageHero from "../../components/ui/PageHero";
 
 import CompanySetupRequired from "../../components/company/CompanySetupRequired";
@@ -33,16 +35,6 @@ const defaultValues = {
   firstName: "",
   lastName: "",
   jobTitle: "",
-};
-
-const getInputClassName = (hasError = false) => {
-  return [
-    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
-    "placeholder:text-slate-400 focus:ring-4",
-    hasError
-      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
-      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
-  ].join(" ");
 };
 
 const getRecruiterId = (recruiter) => {
@@ -71,16 +63,9 @@ const getRecruiterName = (recruiter) => {
 
 const RecruiterStatusPill = ({ recruiter }) => {
   return (
-    <span
-      className={[
-        "inline-flex rounded-full px-3 py-1 text-xs font-bold ring-1",
-        recruiter.isActive
-          ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
-          : "bg-slate-100 text-slate-700 ring-slate-200",
-      ].join(" ")}
-    >
+    <Pill variant={recruiter.isActive ? "emerald" : "slate"}>
       {getRecruiterStatus(recruiter)}
-    </span>
+    </Pill>
   );
 };
 
@@ -227,23 +212,9 @@ const CompanyRecruitersPage = () => {
         }
       />
 
-      {apiError && (
-        <div
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          role="alert"
-        >
-          {apiError}
-        </div>
-      )}
+      {apiError && <Alert variant="error">{apiError}</Alert>}
 
-      {successMessage && (
-        <div
-          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-          role="status"
-        >
-          {successMessage}
-        </div>
-      )}
+      {successMessage && <Alert variant="success">{successMessage}</Alert>}
 
       {requestStatus === "company-missing" && (
         <CompanySetupRequired description="Create your company profile before inviting recruiters." />
@@ -281,12 +252,7 @@ const CompanyRecruitersPage = () => {
               )}
 
               {requestStatus === "error" && (
-                <div
-                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                  role="alert"
-                >
-                  Could not load recruiters.
-                </div>
+                <Alert variant="error">Could not load recruiters.</Alert>
               )}
 
               {requestStatus === "success" && recruiters.length === 0 && (
@@ -383,77 +349,52 @@ const CompanyRecruitersPage = () => {
             <CardBody>
               <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5">
                 <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                  <FormField
+                  <TextInput
+                    id="firstName"
+                    type="text"
                     label="First name"
-                    htmlFor="firstName"
+                    placeholder="First name"
                     error={errors.firstName?.message}
-                  >
-                    <input
-                      id="firstName"
-                      type="text"
-                      placeholder="First name"
-                      className={getInputClassName(Boolean(errors.firstName))}
-                      {...register("firstName")}
-                    />
-                  </FormField>
+                    {...register("firstName")}
+                  />
 
-                  <FormField
+                  <TextInput
+                    id="lastName"
+                    type="text"
                     label="Last name"
-                    htmlFor="lastName"
+                    placeholder="Last name"
                     error={errors.lastName?.message}
-                  >
-                    <input
-                      id="lastName"
-                      type="text"
-                      placeholder="Last name"
-                      className={getInputClassName(Boolean(errors.lastName))}
-                      {...register("lastName")}
-                    />
-                  </FormField>
+                    {...register("lastName")}
+                  />
                 </div>
 
-                <FormField
+                <TextInput
+                  id="jobTitle"
+                  type="text"
                   label="Job title"
-                  htmlFor="jobTitle"
+                  placeholder="Technical Recruiter"
                   error={errors.jobTitle?.message}
-                >
-                  <input
-                    id="jobTitle"
-                    type="text"
-                    placeholder="Technical Recruiter"
-                    className={getInputClassName(Boolean(errors.jobTitle))}
-                    {...register("jobTitle")}
-                  />
-                </FormField>
+                  {...register("jobTitle")}
+                />
 
-                <FormField
+                <TextInput
+                  id="username"
+                  type="text"
                   label="Username"
-                  htmlFor="username"
-                  error={errors.username?.message}
+                  placeholder="recruiter_one"
                   hint="Only letters, numbers, and underscores are allowed."
-                >
-                  <input
-                    id="username"
-                    type="text"
-                    placeholder="recruiter_one"
-                    className={getInputClassName(Boolean(errors.username))}
-                    {...register("username")}
-                  />
-                </FormField>
+                  error={errors.username?.message}
+                  {...register("username")}
+                />
 
-                <FormField
+                <TextInput
+                  id="email"
+                  type="email"
                   label="Email"
-                  htmlFor="email"
+                  placeholder="recruiter@example.com"
                   error={errors.email?.message}
-                >
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="recruiter@example.com"
-                    className={getInputClassName(Boolean(errors.email))}
-                    {...register("email")}
-                  />
-                </FormField>
+                  {...register("email")}
+                />
 
                 <PasswordField
                   id="password"
