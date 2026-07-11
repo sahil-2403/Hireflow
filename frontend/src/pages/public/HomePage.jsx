@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { listPublicJobs } from "../../api/job.api";
 
+import Alert from "../../components/ui/Alert";
+
 import ApiStatus from "../../components/common/ApiStatus";
 
 const popularFilters = [
@@ -345,9 +347,9 @@ const LatestJobsSection = () => {
         )}
 
         {status === "error" && (
-          <div className="rounded-4xl border border-red-200 bg-red-50 p-8 text-sm text-red-700">
+          <Alert variant="error" className="rounded-4xl p-8">
             Could not load latest jobs right now.
-          </div>
+          </Alert>
         )}
 
         {status === "success" && jobs.length === 0 && (

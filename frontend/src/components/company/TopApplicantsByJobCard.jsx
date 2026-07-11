@@ -5,6 +5,7 @@ import MatchScoreBadge from "../application/MatchScoreBadge";
 import ProfileAvatar from "../common/ProfileAvatar";
 import Button from "../ui/Button";
 import { Card, CardBody, CardHeader } from "../ui/Card";
+import Alert from "../ui/Alert";
 
 const getCandidateName = (candidate) => {
   const name = [candidate?.firstName, candidate?.lastName]
@@ -49,14 +50,7 @@ const TopApplicantsByJobCard = ({ status, applicants, errorMessage }) => {
           <p className="text-sm text-slate-600">Loading top applicants...</p>
         )}
 
-        {status === "error" && (
-          <div
-            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            role="alert"
-          >
-            {errorMessage}
-          </div>
-        )}
+        {status === "error" && <Alert variant="error">{errorMessage}</Alert>}
 
         {status === "success" && applicants.length === 0 && (
           <div className="rounded-xl bg-slate-50 px-4 py-6 text-center">

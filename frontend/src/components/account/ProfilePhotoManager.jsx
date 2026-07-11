@@ -6,6 +6,7 @@ import getApiError from "../../utils/getApiError";
 
 import Button from "../ui/Button";
 import { Card, CardBody, CardHeader } from "../ui/Card";
+import Alert from "../ui/Alert";
 
 import ProfileAvatar from "../common/ProfileAvatar";
 
@@ -189,21 +190,15 @@ const ProfilePhotoManager = ({
         </div>
 
         {photoError && (
-          <div
-            className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            role="alert"
-          >
+          <Alert variant="error" className="mt-4">
             {photoError}
-          </div>
+          </Alert>
         )}
 
         {photoSuccess && (
-          <div
-            className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-            role="status"
-          >
+          <Alert variant="success" className="mt-4">
             {photoSuccess}
-          </div>
+          </Alert>
         )}
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">

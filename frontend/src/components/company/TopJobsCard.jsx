@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import Button from "../ui/Button";
 import { Card, CardBody, CardHeader } from "../ui/Card";
+import Alert from "../ui/Alert";
 
 const TopJobsCard = ({ status, jobs, errorMessage }) => {
   return (
@@ -31,14 +32,7 @@ const TopJobsCard = ({ status, jobs, errorMessage }) => {
           <p className="text-sm text-slate-600">Loading top jobs...</p>
         )}
 
-        {status === "error" && (
-          <div
-            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            role="alert"
-          >
-            {errorMessage}
-          </div>
-        )}
+        {status === "error" && <Alert variant="error">{errorMessage}</Alert>}
 
         {status === "success" && jobs.length === 0 && (
           <div className="rounded-xl bg-slate-50 px-4 py-5 text-center">

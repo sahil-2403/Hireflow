@@ -8,18 +8,18 @@ import getApiError from "../../utils/getApiError";
 
 import Button from "../../components/ui/Button";
 import { Card, CardBody } from "../../components/ui/Card";
+import Alert from "../../components/ui/Alert";
 
-const getStatusBoxClassName = (status) => {
-  const statusClasses = {
-    verifying: "border-amber-200 bg-amber-50 text-amber-700",
-    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    error: "border-red-200 bg-red-50 text-red-700",
-  };
+const getAlertVariant = (status) => {
+  if (status === "success") {
+    return "success";
+  }
 
-  return [
-    "mt-6 rounded-xl border px-4 py-4 text-sm",
-    statusClasses[status] || statusClasses.verifying,
-  ].join(" ");
+  if (status === "error") {
+    return "error";
+  }
+
+  return "warning";
 };
 
 const VerifyEmailPage = () => {
@@ -78,12 +78,9 @@ const VerifyEmailPage = () => {
               Verifying your email
             </h1>
 
-            <div
-              className={getStatusBoxClassName(status)}
-              role={status === "error" ? "alert" : "status"}
-            >
+            <Alert variant={getAlertVariant(status)} className="mt-6">
               {message}
-            </div>
+            </Alert>
 
             <div className="mt-6 grid gap-3">
               {status === "success" && (

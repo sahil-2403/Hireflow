@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import Button from "../ui/Button";
 import { Card, CardBody, CardFooter } from "../ui/Card";
+import Alert from "../ui/Alert";
 
 const ResumeStatusMessage = ({ status, hasResume }) => {
   if (status === "loading") {
@@ -14,32 +15,25 @@ const ResumeStatusMessage = ({ status, hasResume }) => {
 
   if (status === "missing") {
     return (
-      <p className="mt-3 text-sm leading-6 text-amber-700">
+      <Alert variant="warning" className="mt-4">
         Create your candidate profile before uploading a resume.
-      </p>
+      </Alert>
     );
   }
 
   if (status === "error") {
     return (
-      <p className="mt-3 text-sm leading-6 text-red-700">
+      <Alert variant="error" className="mt-4">
         Resume status could not be loaded.
-      </p>
+      </Alert>
     );
   }
 
   return (
     <>
-      <div
-        className={[
-          "mt-4 rounded-xl border px-4 py-3 text-sm font-bold",
-          hasResume
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-            : "border-amber-200 bg-amber-50 text-amber-700",
-        ].join(" ")}
-      >
+      <Alert variant={hasResume ? "success" : "warning"} className="mt-4">
         {hasResume ? "Your resume is ready" : "Resume required"}
-      </div>
+      </Alert>
 
       <p className="mt-3 text-sm leading-6 text-slate-600">
         {hasResume

@@ -1,4 +1,5 @@
 import { Card, CardBody, CardHeader } from "../ui/Card";
+import Alert from "../ui/Alert";
 
 const STATUS_LABELS = {
   applied: "Applied",
@@ -45,14 +46,7 @@ const HiringFunnelCard = ({ status, funnelData, errorMessage }) => {
           <p className="text-sm text-slate-600">Loading hiring funnel...</p>
         )}
 
-        {status === "error" && (
-          <div
-            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            role="alert"
-          >
-            {errorMessage}
-          </div>
-        )}
+        {status === "error" && <Alert variant="error">{errorMessage}</Alert>}
 
         {status === "success" && funnel.length === 0 && (
           <p className="text-sm text-slate-600">
