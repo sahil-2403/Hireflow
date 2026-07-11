@@ -10,6 +10,7 @@ import {
 
 import getApiError from "../../utils/getApiError";
 import openPdfBlob from "../../utils/openPdfBlob";
+import { formatDateTime } from "../../utils/formatDate";
 
 import ApplicationStatusBadge from "../../components/application/ApplicationStatusBadge";
 import MatchBreakdownCard from "../../components/application/MatchBreakdownCard";
@@ -21,19 +22,9 @@ import ProfileAvatar from "../../components/common/ProfileAvatar";
 import Button from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import PageHero from "../../components/ui/PageHero";
+import Alert from "../../components/ui/Alert";
 
 import { getApplicationStatusLabel } from "../../features/applications/application.constants";
-
-const formatDateTime = (value) => {
-  if (!value) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-};
 
 const getCandidateName = (candidate) => {
   const name = [candidate?.firstName, candidate?.lastName]
@@ -246,38 +237,16 @@ const CompanyApplicationDetailsPage = () => {
       )}
 
       {requestStatus === "error" && (
-        <Card className="border-red-200 bg-red-50">
-          <CardBody>
-            <p className="font-bold text-red-700">
-              Could not load application details
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-red-700">
-              {errorMessage}
-            </p>
-          </CardBody>
-        </Card>
+        <Alert variant="error" title="Could not load application details">
+          {errorMessage}
+        </Alert>
       )}
 
       {requestStatus === "success" && details && (
         <>
-          {successMessage && (
-            <div
-              className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-              role="status"
-            >
-              {successMessage}
-            </div>
-          )}
+          {successMessage && <Alert variant="success">{successMessage}</Alert>}
 
-          {errorMessage && (
-            <div
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-              role="alert"
-            >
-              {errorMessage}
-            </div>
-          )}
+          {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
 
           <Card>
             <CardBody className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
