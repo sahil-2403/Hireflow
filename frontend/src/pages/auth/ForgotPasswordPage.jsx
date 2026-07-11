@@ -13,17 +13,8 @@ import getApiError from "../../utils/getApiError";
 
 import Button from "../../components/ui/Button";
 import { Card, CardBody } from "../../components/ui/Card";
-import FormField from "../../components/ui/FormField";
-
-const getInputClassName = (hasError) => {
-  return [
-    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
-    "placeholder:text-slate-400 focus:ring-4",
-    hasError
-      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
-      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
-  ].join(" ");
-};
+import Alert from "../../components/ui/Alert";
+import TextInput from "../../components/ui/TextInput";
 
 const ForgotPasswordPage = () => {
   const [apiError, setApiError] = useState("");
@@ -102,21 +93,15 @@ const ForgotPasswordPage = () => {
             </div>
 
             {apiError && (
-              <div
-                className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                role="alert"
-              >
+              <Alert variant="error" className="mb-6">
                 {apiError}
-              </div>
+              </Alert>
             )}
 
             {successMessage && (
-              <div
-                className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-                role="status"
-              >
+              <Alert variant="success" className="mb-6">
                 {successMessage}
-              </div>
+              </Alert>
             )}
 
             <form
@@ -124,20 +109,15 @@ const ForgotPasswordPage = () => {
               onSubmit={handleSubmit(onSubmit)}
               noValidate
             >
-              <FormField
+              <TextInput
+                id="email"
+                type="email"
                 label="Email address"
-                htmlFor="email"
+                autoComplete="email"
+                placeholder="you@example.com"
                 error={errors.email?.message}
-              >
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  className={getInputClassName(Boolean(errors.email))}
-                  {...register("email")}
-                />
-              </FormField>
+                {...register("email")}
+              />
 
               <Button type="submit" disabled={isSubmitting} fullWidth size="lg">
                 {isSubmitting ? "Sending..." : "Send reset link"}
