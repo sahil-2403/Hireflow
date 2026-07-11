@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const sizeClassNames = {
   xs: "h-8 w-8 text-xs rounded-xl",
@@ -29,11 +29,9 @@ const CompanyLogo = ({
 
   const companyName = getCompanyName(company, name);
 
-  const [hasImageError, setHasImageError] = useState(false);
+  const [failedImageUrl, setFailedImageUrl] = useState("");
 
-  useEffect(() => {
-    setHasImageError(false);
-  }, [imageUrl]);
+  const shouldShowImage = Boolean(imageUrl) && failedImageUrl !== imageUrl;
 
   const sizeClassName = sizeClassNames[size] || sizeClassNames.md;
 
@@ -45,12 +43,12 @@ const CompanyLogo = ({
     .filter(Boolean)
     .join(" ");
 
-  if (imageUrl && !hasImageError) {
+  if (shouldShowImage) {
     return (
       <img
         src={imageUrl}
         alt={`${companyName} logo`}
-        onError={() => setHasImageError(true)}
+        onError={() => setFailedImageUrl(imageUrl)}
         className={[baseClassName, "bg-white object-cover", imageClassName]
           .filter(Boolean)
           .join(" ")}

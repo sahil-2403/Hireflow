@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import { Link, useNavigate } from "react-router-dom";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { registerUser } from "../../api/auth.api";
@@ -101,7 +101,7 @@ const RegisterPage = () => {
     handleSubmit,
     setError,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(registerSchema),
@@ -115,7 +115,10 @@ const RegisterPage = () => {
     },
   });
 
-  const selectedRole = watch("role");
+  const selectedRole = useWatch({
+    control,
+    name: "role",
+  });
 
   const selectedRegistrationOption = useMemo(() => {
     return (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const sizeClassNames = {
   xs: "h-8 w-8 text-xs",
@@ -9,13 +9,7 @@ const sizeClassNames = {
 };
 
 const getDisplayName = (user, name) => {
-  return (
-    name ||
-    user?.firstName ||
-    user?.username ||
-    user?.email ||
-    "User"
-  );
+  return name || user?.firstName || user?.username || user?.email || "User";
 };
 
 const getInitials = (displayName) => {
@@ -43,11 +37,9 @@ const ProfileAvatar = ({
 
   const displayName = getDisplayName(user, name);
 
-  const [hasImageError, setHasImageError] = useState(false);
+  const [failedImageUrl, setFailedImageUrl] = useState("");
 
-  useEffect(() => {
-    setHasImageError(false);
-  }, [imageUrl]);
+  const shouldShowImage = Boolean(imageUrl) && failedImageUrl !== imageUrl;
 
   const sizeClassName = sizeClassNames[size] || sizeClassNames.md;
 
@@ -59,17 +51,13 @@ const ProfileAvatar = ({
     .filter(Boolean)
     .join(" ");
 
-  if (imageUrl && !hasImageError) {
+  if (shouldShowImage) {
     return (
       <img
         src={imageUrl}
         alt={`${displayName} profile`}
-        onError={() => setHasImageError(true)}
-        className={[
-          baseClassName,
-          "object-cover",
-          imageClassName,
-        ]
+        onError={() => setFailedImageUrl(imageUrl)}
+        className={[baseClassName, "object-cover", imageClassName]
           .filter(Boolean)
           .join(" ")}
       />
