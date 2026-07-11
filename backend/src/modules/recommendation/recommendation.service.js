@@ -138,9 +138,8 @@ const sortRecommendedJobs = (jobs, sortBy, order) => {
 
     if (firstValue === secondValue) {
       return (
-        (new Date(secondJob.createdAt || 0).getTime() -
-          new Date(firstJob.createdAt || 0).getTime()) *
-        direction
+        new Date(secondJob.createdAt || 0).getTime() -
+        new Date(firstJob.createdAt || 0).getTime()
       );
     }
 
