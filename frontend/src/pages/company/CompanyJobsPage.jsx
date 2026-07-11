@@ -6,12 +6,17 @@ import { listManagedJobs, updateManagedJobStatus } from "../../api/job.api";
 
 import getApiError from "../../utils/getApiError";
 import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
+import { formatDate } from "../../utils/formatDate";
+import { getOptionLabel } from "../../utils/options";
 
 import Button from "../../components/ui/Button";
 import { Card, CardBody } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
-import FormField from "../../components/ui/FormField";
 import PageHero from "../../components/ui/PageHero";
+import Alert from "../../components/ui/Alert";
+import FilterChips from "../../components/ui/FilterChips";
+import SelectInput from "../../components/ui/SelectInput";
+import TextInput from "../../components/ui/TextInput";
 
 import JobStatusBadge from "../../components/company/JobStatusBadge";
 import CompanySetupRequired from "../../components/company/CompanySetupRequired";
@@ -31,27 +36,6 @@ const JOB_STATUS_OPTIONS = [
   },
 ];
 
-const getInputClassName = () => {
-  return [
-    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
-    "placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50",
-  ].join(" ");
-};
-
-const formatDate = (value) => {
-  if (!value) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-  }).format(new Date(value));
-};
-
-const getStatusLabel = (status) => {
-  return JOB_STATUS_OPTIONS.find((option) => option.value === status)?.label;
-};
-
 const getActiveFilterChips = ({ search, selectedStatus }) => {
   const chips = [];
 
@@ -65,7 +49,7 @@ const getActiveFilterChips = ({ search, selectedStatus }) => {
   if (selectedStatus) {
     chips.push({
       key: "status",
-      label: getStatusLabel(selectedStatus) || selectedStatus,
+      label: getOptionLabel(JOB_STATUS_OPTIONS, selectedStatus, selectedStatus),
     });
   }
 
@@ -239,31 +223,22 @@ const CompanyJobsPage = () => {
               onSubmit={handleSearchSubmit}
               className="grid gap-4 lg:grid-cols-[1.4fr_260px_auto]"
             >
-              <FormField label="Search jobs" htmlFor="search">
-                <input
-                  id="search"
-                  type="search"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Search by title, description, or skills"
-                  className={getInputClassName()}
-                />
-              </FormField>
+              <TextInput
+                id="search"
+                type="search"
+                label="Search jobs"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Search by title, description, or skills"
+              />
 
-              <FormField label="Status" htmlFor="status">
-                <select
-                  id="status"
-                  value={selectedStatus}
-                  onChange={handleStatusFilterChange}
-                  className={getInputClassName()}
-                >
-                  {JOB_STATUS_OPTIONS.map((option) => (
-                    <option key={option.label} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
+              <SelectInput
+                id="status"
+                label="Status"
+                value={selectedStatus}
+                onChange={handleStatusFilterChange}
+                options={JOB_STATUS_OPTIONS}
+              />
 
               <div className="flex items-end gap-3">
                 <Button type="submit" className="shrink-0">
@@ -281,52 +256,20 @@ const CompanyJobsPage = () => {
               </div>
             </form>
 
-            {activeFilterChips.length > 0 && (
-              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-5">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Active filters:
-                </span>
-
-                {activeFilterChips.map((chip) => (
-                  <button
-                    key={chip.key}
-                    type="button"
-                    onClick={() => handleRemoveFilter(chip.key)}
-                    className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
-                  >
-                    {chip.label} ×
-                  </button>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={handleClearFilters}
-                  className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
-                >
-                  Clear all
-                </button>
-              </div>
-            )}
+            <FilterChips
+              chips={activeFilterChips}
+              onRemove={handleRemoveFilter}
+              onClear={handleClearFilters}
+              className="mt-5"
+            />
           </CardBody>
         </Card>
       )}
 
-      {successMessage && (
-        <div
-          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-          role="status"
-        >
-          {successMessage}
-        </div>
-      )}
+      {successMessage && <Alert variant="success">{successMessage}</Alert>}
 
       {errorMessage && requestStatus !== "error" && (
-        <div
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          role="alert"
-        >
-          {errorMessage}
-        </div>
+        <Alert variant="error">{errorMessage}</Alert>
       )}
 
       {requestStatus === "loading" && (
@@ -342,15 +285,9 @@ const CompanyJobsPage = () => {
       )}
 
       {requestStatus === "error" && (
-        <Card className="border-red-200 bg-red-50">
-          <CardBody>
-            <p className="font-bold text-red-700">Could not load jobs</p>
-
-            <p className="mt-2 text-sm leading-6 text-red-700">
-              {errorMessage}
-            </p>
-          </CardBody>
-        </Card>
+        <Alert variant="error" title="Could not load jobs">
+          {errorMessage}
+        </Alert>
       )}
 
       {requestStatus === "success" && jobs.length === 0 && (
@@ -398,8 +335,8 @@ const CompanyJobsPage = () => {
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-black text-slate-950">{job.title}</p>
 
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold capitalize text-slate-600 lg:hidden">
-                      {job.status}
+                    <span className="lg:hidden">
+                      <JobStatusBadge status={job.status} />
                     </span>
                   </div>
 

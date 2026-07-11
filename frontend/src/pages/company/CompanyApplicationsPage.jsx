@@ -6,6 +6,8 @@ import { listManagedApplicationJobs } from "../../api/application.api";
 
 import getApiError from "../../utils/getApiError";
 import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
+import { formatDate } from "../../utils/formatDate";
+import { getOptionLabel, getSortOptionByValue } from "../../utils/options";
 
 import MatchScoreBadge from "../../components/application/MatchScoreBadge";
 import JobStatusBadge from "../../components/company/JobStatusBadge";
@@ -14,8 +16,12 @@ import CompanySetupRequired from "../../components/company/CompanySetupRequired"
 import Button from "../../components/ui/Button";
 import { Card, CardBody } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
-import FormField from "../../components/ui/FormField";
 import PageHero from "../../components/ui/PageHero";
+import Alert from "../../components/ui/Alert";
+import FilterChips from "../../components/ui/FilterChips";
+import Pill from "../../components/ui/Pill";
+import SelectInput from "../../components/ui/SelectInput";
+import TextInput from "../../components/ui/TextInput";
 
 const JOB_STATUS_OPTIONS = [
   {
@@ -71,35 +77,6 @@ const SORT_OPTIONS = [
   },
 ];
 
-const getInputClassName = () => {
-  return [
-    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
-    "placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50",
-  ].join(" ");
-};
-
-const formatDate = (value) => {
-  if (!value) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-  }).format(new Date(value));
-};
-
-const getSortOption = (value) => {
-  return (
-    SORT_OPTIONS.find((option) => option.value === value) || SORT_OPTIONS[0]
-  );
-};
-
-const getStatusLabel = (value) => {
-  return (
-    JOB_STATUS_OPTIONS.find((option) => option.value === value)?.label || value
-  );
-};
-
 const getActiveFilterChips = ({ search, selectedStatus, sortValue }) => {
   const chips = [];
 
@@ -113,14 +90,16 @@ const getActiveFilterChips = ({ search, selectedStatus, sortValue }) => {
   if (selectedStatus) {
     chips.push({
       key: "status",
-      label: getStatusLabel(selectedStatus),
+      label: getOptionLabel(JOB_STATUS_OPTIONS, selectedStatus, selectedStatus),
     });
   }
 
   if (sortValue !== SORT_OPTIONS[0].value) {
     chips.push({
       key: "sort",
-      label: `Sort: ${getSortOption(sortValue).label}`,
+      label: `Sort: ${
+        getSortOptionByValue(SORT_OPTIONS, sortValue, SORT_OPTIONS[0]).label
+      }`,
     });
   }
 
@@ -164,7 +143,11 @@ const CompanyApplicationsPage = () => {
         setRequestStatus("loading");
         setErrorMessage("");
 
-        const sortOption = getSortOption(sortValue);
+        const sortOption = getSortOptionByValue(
+          SORT_OPTIONS,
+          sortValue,
+          SORT_OPTIONS[0],
+        );
 
         const params = {
           page,
@@ -286,46 +269,30 @@ const CompanyApplicationsPage = () => {
               onSubmit={handleSearchSubmit}
               className="grid gap-4 lg:grid-cols-[1.3fr_220px_260px_auto]"
             >
-              <FormField label="Search jobs" htmlFor="search">
-                <input
-                  id="search"
-                  type="search"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Search jobs by title, location, or skill"
-                  className={getInputClassName()}
-                />
-              </FormField>
+              <TextInput
+                id="search"
+                type="search"
+                label="Search jobs"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Search jobs by title, location, or skill"
+              />
 
-              <FormField label="Status" htmlFor="status">
-                <select
-                  id="status"
-                  value={selectedStatus}
-                  onChange={handleStatusChange}
-                  className={getInputClassName()}
-                >
-                  {JOB_STATUS_OPTIONS.map((option) => (
-                    <option key={option.label} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
+              <SelectInput
+                id="status"
+                label="Status"
+                value={selectedStatus}
+                onChange={handleStatusChange}
+                options={JOB_STATUS_OPTIONS}
+              />
 
-              <FormField label="Sort" htmlFor="sort">
-                <select
-                  id="sort"
-                  value={sortValue}
-                  onChange={handleSortChange}
-                  className={getInputClassName()}
-                >
-                  {SORT_OPTIONS.map((option) => (
-                    <option key={option.label} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
+              <SelectInput
+                id="sort"
+                label="Sort"
+                value={sortValue}
+                onChange={handleSortChange}
+                options={SORT_OPTIONS}
+              />
 
               <div className="flex items-end gap-3">
                 <Button type="submit">Search</Button>
@@ -340,24 +307,12 @@ const CompanyApplicationsPage = () => {
               </div>
             </form>
 
-            {activeFilterChips.length > 0 && (
-              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-5">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Active filters:
-                </span>
-
-                {activeFilterChips.map((chip) => (
-                  <button
-                    key={chip.key}
-                    type="button"
-                    onClick={() => handleRemoveFilter(chip.key)}
-                    className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
-                  >
-                    {chip.label} ×
-                  </button>
-                ))}
-              </div>
-            )}
+            <FilterChips
+              chips={activeFilterChips}
+              onRemove={handleRemoveFilter}
+              onClear={handleClearFilters}
+              className="mt-5"
+            />
           </CardBody>
         </Card>
       )}
@@ -377,17 +332,9 @@ const CompanyApplicationsPage = () => {
       )}
 
       {requestStatus === "error" && (
-        <Card className="border-red-200 bg-red-50">
-          <CardBody>
-            <p className="font-bold text-red-700">
-              Could not load application groups
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-red-700">
-              {errorMessage}
-            </p>
-          </CardBody>
-        </Card>
+        <Alert variant="error" title="Could not load application groups">
+          {errorMessage}
+        </Alert>
       )}
 
       {requestStatus === "success" && jobs.length === 0 && (
@@ -429,17 +376,17 @@ const CompanyApplicationsPage = () => {
                     </p>
 
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold capitalize text-slate-600">
-                      <span className="rounded-full bg-slate-100 px-3 py-1">
+                      <Pill variant="slate" className="ring-0">
                         {job.employmentType || "Employment unavailable"}
-                      </span>
+                      </Pill>
 
-                      <span className="rounded-full bg-slate-100 px-3 py-1">
+                      <Pill variant="slate" className="ring-0">
                         {job.workplaceType || "Workplace unavailable"}
-                      </span>
+                      </Pill>
 
-                      <span className="rounded-full bg-slate-100 px-3 py-1">
+                      <Pill variant="slate" className="ring-0">
                         {job.experienceLevel || "Level unavailable"}
-                      </span>
+                      </Pill>
                     </div>
                   </div>
 
