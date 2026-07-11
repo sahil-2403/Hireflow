@@ -1,4 +1,4 @@
-import apiClient from "./apiClient";
+import apiClient, { UPLOAD_REQUEST_TIMEOUT_MS } from "./apiClient";
 
 const login = async (credentials) => {
   const response = await apiClient.post("/auth/login", credentials);
@@ -60,7 +60,10 @@ const uploadProfilePhoto = async (photoFile) => {
 
   formData.append("photo", photoFile);
 
-  const response = await apiClient.patch("/auth/me/profile-photo", formData);
+  const response = await apiClient.patch("/auth/me/profile-photo", formData, {
+    timeout: UPLOAD_REQUEST_TIMEOUT_MS,
+    _isUploadRequest: true,
+  });
 
   return response.data;
 };

@@ -6,12 +6,16 @@ const CSRF_HEADER_NAME = "X-CSRF-Token";
 
 const UNSAFE_METHODS = new Set(["post", "put", "patch", "delete"]);
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
+
+const UPLOAD_REQUEST_TIMEOUT_MS = 120000;
+
 let csrfToken = null;
 let csrfTokenPromise = null;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: DEFAULT_REQUEST_TIMEOUT_MS,
   withCredentials: true,
 });
 
@@ -85,5 +89,7 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+export { UPLOAD_REQUEST_TIMEOUT_MS };
 
 export default apiClient;

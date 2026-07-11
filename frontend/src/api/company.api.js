@@ -1,4 +1,4 @@
-import apiClient from "./apiClient";
+import apiClient, { UPLOAD_REQUEST_TIMEOUT_MS } from "./apiClient";
 
 const appendCompanyDataToFormData = (formData, companyData) => {
   Object.entries(companyData).forEach(([key, value]) => {
@@ -24,7 +24,10 @@ const createCompanyProfile = async (companyData, logoFile = null) => {
   appendCompanyDataToFormData(formData, companyData);
   formData.append("logo", logoFile);
 
-  const response = await apiClient.post("/company", formData);
+  const response = await apiClient.post("/company", formData, {
+    timeout: UPLOAD_REQUEST_TIMEOUT_MS,
+    _isUploadRequest: true,
+  });
 
   return response.data;
 };
@@ -40,7 +43,10 @@ const uploadCompanyLogo = async (logoFile) => {
 
   formData.append("logo", logoFile);
 
-  const response = await apiClient.patch("/company/logo", formData);
+  const response = await apiClient.patch("/company/logo", formData, {
+    timeout: UPLOAD_REQUEST_TIMEOUT_MS,
+    _isUploadRequest: true,
+  });
 
   return response.data;
 };

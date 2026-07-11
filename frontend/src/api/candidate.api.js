@@ -1,4 +1,4 @@
-import apiClient from "./apiClient";
+import apiClient, { UPLOAD_REQUEST_TIMEOUT_MS } from "./apiClient";
 
 const getMyCandidateProfile = async () => {
   const response = await apiClient.get("/candidates/profile");
@@ -26,6 +26,10 @@ const uploadCandidateResume = async (resumeFile) => {
   const response = await apiClient.patch(
     "/candidates/profile/resume",
     formData,
+    {
+      timeout: UPLOAD_REQUEST_TIMEOUT_MS,
+      _isUploadRequest: true,
+    },
   );
 
   return response.data;
