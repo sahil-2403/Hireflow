@@ -9,7 +9,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "seed:demo": "node src/scripts/seedDemoData.js",
+    "seed:demo:reset": "node src/scripts/seedDemoData.js --reset"
   },
   "keywords": [],
   "author": "",
