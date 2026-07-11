@@ -112,7 +112,7 @@ const TopApplicantsByJobCard = ({ status, applicants, errorMessage }) => {
                         )}
 
                         <p className="mt-1 text-sm font-semibold text-slate-600">
-                          Applied for : {item.job?.title || "Job unavailable"}
+                          Applied for: {item.job?.title || "Job unavailable"}
                         </p>
                       </div>
                     </div>
