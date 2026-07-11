@@ -15,6 +15,7 @@ import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingErr
 import Button from "../../components/ui/Button";
 import { Card, CardBody } from "../../components/ui/Card";
 import PageHero from "../../components/ui/PageHero";
+import Alert from "../../components/ui/Alert";
 
 import CompanyMetricCard from "../../components/company/CompanyMetricCard";
 import HiringFunnelCard from "../../components/company/HiringFunnelCard";
@@ -345,17 +346,9 @@ const CompanyDashboardPage = () => {
       )}
 
       {overviewState.status === "error" && (
-        <Card className="border-red-200 bg-red-50">
-          <CardBody>
-            <p className="font-bold text-red-700">
-              Could not load company dashboard
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-red-700">
-              {overviewState.errorMessage}
-            </p>
-          </CardBody>
-        </Card>
+        <Alert variant="error" title="Could not load company dashboard">
+          {overviewState.errorMessage}
+        </Alert>
       )}
 
       {overviewState.status === "success" && (

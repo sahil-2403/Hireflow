@@ -16,6 +16,8 @@ import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
 import FormField from "../../components/ui/FormField";
 import PageHero from "../../components/ui/PageHero";
+import Alert from "../../components/ui/Alert";
+import Pill from "../../components/ui/Pill";
 
 const MAX_RESUME_SIZE = 5 * 1024 * 1024;
 
@@ -66,34 +68,6 @@ const getFileInputClassName = () => {
   ].join(" ");
 };
 
-const StatusPill = ({ hasResume }) => {
-  return (
-    <span
-      className={[
-        "inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold",
-        hasResume
-          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
-          : "bg-amber-50 text-amber-700 ring-1 ring-amber-100",
-      ].join(" ")}
-    >
-      {hasResume ? "Uploaded" : "Not uploaded"}
-    </span>
-  );
-};
-
-const AlertMessage = ({ type = "error", children }) => {
-  const className =
-    type === "success"
-      ? "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-      : "rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700";
-
-  return (
-    <div className={className} role={type === "success" ? "status" : "alert"}>
-      {children}
-    </div>
-  );
-};
-
 const ResumeStatusPanel = ({ hasResume, onViewResume, isOpeningResume }) => {
   return (
     <div
@@ -116,7 +90,9 @@ const ResumeStatusPanel = ({ hasResume, onViewResume, isOpeningResume }) => {
           </div>
 
           <div>
-            <StatusPill hasResume={hasResume} />
+            <Pill variant={hasResume ? "emerald" : "amber"}>
+              {hasResume ? "Uploaded" : "Not uploaded"}
+            </Pill>
 
             <h3 className="mt-3 text-lg font-black text-slate-950">
               {hasResume
@@ -516,14 +492,16 @@ const CandidateResumePage = () => {
         eyebrow="Candidate resume"
         title="Manage your resume"
         description="Upload a PDF resume and keep it ready for job applications."
-        meta={<StatusPill hasResume={hasResume} />}
+        meta={
+          <Pill variant={hasResume ? "emerald" : "amber"}>
+            {hasResume ? "Uploaded" : "Not uploaded"}
+          </Pill>
+        }
       />
 
-      {apiError && <AlertMessage>{apiError}</AlertMessage>}
+      {apiError && <Alert variant="error">{apiError}</Alert>}
 
-      {successMessage && (
-        <AlertMessage type="success">{successMessage}</AlertMessage>
-      )}
+      {successMessage && <Alert variant="success">{successMessage}</Alert>}
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card>
