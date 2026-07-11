@@ -387,20 +387,12 @@ const CompanyJobApplicationsPage = () => {
                 </div>
               </form>
 
-              {activeFilterChips.length > 0 && (
-                <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Active filters:
-                  </span>
-
-                  <FilterChips
-                    chips={activeFilterChips}
-                    onRemove={handleRemoveFilter}
-                    onClear={handleClearFilters}
-                    className="mt-5"
-                  />
-                </div>
-              )}
+              <FilterChips
+                chips={activeFilterChips}
+                onRemove={handleRemoveFilter}
+                onClear={handleClearFilters}
+                className="mt-5"
+              />
             </CardBody>
           </Card>
 
