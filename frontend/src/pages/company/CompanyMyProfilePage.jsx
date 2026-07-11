@@ -32,7 +32,8 @@ import {
   CardHeader,
 } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
-import FormField from "../../components/ui/FormField";
+import Alert from "../../components/ui/Alert";
+import TextInput from "../../components/ui/TextInput";
 import PageHero from "../../components/ui/PageHero";
 
 import CompanySetupRequired from "../../components/company/CompanySetupRequired";
@@ -53,16 +54,6 @@ const convertFormDataToPayload = (formData) => {
     phone: formData.phone || null,
     jobTitle: formData.jobTitle,
   };
-};
-
-const getInputClassName = (hasError = false) => {
-  return [
-    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
-    "placeholder:text-slate-400 focus:ring-4",
-    hasError
-      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
-      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
-  ].join(" ");
 };
 
 const getFullName = (values, user) => {
@@ -330,23 +321,9 @@ const CompanyMyProfilePage = () => {
         }
       />
 
-      {apiError && (
-        <div
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          role="alert"
-        >
-          {apiError}
-        </div>
-      )}
+      {apiError && <Alert variant="error">{apiError}</Alert>}
 
-      {successMessage && (
-        <div
-          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-          role="status"
-        >
-          {successMessage}
-        </div>
-      )}
+      {successMessage && <Alert variant="success">{successMessage}</Alert>}
 
       <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
         <aside className="grid gap-6">
@@ -385,62 +362,42 @@ const CompanyMyProfilePage = () => {
 
             <CardBody>
               <div className="grid gap-4 md:grid-cols-2">
-                <FormField
+                <TextInput
+                  id="firstName"
+                  type="text"
                   label="First name"
-                  htmlFor="firstName"
+                  placeholder="Sahil"
                   error={errors.firstName?.message}
-                >
-                  <input
-                    id="firstName"
-                    type="text"
-                    {...register("firstName")}
-                    className={getInputClassName(Boolean(errors.firstName))}
-                    placeholder="Sahil"
-                  />
-                </FormField>
+                  {...register("firstName")}
+                />
 
-                <FormField
+                <TextInput
+                  id="lastName"
+                  type="text"
                   label="Last name"
-                  htmlFor="lastName"
+                  placeholder="Pawar"
                   error={errors.lastName?.message}
-                >
-                  <input
-                    id="lastName"
-                    type="text"
-                    {...register("lastName")}
-                    className={getInputClassName(Boolean(errors.lastName))}
-                    placeholder="Pawar"
-                  />
-                </FormField>
+                  {...register("lastName")}
+                />
 
-                <FormField
+                <TextInput
+                  id="jobTitle"
+                  type="text"
                   label="Job title"
-                  htmlFor="jobTitle"
+                  placeholder="Founder, HR Manager, Technical Recruiter"
                   error={errors.jobTitle?.message}
-                >
-                  <input
-                    id="jobTitle"
-                    type="text"
-                    {...register("jobTitle")}
-                    className={getInputClassName(Boolean(errors.jobTitle))}
-                    placeholder="Founder, HR Manager, Technical Recruiter"
-                  />
-                </FormField>
+                  {...register("jobTitle")}
+                />
 
-                <FormField
+                <TextInput
+                  id="phone"
+                  type="text"
                   label="Phone"
-                  htmlFor="phone"
-                  error={errors.phone?.message}
+                  placeholder="+91 98765 43210"
                   hint="Optional. Maximum 20 characters."
-                >
-                  <input
-                    id="phone"
-                    type="text"
-                    {...register("phone")}
-                    className={getInputClassName(Boolean(errors.phone))}
-                    placeholder="+91 98765 43210"
-                  />
-                </FormField>
+                  error={errors.phone?.message}
+                  {...register("phone")}
+                />
               </div>
             </CardBody>
 
