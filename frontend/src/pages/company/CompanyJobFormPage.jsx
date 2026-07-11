@@ -25,7 +25,10 @@ import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingErr
 import Button from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
-import FormField from "../../components/ui/FormField";
+import Alert from "../../components/ui/Alert";
+import TextInput from "../../components/ui/TextInput";
+import TextareaInput from "../../components/ui/TextareaInput";
+import SelectInput from "../../components/ui/SelectInput";
 import PageHero from "../../components/ui/PageHero";
 
 import CompanySetupRequired from "../../components/company/CompanySetupRequired";
@@ -44,26 +47,6 @@ const defaultValues = {
   salaryMax: "",
   salaryCurrency: "INR",
   isSalaryVisible: true,
-};
-
-const getInputClassName = (hasError = false) => {
-  return [
-    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
-    "placeholder:text-slate-400 focus:ring-4",
-    hasError
-      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
-      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
-  ].join(" ");
-};
-
-const getTextareaClassName = (hasError = false) => {
-  return [
-    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm leading-6 text-slate-900 outline-none transition",
-    "placeholder:text-slate-400 focus:ring-4",
-    hasError
-      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
-      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
-  ].join(" ");
 };
 
 const splitLines = (value) => {
@@ -310,14 +293,7 @@ const CompanyJobFormPage = () => {
         className="grid gap-6"
         hidden={isCompanyMissing}
       >
-        {apiError && (
-          <div
-            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            role="alert"
-          >
-            {apiError}
-          </div>
-        )}
+        {apiError && <Alert variant="error">{apiError}</Alert>}
 
         <Card>
           <FormSectionTitle
@@ -327,125 +303,73 @@ const CompanyJobFormPage = () => {
           />
 
           <CardBody className="grid gap-5">
-            <FormField
+            <TextInput
+              id="title"
+              type="text"
               label="Job title"
-              htmlFor="title"
+              placeholder="Example: MERN Stack Developer"
               error={errors.title?.message}
-            >
-              <input
-                id="title"
-                type="text"
-                placeholder="Example: MERN Stack Developer"
-                className={getInputClassName(Boolean(errors.title))}
-                {...register("title")}
-              />
-            </FormField>
+              {...register("title")}
+            />
 
-            <FormField
+            <TextareaInput
+              id="description"
               label="Job description"
-              htmlFor="description"
-              error={errors.description?.message}
+              rows={7}
+              placeholder="Describe the role, team, work, and expectations."
               hint="Describe the role, team, work, expectations, and why the candidate should apply."
-            >
-              <textarea
-                id="description"
-                rows={7}
-                placeholder="Describe the role, team, work, and expectations."
-                className={getTextareaClassName(Boolean(errors.description))}
-                {...register("description")}
-              />
-            </FormField>
+              error={errors.description?.message}
+              {...register("description")}
+            />
 
             <div className="grid gap-5 lg:grid-cols-3">
-              <FormField
+              <SelectInput
+                id="employmentType"
                 label="Employment type"
-                htmlFor="employmentType"
+                placeholder="Select employment type"
+                options={EMPLOYMENT_TYPES}
                 error={errors.employmentType?.message}
-              >
-                <select
-                  id="employmentType"
-                  className={getInputClassName(Boolean(errors.employmentType))}
-                  {...register("employmentType")}
-                >
-                  <option value="">Select employment type</option>
+                {...register("employmentType")}
+              />
 
-                  {EMPLOYMENT_TYPES.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
-
-              <FormField
+              <SelectInput
+                id="workplaceType"
                 label="Workplace type"
-                htmlFor="workplaceType"
+                placeholder="Select workplace type"
+                options={WORKPLACE_TYPES}
                 error={errors.workplaceType?.message}
-              >
-                <select
-                  id="workplaceType"
-                  className={getInputClassName(Boolean(errors.workplaceType))}
-                  {...register("workplaceType")}
-                >
-                  <option value="">Select workplace type</option>
+                {...register("workplaceType")}
+              />
 
-                  {WORKPLACE_TYPES.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
-
-              <FormField
+              <SelectInput
+                id="experienceLevel"
                 label="Experience level"
-                htmlFor="experienceLevel"
+                placeholder="Select experience level"
+                options={EXPERIENCE_LEVELS}
                 error={errors.experienceLevel?.message}
-              >
-                <select
-                  id="experienceLevel"
-                  className={getInputClassName(Boolean(errors.experienceLevel))}
-                  {...register("experienceLevel")}
-                >
-                  <option value="">Select experience level</option>
-
-                  {EXPERIENCE_LEVELS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
+                {...register("experienceLevel")}
+              />
             </div>
 
-            <FormField
+            <TextInput
+              id="location"
+              type="text"
               label="Location"
-              htmlFor="location"
-              error={errors.location?.message}
+              placeholder="Example: Pune, India"
               hint="Examples: Pune, India · Remote · Mumbai, India"
-            >
-              <input
-                id="location"
-                type="text"
-                placeholder="Example: Pune, India"
-                className={getInputClassName(Boolean(errors.location))}
-                {...register("location")}
-              />
-            </FormField>
+              error={errors.location?.message}
+              {...register("location")}
+            />
 
-            <FormField
+            <TextInput
+              id="skillsText"
+              type="text"
               label="Skills"
-              htmlFor="skillsText"
+              placeholder="React, Node.js, MongoDB"
               hint="Separate skills with commas. Example: React, Node.js, MongoDB"
-            >
-              <input
-                id="skillsText"
-                type="text"
-                placeholder="React, Node.js, MongoDB"
-                className={getInputClassName(Boolean(errors.skillsText))}
-                {...register("skillsText")}
-              />
-            </FormField>
+              error={errors.skillsText?.message}
+              {...register("skillsText")}
+            />
           </CardBody>
         </Card>
 
@@ -458,37 +382,25 @@ const CompanyJobFormPage = () => {
 
           <CardBody>
             <div className="grid gap-5 lg:grid-cols-2">
-              <FormField
+              <TextareaInput
+                id="responsibilitiesText"
                 label="Responsibilities"
-                htmlFor="responsibilitiesText"
+                rows={7}
+                placeholder={`Build frontend features\nIntegrate backend APIs\nWrite clean reusable code`}
                 hint="Write one responsibility per line."
-              >
-                <textarea
-                  id="responsibilitiesText"
-                  rows={7}
-                  placeholder={`Build frontend features\nIntegrate backend APIs\nWrite clean reusable code`}
-                  className={getTextareaClassName(
-                    Boolean(errors.responsibilitiesText),
-                  )}
-                  {...register("responsibilitiesText")}
-                />
-              </FormField>
+                error={errors.responsibilitiesText?.message}
+                {...register("responsibilitiesText")}
+              />
 
-              <FormField
+              <TextareaInput
+                id="requirementsText"
                 label="Requirements"
-                htmlFor="requirementsText"
+                rows={7}
+                placeholder={`Good JavaScript knowledge\nReact project experience\nBasic REST API understanding`}
                 hint="Write one requirement per line."
-              >
-                <textarea
-                  id="requirementsText"
-                  rows={7}
-                  placeholder={`Good JavaScript knowledge\nReact project experience\nBasic REST API understanding`}
-                  className={getTextareaClassName(
-                    Boolean(errors.requirementsText),
-                  )}
-                  {...register("requirementsText")}
-                />
-              </FormField>
+                error={errors.requirementsText?.message}
+                {...register("requirementsText")}
+              />
             </div>
           </CardBody>
         </Card>
@@ -502,52 +414,35 @@ const CompanyJobFormPage = () => {
 
           <CardBody className="grid gap-5">
             <div className="grid gap-5 lg:grid-cols-[1fr_1fr_160px]">
-              <FormField
+              <TextInput
+                id="salaryMin"
+                type="number"
                 label="Minimum salary"
-                htmlFor="salaryMin"
+                min="0"
+                placeholder="300000"
                 error={errors.salaryMin?.message}
-              >
-                <input
-                  id="salaryMin"
-                  type="number"
-                  min="0"
-                  placeholder="300000"
-                  className={getInputClassName(Boolean(errors.salaryMin))}
-                  {...register("salaryMin")}
-                />
-              </FormField>
+                {...register("salaryMin")}
+              />
 
-              <FormField
+              <TextInput
+                id="salaryMax"
+                type="number"
                 label="Maximum salary"
-                htmlFor="salaryMax"
+                min="0"
+                placeholder="700000"
                 error={errors.salaryMax?.message}
-              >
-                <input
-                  id="salaryMax"
-                  type="number"
-                  min="0"
-                  placeholder="700000"
-                  className={getInputClassName(Boolean(errors.salaryMax))}
-                  {...register("salaryMax")}
-                />
-              </FormField>
+                {...register("salaryMax")}
+              />
 
-              <FormField
+              <TextInput
+                id="salaryCurrency"
+                type="text"
                 label="Currency"
-                htmlFor="salaryCurrency"
+                maxLength={3}
                 error={errors.salaryCurrency?.message}
-              >
-                <input
-                  id="salaryCurrency"
-                  type="text"
-                  maxLength={3}
-                  className={[
-                    getInputClassName(Boolean(errors.salaryCurrency)),
-                    "uppercase",
-                  ].join(" ")}
-                  {...register("salaryCurrency")}
-                />
-              </FormField>
+                inputClassName="uppercase"
+                {...register("salaryCurrency")}
+              />
             </div>
 
             <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
