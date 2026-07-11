@@ -8,6 +8,7 @@ import { listMyApplications } from "../../api/application.api";
 import useAuth from "../../hooks/useAuth";
 
 import getApiError from "../../utils/getApiError";
+import { formatShortDate } from "../../utils/formatDate";
 
 import CandidateProfileSummaryCard from "../../components/candidate/CandidateProfileSummaryCard";
 import CandidateResumeStatusCard from "../../components/candidate/CandidateResumeStatusCard";
@@ -17,43 +18,12 @@ import Button from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
 import PageHero from "../../components/ui/PageHero";
+import Alert from "../../components/ui/Alert";
+
+import ApplicationStatusBadge from "../../components/application/ApplicationStatusBadge";
 
 const getDisplayName = (user) => {
   return user?.firstName || user?.username || user?.email || "there";
-};
-
-const formatDate = (dateValue) => {
-  if (!dateValue) {
-    return "Date unavailable";
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(dateValue));
-};
-
-const getStatusClass = (status) => {
-  const normalizedStatus = status?.toLowerCase();
-
-  if (normalizedStatus?.includes("shortlist")) {
-    return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100";
-  }
-
-  if (normalizedStatus?.includes("interview")) {
-    return "bg-violet-50 text-violet-700 ring-1 ring-violet-100";
-  }
-
-  if (normalizedStatus?.includes("reject")) {
-    return "bg-red-50 text-red-700 ring-1 ring-red-100";
-  }
-
-  if (normalizedStatus?.includes("review")) {
-    return "bg-blue-50 text-blue-700 ring-1 ring-blue-100";
-  }
-
-  return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
 };
 
 const CandidateJobSearchCard = () => {
@@ -90,30 +60,6 @@ const CandidateJobSearchCard = () => {
   );
 };
 
-const AlertMessage = ({ children }) => {
-  return (
-    <div
-      className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-      role="alert"
-    >
-      {children}
-    </div>
-  );
-};
-
-const ApplicationStatusPill = ({ status }) => {
-  return (
-    <span
-      className={[
-        "inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold capitalize",
-        getStatusClass(status),
-      ].join(" ")}
-    >
-      {status || "Applied"}
-    </span>
-  );
-};
-
 const RecentApplicationRow = ({ application }) => {
   return (
     <article className="grid gap-4 p-5 transition hover:bg-slate-50/70 lg:grid-cols-[1.4fr_1fr_auto] lg:items-center">
@@ -137,11 +83,11 @@ const RecentApplicationRow = ({ application }) => {
         <p className="text-sm font-medium text-slate-500">Applied on</p>
 
         <p className="mt-1 text-sm font-semibold text-slate-800">
-          {formatDate(application.createdAt || application.appliedAt)}
+          {formatShortDate(application.createdAt || application.appliedAt)}
         </p>
       </div>
 
-      <ApplicationStatusPill status={application.status} />
+      <ApplicationStatusBadge status={application.status} />
     </article>
   );
 };
@@ -185,7 +131,7 @@ const RecentApplicationsSection = ({
 
       {status === "error" && (
         <CardBody>
-          <AlertMessage>{errorMessage}</AlertMessage>
+          <Alert variant="error">{errorMessage}</Alert>
         </CardBody>
       )}
 

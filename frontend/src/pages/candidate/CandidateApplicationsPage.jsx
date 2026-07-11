@@ -5,6 +5,8 @@ import { Link } from "react-router-dom";
 import { listMyApplications } from "../../api/application.api";
 
 import getApiError from "../../utils/getApiError";
+import { formatDate } from "../../utils/formatDate";
+import { getOptionLabel } from "../../utils/options";
 
 import ApplicationStatusBadge from "../../components/application/ApplicationStatusBadge";
 
@@ -12,6 +14,7 @@ import Button from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
 import PageHero from "../../components/ui/PageHero";
+import Alert from "../../components/ui/Alert";
 
 import CompanyLogo from "../../components/common/CompanyLogo";
 
@@ -48,16 +51,6 @@ const APPLICATION_STATUS_OPTIONS = [
 
 const SUMMARY_FETCH_LIMIT = 100;
 
-const formatDate = (value) => {
-  if (!value) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-  }).format(new Date(value));
-};
-
 const getApplicationId = (application) => {
   return application._id || application.id;
 };
@@ -76,11 +69,11 @@ const getStatusDescription = (selectedStatus) => {
     return "Showing all application statuses.";
   }
 
-  const option = APPLICATION_STATUS_OPTIONS.find(
-    (statusOption) => statusOption.value === selectedStatus,
-  );
-
-  return `Showing ${option?.label || selectedStatus} applications.`;
+  return `Showing ${getOptionLabel(
+    APPLICATION_STATUS_OPTIONS,
+    selectedStatus,
+    selectedStatus,
+  )} applications.`;
 };
 
 const getStatCardClasses = (tone) => {
@@ -129,17 +122,6 @@ const StatCard = ({ icon, label, value, description, tone = "blue" }) => {
         <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
       </CardBody>
     </Card>
-  );
-};
-
-const AlertMessage = ({ children }) => {
-  return (
-    <div
-      className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-      role="alert"
-    >
-      {children}
-    </div>
   );
 };
 
@@ -460,9 +442,9 @@ const CandidateApplicationsPage = () => {
       />
 
       {summaryStatus === "error" && (
-        <AlertMessage>
+        <Alert variant="warning">
           Application summary could not be loaded: {summaryErrorMessage}
-        </AlertMessage>
+        </Alert>
       )}
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -538,12 +520,7 @@ const CandidateApplicationsPage = () => {
 
           {status === "error" && (
             <CardBody>
-              <div
-                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                role="alert"
-              >
-                {errorMessage}
-              </div>
+              <Alert variant="error">{errorMessage}</Alert>
             </CardBody>
           )}
 
