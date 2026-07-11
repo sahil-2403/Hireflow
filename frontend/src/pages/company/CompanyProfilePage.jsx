@@ -22,32 +22,15 @@ import getApiError from "../../utils/getApiError";
 import Button from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
-import FormField from "../../components/ui/FormField";
+import Alert from "../../components/ui/Alert";
+import SelectInput from "../../components/ui/SelectInput";
+import TextInput from "../../components/ui/TextInput";
+import TextareaInput from "../../components/ui/TextareaInput";
 import PageHero from "../../components/ui/PageHero";
 
 const MAX_LOGO_SIZE = 2 * 1024 * 1024;
 
 const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
-const getInputClassName = (hasError = false) => {
-  return [
-    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition",
-    "placeholder:text-slate-400 focus:ring-4",
-    hasError
-      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
-      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
-  ].join(" ");
-};
-
-const getTextareaClassName = (hasError = false) => {
-  return [
-    "w-full rounded-xl border bg-white px-3 py-2.5 text-sm leading-6 text-slate-900 outline-none transition",
-    "placeholder:text-slate-400 focus:ring-4",
-    hasError
-      ? "border-red-400 focus:border-red-500 focus:ring-red-50"
-      : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
-  ].join(" ");
-};
 
 const getDefaultValues = (company = null) => {
   return {
@@ -368,23 +351,9 @@ const CompanyProfilePage = () => {
         }
       />
 
-      {apiError && (
-        <div
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          role="alert"
-        >
-          {apiError}
-        </div>
-      )}
+      {apiError && <Alert variant="error">{apiError}</Alert>}
 
-      {successMessage && (
-        <div
-          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-          role="status"
-        >
-          {successMessage}
-        </div>
-      )}
+      {successMessage && <Alert variant="success">{successMessage}</Alert>}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         <div className="grid gap-6">
@@ -505,101 +474,63 @@ const CompanyProfilePage = () => {
               </CardHeader>
 
               <CardBody className="grid gap-5">
-                <FormField
+                <TextInput
+                  id="name"
+                  type="text"
                   label="Company name"
-                  htmlFor="name"
+                  placeholder="Example: HireFlow Technologies"
                   error={errors.name?.message}
-                >
-                  <input
-                    id="name"
-                    type="text"
-                    placeholder="Example: HireFlow Technologies"
-                    className={getInputClassName(Boolean(errors.name))}
-                    {...register("name")}
-                  />
-                </FormField>
+                  {...register("name")}
+                />
 
                 <div className="grid gap-5 lg:grid-cols-2">
-                  <FormField
+                  <TextInput
+                    id="industry"
+                    type="text"
                     label="Industry"
-                    htmlFor="industry"
+                    placeholder="Example: Software Development"
                     error={errors.industry?.message}
-                  >
-                    <input
-                      id="industry"
-                      type="text"
-                      placeholder="Example: Software Development"
-                      className={getInputClassName(Boolean(errors.industry))}
-                      {...register("industry")}
-                    />
-                  </FormField>
+                    {...register("industry")}
+                  />
 
-                  <FormField
+                  <SelectInput
+                    id="companySize"
                     label="Company size"
-                    htmlFor="companySize"
+                    placeholder="Select company size"
+                    options={COMPANY_SIZES}
                     error={errors.companySize?.message}
-                  >
-                    <select
-                      id="companySize"
-                      className={getInputClassName(Boolean(errors.companySize))}
-                      {...register("companySize")}
-                    >
-                      <option value="">Select company size</option>
-
-                      {COMPANY_SIZES.map((size) => (
-                        <option key={size.value} value={size.value}>
-                          {size.label}
-                        </option>
-                      ))}
-                    </select>
-                  </FormField>
+                    {...register("companySize")}
+                  />
                 </div>
 
-                <FormField
+                <TextInput
+                  id="headquarters"
+                  type="text"
                   label="Headquarters"
-                  htmlFor="headquarters"
+                  placeholder="Example: Pune, Maharashtra"
                   error={errors.headquarters?.message}
-                >
-                  <input
-                    id="headquarters"
-                    type="text"
-                    placeholder="Example: Pune, Maharashtra"
-                    className={getInputClassName(Boolean(errors.headquarters))}
-                    {...register("headquarters")}
-                  />
-                </FormField>
+                  {...register("headquarters")}
+                />
 
-                <FormField
+                <TextInput
+                  id="websiteUrl"
+                  type="url"
                   label="Website URL"
-                  htmlFor="websiteUrl"
-                  error={errors.websiteUrl?.message}
+                  placeholder="https://example.com"
                   hint="Optional. Example: https://example.com"
-                >
-                  <input
-                    id="websiteUrl"
-                    type="url"
-                    placeholder="https://example.com"
-                    className={getInputClassName(Boolean(errors.websiteUrl))}
-                    {...register("websiteUrl")}
-                  />
-                </FormField>
+                  error={errors.websiteUrl?.message}
+                  {...register("websiteUrl")}
+                />
 
-                <FormField
+                <TextareaInput
+                  id="description"
                   label="Description"
-                  htmlFor="description"
-                  error={errors.description?.message}
+                  rows={6}
+                  placeholder="Write a short company description."
                   hint="Optional. Keep it short and candidate-friendly."
-                >
-                  <textarea
-                    id="description"
-                    rows={6}
-                    placeholder="Write a short company description."
-                    className={getTextareaClassName(
-                      Boolean(errors.description),
-                    )}
-                    {...register("description")}
-                  />
-                </FormField>
+                  error={errors.description?.message}
+                  {...register("description")}
+                />
               </CardBody>
             </Card>
 
