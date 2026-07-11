@@ -23,6 +23,7 @@ import FilterChips from "../../components/ui/FilterChips";
 import Pill from "../../components/ui/Pill";
 import SelectInput from "../../components/ui/SelectInput";
 import TextInput from "../../components/ui/TextInput";
+import Alert from "../../components/ui/Alert";
 
 import CompanyLogo from "../../components/common/CompanyLogo";
 
@@ -897,22 +898,7 @@ const JobsPage = () => {
             )}
           </div>
 
-          {status === "loading" && (
-            <Card>
-              <CardBody>
-                <p className="text-sm text-slate-600">Loading jobs...</p>
-              </CardBody>
-            </Card>
-          )}
-
-          {status === "error" && (
-            <div
-              className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-              role="alert"
-            >
-              {errorMessage}
-            </div>
-          )}
+          {status === "error" && <Alert variant="error">{errorMessage}</Alert>}
 
           {status === "success" && jobs.length === 0 && (
             <EmptyState
