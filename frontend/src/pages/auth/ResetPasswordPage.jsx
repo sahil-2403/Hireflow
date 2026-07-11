@@ -15,6 +15,7 @@ import PasswordField from "../../components/common/PasswordField";
 
 import Button from "../../components/ui/Button";
 import { Card, CardBody } from "../../components/ui/Card";
+import Alert from "../../components/ui/Alert";
 
 const ResetPasswordPage = () => {
   const { token } = useParams();
@@ -113,21 +114,15 @@ const ResetPasswordPage = () => {
             </div>
 
             {apiError && (
-              <div
-                className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                role="alert"
-              >
+              <Alert variant="error" className="mb-6">
                 {apiError}
-              </div>
+              </Alert>
             )}
 
             {!token && (
-              <div
-                className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-                role="alert"
-              >
+              <Alert variant="error" className="mb-6">
                 Password reset token is missing.
-              </div>
+              </Alert>
             )}
 
             <form
