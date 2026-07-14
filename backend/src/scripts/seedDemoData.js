@@ -1657,7 +1657,7 @@ const createJobs = async ({ userMap, companyMap, jobMap }) => {
   }
 };
 
-const createApplications = async ({ userMap, candidateMap, jobMap }) => {
+const createApplications = async ({ candidateMap, jobMap }) => {
   let createdApplicationsCount = 0;
 
   for (const applicationSeed of applicationSeeds) {
@@ -1740,10 +1740,9 @@ const seedDemoData = async () => {
   await createJobs({ userMap, companyMap, jobMap });
 
   const applicationCount = await createApplications({
-    userMap,
-    candidateMap,
-    jobMap,
-  });
+  candidateMap,
+  jobMap,
+});
 
   printSeedSummary({
     users: userMap.size,
