@@ -7,10 +7,18 @@ import { ROLES } from "../../src/config/constants.js";
 import {
   createVerifiedUser,
   loginUser,
-  authHeader,
+  postWithCsrf,
 } from "../helpers/auth.helpers.js";
 
 describe("Role-based authorization", () => {
+  test("unauthenticated request cannot access protected company route", async () => {
+    const response = await request(app)
+      .get("/api/v1/company/recruiters")
+      .expect(401);
+
+    expect(response.body.message).toBe("Authentication token missing");
+  });
+
   test("candidate cannot access company recruiter management", async () => {
     const candidate = {
       username: "authorization_candidate",
@@ -21,15 +29,12 @@ describe("Role-based authorization", () => {
 
     await createVerifiedUser(candidate);
 
-    const { accessToken } = await loginUser({
+    const { agent } = await loginUser({
       email: candidate.email,
       password: candidate.password,
     });
 
-    const response = await request(app)
-      .get("/api/v1/company/recruiters")
-      .set(authHeader(accessToken))
-      .expect(403);
+    const response = await agent.get("/api/v1/company/recruiters").expect(403);
 
     expect(response.body.message).toBe(
       "You are not allowed to perform this action",
@@ -46,18 +51,19 @@ describe("Role-based authorization", () => {
 
     await createVerifiedUser(candidate);
 
-    const { accessToken } = await loginUser({
+    const { agent } = await loginUser({
       email: candidate.email,
       password: candidate.password,
     });
 
-    await request(app)
-      .get("/api/v1/jobs/manage")
-      .set(authHeader(accessToken))
-      .expect(403);
+    const response = await agent.get("/api/v1/jobs/manage").expect(403);
+
+    expect(response.body.message).toBe(
+      "You are not allowed to perform this action",
+    );
   });
 
-  test("company owner cannot access candidate profile routes", async () => {
+  test("company admin cannot access candidate profile routes", async () => {
     const owner = {
       username: "authorization_owner",
       email: "authorization.owner@example.com",
@@ -67,15 +73,16 @@ describe("Role-based authorization", () => {
 
     await createVerifiedUser(owner);
 
-    const { accessToken } = await loginUser({
+    const { agent } = await loginUser({
       email: owner.email,
       password: owner.password,
     });
 
-    await request(app)
-      .get("/api/v1/candidates/profile")
-      .set(authHeader(accessToken))
-      .expect(403);
+    const response = await agent.get("/api/v1/candidates/profile").expect(403);
+
+    expect(response.body.message).toBe(
+      "You are not allowed to perform this action",
+    );
   });
 
   test("recruiter cannot apply to a job as a candidate", async () => {
@@ -88,17 +95,22 @@ describe("Role-based authorization", () => {
 
     await createVerifiedUser(recruiter);
 
-    const { accessToken } = await loginUser({
+    const { agent } = await loginUser({
       email: recruiter.email,
       password: recruiter.password,
     });
 
-    await request(app)
-      .post("/api/v1/applications/jobs/507f1f77bcf86cd799439011/apply")
-      .set(authHeader(accessToken))
-      .send({
+    const response = await postWithCsrf(
+      agent,
+      "/api/v1/applications/jobs/507f1f77bcf86cd799439011/apply",
+      {
         coverLetter: "Test",
-      })
-      .expect(403);
+      },
+      403,
+    );
+
+    expect(response.body.message).toBe(
+      "You are not allowed to perform this action",
+    );
   });
 });

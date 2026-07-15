@@ -1,4 +1,3 @@
-import request from "supertest";
 import { vi } from "vitest";
 
 vi.mock("../../src/shared/services/email.service.js", () => ({
@@ -7,45 +6,62 @@ vi.mock("../../src/shared/services/email.service.js", () => ({
   }),
 }));
 
-import app from "../../src/app.js";
-
 import User from "../../src/modules/auth/auth.model.js";
 import EmailVerificationToken from "../../src/modules/auth/emailVerificationToken.model.js";
 import RefreshToken from "../../src/modules/auth/refreshToken.model.js";
 
 import { ROLES } from "../../src/config/constants.js";
 
-describe("Authentication API", () => {
-  const validCandidate = {
-    username: "sahil_test",
-    email: "sahil.test@example.com",
-    password: "Password123",
-  };
+import {
+  createTestAgent,
+  getCookieValue,
+  getSetCookies,
+  postWithCsrf,
+} from "../helpers/auth.helpers.js";
 
+import {
+  getAccessTokenCookieName,
+  getRefreshTokenCookieName,
+} from "../../src/modules/auth/auth.cookie.js";
+
+describe("Authentication API", () => {
   test("registers a candidate and stores a hashed password", async () => {
-    const response = await request(app)
-      .post("/api/v1/auth/register")
-      .send(validCandidate)
-      .expect(201);
+    const agent = createTestAgent();
+
+    const candidate = {
+      username: "sahil_test",
+      email: "sahil.test@example.com",
+      password: "Password123",
+    };
+
+    const response = await postWithCsrf(
+      agent,
+      "/api/v1/auth/register",
+      candidate,
+      201,
+    );
 
     expect(response.body.success).toBe(true);
-    expect(response.body.message).toContain("Registration successful");
+    expect(response.body.message).toContain(
+      "Candidate registration successful",
+    );
 
     expect(response.body.data).toEqual(
       expect.objectContaining({
-        email: validCandidate.email,
+        email: candidate.email,
         userId: expect.any(String),
+        role: ROLES.CANDIDATE,
       }),
     );
 
     expect(response.body.data.verificationUrl).toBeUndefined();
 
     const user = await User.findOne({
-      email: validCandidate.email,
+      email: candidate.email,
     }).select("+password");
 
     expect(user).not.toBeNull();
-    expect(user.password).not.toBe(validCandidate.password);
+    expect(user.password).not.toBe(candidate.password);
 
     expect(user.role).toBe(ROLES.CANDIDATE);
     expect(user.isEmailVerified).toBe(false);
@@ -58,15 +74,54 @@ describe("Authentication API", () => {
     expect(verificationToken.tokenHash).toEqual(expect.any(String));
   });
 
+  test("registers a company admin account", async () => {
+    const agent = createTestAgent();
+
+    const response = await postWithCsrf(
+      agent,
+      "/api/v1/auth/register",
+      {
+        username: "company_admin_test",
+        email: "company.admin.test@example.com",
+        password: "Password123",
+        role: ROLES.OWNER,
+      },
+      201,
+    );
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.message).toContain(
+      "Company admin registration successful",
+    );
+
+    expect(response.body.data).toEqual(
+      expect.objectContaining({
+        email: "company.admin.test@example.com",
+        role: ROLES.OWNER,
+      }),
+    );
+
+    const user = await User.findOne({
+      email: "company.admin.test@example.com",
+    });
+
+    expect(user.role).toBe(ROLES.OWNER);
+    expect(user.isEmailVerified).toBe(false);
+  });
+
   test("rejects an invalid registration payload", async () => {
-    const response = await request(app)
-      .post("/api/v1/auth/register")
-      .send({
+    const agent = createTestAgent();
+
+    const response = await postWithCsrf(
+      agent,
+      "/api/v1/auth/register",
+      {
         username: "ab",
         email: "invalid-email",
         password: "weak",
-      })
-      .expect(400);
+      },
+      400,
+    );
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe("Validation failed");
@@ -76,53 +131,153 @@ describe("Authentication API", () => {
     expect(await User.countDocuments()).toBe(0);
   });
 
-  test("prevents login before email verification", async () => {
-    await request(app)
-      .post("/api/v1/auth/register")
-      .send(validCandidate)
-      .expect(201);
+  test("rejects public registration with recruiter role", async () => {
+    const agent = createTestAgent();
 
-    const response = await request(app)
-      .post("/api/v1/auth/login")
-      .send({
-        email: validCandidate.email,
-        password: validCandidate.password,
-      })
-      .expect(403);
+    const response = await postWithCsrf(
+      agent,
+      "/api/v1/auth/register",
+      {
+        username: "recruiter_public",
+        email: "recruiter.public@example.com",
+        password: "Password123",
+        role: ROLES.RECRUITER,
+      },
+      400,
+    );
+
+    expect(response.body.success).toBe(false);
+
+    expect(await User.countDocuments()).toBe(0);
+  });
+
+  test("rejects duplicate email for a verified account", async () => {
+    await User.create({
+      username: "duplicate_email_user",
+      email: "duplicate.email@example.com",
+      password: "Password123",
+      role: ROLES.CANDIDATE,
+      isEmailVerified: true,
+      isActive: true,
+    });
+
+    const agent = createTestAgent();
+
+    const response = await postWithCsrf(
+      agent,
+      "/api/v1/auth/register",
+      {
+        username: "another_duplicate_email_user",
+        email: "duplicate.email@example.com",
+        password: "Password123",
+        role: ROLES.CANDIDATE,
+      },
+      409,
+    );
+
+    expect(response.body.message).toBe("Email already exists");
+  });
+
+  test("rejects duplicate username for a different email", async () => {
+    await User.create({
+      username: "duplicate_username",
+      email: "duplicate.username.one@example.com",
+      password: "Password123",
+      role: ROLES.CANDIDATE,
+      isEmailVerified: true,
+      isActive: true,
+    });
+
+    const agent = createTestAgent();
+
+    const response = await postWithCsrf(
+      agent,
+      "/api/v1/auth/register",
+      {
+        username: "duplicate_username",
+        email: "duplicate.username.two@example.com",
+        password: "Password123",
+        role: ROLES.CANDIDATE,
+      },
+      409,
+    );
+
+    expect(response.body.message).toBe("Username already exists");
+  });
+
+  test("prevents login before email verification", async () => {
+    const agent = createTestAgent();
+
+    const candidate = {
+      username: "unverified_candidate",
+      email: "unverified.candidate@example.com",
+      password: "Password123",
+    };
+
+    await postWithCsrf(agent, "/api/v1/auth/register", candidate, 201);
+
+    const response = await postWithCsrf(
+      agent,
+      "/api/v1/auth/login",
+      {
+        email: candidate.email,
+        password: candidate.password,
+      },
+      403,
+    );
 
     expect(response.body.message).toBe(
       "Please verify your email before logging in",
     );
   });
 
-  test("logs in a verified candidate and creates a refresh session", async () => {
+  test("logs in a verified candidate and creates auth cookies plus refresh session", async () => {
+    const candidate = {
+      username: "verified_candidate_login",
+      email: "verified.candidate.login@example.com",
+      password: "Password123",
+    };
+
     const user = await User.create({
-      ...validCandidate,
+      ...candidate,
       role: ROLES.CANDIDATE,
       isEmailVerified: true,
       isActive: true,
     });
 
-    const response = await request(app)
-      .post("/api/v1/auth/login")
-      .send({
-        email: validCandidate.email,
-        password: validCandidate.password,
-      })
-      .expect(200);
+    const agent = createTestAgent();
+
+    const response = await postWithCsrf(
+      agent,
+      "/api/v1/auth/login",
+      {
+        email: candidate.email,
+        password: candidate.password,
+      },
+      200,
+    );
 
     expect(response.body.success).toBe(true);
 
     expect(response.body.data).toEqual(
       expect.objectContaining({
         user: expect.objectContaining({
-          email: validCandidate.email,
+          email: candidate.email,
           role: ROLES.CANDIDATE,
         }),
-        accessToken: expect.any(String),
-        refreshToken: expect.any(String),
       }),
     );
+
+    expect(response.body.data.accessToken).toBeUndefined();
+    expect(response.body.data.refreshToken).toBeUndefined();
+
+    const cookies = getSetCookies(response);
+
+    const accessToken = getCookieValue(cookies, getAccessTokenCookieName());
+    const refreshToken = getCookieValue(cookies, getRefreshTokenCookieName());
+
+    expect(accessToken).toEqual(expect.any(String));
+    expect(refreshToken).toEqual(expect.any(String));
 
     const storedRefreshTokens = await RefreshToken.find({
       userId: user._id,
@@ -130,26 +285,60 @@ describe("Authentication API", () => {
 
     expect(storedRefreshTokens).toHaveLength(1);
 
-    expect(storedRefreshTokens[0].tokenHash).not.toBe(
-      response.body.data.refreshToken,
-    );
+    expect(storedRefreshTokens[0].tokenHash).not.toBe(refreshToken);
   });
 
   test("rejects incorrect login credentials", async () => {
+    const candidate = {
+      username: "wrong_password_candidate",
+      email: "wrong.password.candidate@example.com",
+      password: "Password123",
+    };
+
     await User.create({
-      ...validCandidate,
+      ...candidate,
       role: ROLES.CANDIDATE,
       isEmailVerified: true,
+      isActive: true,
     });
 
-    const response = await request(app)
-      .post("/api/v1/auth/login")
-      .send({
-        email: validCandidate.email,
+    const agent = createTestAgent();
+
+    const response = await postWithCsrf(
+      agent,
+      "/api/v1/auth/login",
+      {
+        email: candidate.email,
         password: "WrongPassword123",
-      })
-      .expect(401);
+      },
+      401,
+    );
 
     expect(response.body.message).toBe("Invalid email or password");
+  });
+
+  test("rejects login for deactivated user", async () => {
+    await User.create({
+      username: "inactive_user",
+      email: "inactive.user@example.com",
+      password: "Password123",
+      role: ROLES.CANDIDATE,
+      isEmailVerified: true,
+      isActive: false,
+    });
+
+    const agent = createTestAgent();
+
+    const response = await postWithCsrf(
+      agent,
+      "/api/v1/auth/login",
+      {
+        email: "inactive.user@example.com",
+        password: "Password123",
+      },
+      403,
+    );
+
+    expect(response.body.message).toBe("This account has been deactivated");
   });
 });
