@@ -1740,9 +1740,9 @@ const seedDemoData = async () => {
   await createJobs({ userMap, companyMap, jobMap });
 
   const applicationCount = await createApplications({
-  candidateMap,
-  jobMap,
-});
+    candidateMap,
+    jobMap,
+  });
 
   printSeedSummary({
     users: userMap.size,
