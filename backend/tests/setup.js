@@ -45,6 +45,9 @@ process.env.AI_CANDIDATE_COMPARISON_DAILY_LIMIT = "5";
 process.env.AI_MAX_SHORTLIST_CANDIDATES = "10";
 process.env.AI_MAX_COMPARISON_CANDIDATES = "3";
 
+process.env.GEMINI_API_BASE_URL =
+  "https://generativelanguage.googleapis.com/v1beta";
+
 process.env.SMTP_HOST = "smtp.example.com";
 process.env.SMTP_PORT = "587";
 process.env.SMTP_SECURE = "false";

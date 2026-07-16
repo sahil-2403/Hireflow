@@ -20,6 +20,16 @@ const getNumberEnv = (key, fallback) => {
   return value;
 };
 
+const getStringEnv = (key, fallback = null) => {
+  const value = process.env[key];
+
+  if (!value || value.trim() === "") {
+    return fallback;
+  }
+
+  return value.trim();
+};
+
 const getAiFeatureDailyLimits = () => {
   return {
     [AI_FEATURE_KEYS.RESUME_ANALYSIS]: getNumberEnv(
@@ -63,8 +73,13 @@ const getAiFeatureDailyLimit = (featureKey) => {
 const getAiConfig = () => {
   return {
     enabled: getBooleanEnv("AI_ENABLED", false),
-    provider: process.env.AI_PROVIDER || "gemini",
-    model: process.env.AI_MODEL || null,
+    provider: getStringEnv("AI_PROVIDER", "gemini"),
+    model: getStringEnv("AI_MODEL"),
+    geminiApiKey: getStringEnv("GEMINI_API_KEY"),
+    geminiApiBaseUrl: getStringEnv(
+      "GEMINI_API_BASE_URL",
+      "https://generativelanguage.googleapis.com/v1beta",
+    ),
     requestTimeoutMs: getNumberEnv("AI_REQUEST_TIMEOUT_MS", 30000),
     maxShortlistCandidates: getNumberEnv("AI_MAX_SHORTLIST_CANDIDATES", 10),
     maxComparisonCandidates: getNumberEnv("AI_MAX_COMPARISON_CANDIDATES", 3),
