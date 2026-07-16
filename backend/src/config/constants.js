@@ -66,3 +66,14 @@ export const AI_FEATURE_LABELS = Object.freeze({
   [AI_FEATURE_KEYS.SHORTLIST]: "AI Suggested Shortlist",
   [AI_FEATURE_KEYS.CANDIDATE_COMPARISON]: "AI Candidate Comparison",
 });
+
+export const RESUME_ANALYSIS_STATUS = Object.freeze({
+  PENDING: "pending",
+  COMPLETED: "completed",
+  FAILED: "failed",
+});
+
+export const RESUME_ANALYSIS_SOURCE_TYPES = Object.freeze({
+  CANDIDATE_PROFILE_RESUME: "candidate_profile_resume",
+  APPLICATION_RESUME: "application_resume",
+});
