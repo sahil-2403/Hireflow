@@ -103,6 +103,78 @@ const JOB_RESUME_FIT_OUTPUT_SHAPE = {
   beforeApplyingChecklist: [],
 };
 
+const APPLICATION_RESUME_REVIEW_OUTPUT_SHAPE = {
+  summary: "",
+  matchedEvidence: [
+    {
+      requirement: "",
+      evidence: "",
+    },
+  ],
+  missingOrWeakAreas: [],
+  resumeStrengths: [],
+  interviewFocus: [],
+  riskNotes: [],
+};
+
+const buildApplicationResumeReviewPrompt = ({
+  job,
+  candidateProfile,
+  resumeAnalysis,
+  match,
+}) => {
+  return buildJsonPrompt({
+    task: [
+      "Review the candidate's submitted resume against this job.",
+      "Use the deterministic match score as the scoring source of truth.",
+      "Explain job-related evidence found in the resume.",
+      "Identify missing or weak areas that should be verified.",
+      "Suggest interview focus areas.",
+      "Do not recommend hiring, rejecting, or making a final decision.",
+    ].join(" "),
+
+    context: {
+      job: {
+        title: job.title,
+        description: job.description,
+        requirements: job.requirements,
+        skills: job.skills,
+        location: job.location,
+        employmentType: job.employmentType,
+        workplaceType: job.workplaceType,
+        experienceLevel: job.experienceLevel,
+      },
+
+      candidateProfile: {
+        headline: candidateProfile.headline,
+        summary: candidateProfile.summary,
+        skills: candidateProfile.skills,
+        experienceLevel: candidateProfile.experienceLevel,
+        location: candidateProfile.location,
+        targetJobTitles: candidateProfile.targetJobTitles,
+      },
+
+      resumeAnalysis: {
+        extracted: resumeAnalysis.extracted,
+        evaluation: resumeAnalysis.evaluation,
+      },
+
+      deterministicMatch: {
+        matchScore: match.matchScore,
+        matchLabel: match.matchLabel,
+        matchBasis: match.matchBasis,
+        profileScore: match.profileScore,
+        resumeBoost: match.resumeBoost,
+        matchedSkills: match.matchedSkills,
+        missingSkills: match.missingSkills,
+        resumeEvidence: match.resumeEvidence,
+      },
+    },
+
+    outputShape: APPLICATION_RESUME_REVIEW_OUTPUT_SHAPE,
+  });
+};
+
 const buildJobResumeFitPrompt = ({
   candidateProfile,
   job,
@@ -199,6 +271,8 @@ export {
   buildJsonPrompt,
   buildResumeAnalysisPrompt,
   buildJobResumeFitPrompt,
+  buildApplicationResumeReviewPrompt,
   RESUME_ANALYSIS_OUTPUT_SHAPE,
   JOB_RESUME_FIT_OUTPUT_SHAPE,
+  APPLICATION_RESUME_REVIEW_OUTPUT_SHAPE,
 };

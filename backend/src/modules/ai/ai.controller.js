@@ -3,13 +3,32 @@ import asyncHandler from "../../shared/utils/asyncHandler.js";
 
 import {
   analyzeMyCandidateResume,
-  getMyCandidateResumeAnalysis,
   checkMyCandidateJobResumeFit,
+  getMyCandidateResumeAnalysis,
+  reviewManagedApplicationResumeMatch,
 } from "./ai.service.js";
 
 const getAuthUserId = (req) => {
   return req.user?._id || req.user?.id;
 };
+
+const reviewApplicationResumeMatch = asyncHandler(async (req, res) => {
+  const result = await reviewManagedApplicationResumeMatch({
+    userId: getAuthUserId(req),
+    role: req.user.role,
+    applicationId: req.params.applicationId,
+  });
+
+  const statusCode = result.reused ? 200 : 201;
+
+  const message = result.reused
+    ? "AI Resume Match Review already available for this application"
+    : "AI Resume Match Review generated successfully";
+
+  return res
+    .status(statusCode)
+    .json(new ApiResponse(statusCode, message, result));
+});
 
 const analyzeCandidateResume = asyncHandler(async (req, res) => {
   const result = await analyzeMyCandidateResume(getAuthUserId(req));
@@ -56,4 +75,5 @@ export {
   analyzeCandidateResume,
   checkCandidateJobResumeFit,
   getCandidateResumeAnalysis,
+  reviewApplicationResumeMatch,
 };

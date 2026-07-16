@@ -9,6 +9,7 @@ import {
   analyzeCandidateResume,
   checkCandidateJobResumeFit,
   getCandidateResumeAnalysis,
+  reviewApplicationResumeMatch,
 } from "./ai.controller.js";
 
 const router = express.Router();
@@ -31,6 +32,12 @@ router.post(
   "/jobs/:jobId/resume-fit",
   authorize(ROLES.CANDIDATE),
   checkCandidateJobResumeFit,
+);
+
+router.post(
+  "/applications/:applicationId/resume-review",
+  authorize(ROLES.OWNER, ROLES.RECRUITER),
+  reviewApplicationResumeMatch,
 );
 
 export default router;

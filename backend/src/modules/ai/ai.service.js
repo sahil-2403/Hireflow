@@ -29,15 +29,21 @@ import {
   findLatestCompletedResumeAnalysis,
   findLatestResumeAnalysis,
   isResumeAnalysisFreshForSource,
+  buildApplicationResumeSource,
 } from "../resumeAnalysis/resumeAnalysis.service.js";
 
 import {
   buildAiSystemInstruction,
   buildJobResumeFitPrompt,
   buildResumeAnalysisPrompt,
+  buildApplicationResumeReviewPrompt,
 } from "./aiPrompt.service.js";
 
 import { ensureAiProviderReady, generateAiJson } from "./aiProvider.service.js";
+
+import Application from "../application/application.model.js";
+
+import { getStaffCompany } from "../../shared/utils/companyAccess.js";
 
 const RESUME_DOWNLOAD_FAILED_MESSAGE =
   "Unable to download resume for AI analysis";
@@ -517,6 +523,348 @@ const checkMyCandidateJobResumeFit = async ({ userId, jobId }) => {
   };
 };
 
+const APPLICATION_RESUME_REVIEW_NOT_FOUND_MESSAGE = "Application not found";
+
+const normalizeMatchedEvidence = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        return {
+          requirement: null,
+          evidence: item.trim(),
+        };
+      }
+
+      return {
+        requirement: toStringOrNull(item?.requirement),
+        evidence: toStringOrNull(item?.evidence),
+      };
+    })
+    .filter((item) => item.evidence);
+};
+
+const normalizeApplicationResumeReviewOutput = (output) => {
+  return {
+    summary:
+      toStringOrNull(output?.summary) ||
+      "The submitted resume has been reviewed against this job.",
+    matchedEvidence: normalizeMatchedEvidence(output?.matchedEvidence),
+    missingOrWeakAreas: toStringArray(output?.missingOrWeakAreas),
+    resumeStrengths: toStringArray(output?.resumeStrengths),
+    interviewFocus: toStringArray(output?.interviewFocus),
+    riskNotes: toStringArray(output?.riskNotes),
+  };
+};
+
+const formatApplicationResumeReview = (application) => {
+  const review = application.resumeReviewSnapshot;
+
+  if (!review) {
+    return null;
+  }
+
+  return {
+    applicationId: application._id.toString(),
+    jobId: application.jobId?._id?.toString?.() || application.jobId.toString(),
+    resumeAnalysisId: review.resumeAnalysisId?.toString?.() || null,
+    enhancedMatchScore: review.enhancedMatchScore,
+    matchBasis: review.matchBasis,
+    alignmentLevel: review.alignmentLevel,
+    profileScore: review.profileScore,
+    resumeBoost: review.resumeBoost,
+    confidenceScore: review.confidenceScore,
+    confidenceLevel: review.confidenceLevel,
+    matchedSkills: review.matchedSkills,
+    missingSkills: review.missingSkills,
+    resumeEvidence: review.resumeEvidence,
+    summary: review.summary,
+    matchedEvidence: review.matchedEvidence,
+    missingOrWeakAreas: review.missingOrWeakAreas,
+    resumeStrengths: review.resumeStrengths,
+    interviewFocus: review.interviewFocus,
+    riskNotes: review.riskNotes,
+    provider: review.provider,
+    model: review.model,
+    generatedAt: review.generatedAt,
+  };
+};
+
+const getManagedApplicationForAiReview = async ({
+  userId,
+  role,
+  applicationId,
+}) => {
+  if (!mongoose.isValidObjectId(applicationId)) {
+    throw new ApiError(400, "Invalid application ID");
+  }
+
+  const company = await getStaffCompany(
+    userId,
+    role,
+    "You are not allowed to review applications",
+  );
+
+  const application = await Application.findOne({
+    _id: applicationId,
+    companyId: company._id,
+  })
+    .select("+matchSnapshot +resumeReviewSnapshot")
+    .populate({
+      path: "jobId",
+      select:
+        "title description requirements skills location employmentType workplaceType experienceLevel status createdAt",
+    })
+    .populate({
+      path: "candidateId",
+      select:
+        "firstName lastName headline summary skills experienceLevel location resumeUrl linkedinUrl githubUrl portfolioUrl targetJobTitles preferredLocations preferredWorkplaceTypes preferredEmploymentTypes",
+    });
+
+  if (!application) {
+    throw new ApiError(404, APPLICATION_RESUME_REVIEW_NOT_FOUND_MESSAGE);
+  }
+
+  if (!application.resumeUrl) {
+    throw new ApiError(400, "Application resume is missing");
+  }
+
+  if (!application.jobId || !application.candidateId) {
+    throw new ApiError(400, "Application job or candidate data is incomplete");
+  }
+
+  return {
+    company,
+    application,
+  };
+};
+
+const findReusableResumeAnalysisForApplication = async ({
+  application,
+  resumeSource,
+}) => {
+  const applicationResumeAnalysis = await findLatestCompletedResumeAnalysis({
+    candidateUserId: application.candidateUserId,
+    sourceType: RESUME_ANALYSIS_SOURCE_TYPES.APPLICATION_RESUME,
+    resumeSignature: resumeSource.resumeSignature,
+  });
+
+  if (applicationResumeAnalysis) {
+    return applicationResumeAnalysis;
+  }
+
+  const candidateProfileAnalysis = await findLatestCompletedResumeAnalysis({
+    candidateUserId: application.candidateUserId,
+    sourceType: RESUME_ANALYSIS_SOURCE_TYPES.CANDIDATE_PROFILE_RESUME,
+  });
+
+  if (
+    candidateProfileAnalysis &&
+    candidateProfileAnalysis.resumeUrl === application.resumeUrl
+  ) {
+    return candidateProfileAnalysis;
+  }
+
+  return null;
+};
+
+const getOrCreateApplicationResumeAnalysis = async ({
+  application,
+  candidateProfile,
+  aiConfig,
+}) => {
+  const resumeSource = buildApplicationResumeSource(application);
+
+  const reusableAnalysis = await findReusableResumeAnalysisForApplication({
+    application,
+    resumeSource,
+  });
+
+  if (reusableAnalysis) {
+    return {
+      resumeAnalysis: reusableAnalysis,
+      resumeSource,
+    };
+  }
+
+  const pendingAnalysis = await createPendingResumeAnalysis({
+    resumeSource,
+    provider: aiConfig.provider,
+    model: aiConfig.model,
+  });
+
+  try {
+    const resumePart = await downloadResumeAsGeminiPart(resumeSource.resumeUrl);
+
+    const rawOutput = await generateAiJson({
+      parts: [
+        {
+          text: buildResumeAnalysisPrompt({
+            candidateProfile,
+          }),
+        },
+        resumePart,
+      ],
+      systemInstruction: buildAiSystemInstruction(
+        "Application Resume Analysis",
+      ),
+      temperature: 0.2,
+      maxOutputTokens: 4096,
+    });
+
+    const normalizedOutput = normalizeResumeAnalysisOutput(rawOutput);
+
+    const completedAnalysis = await completeResumeAnalysis({
+      analysisId: pendingAnalysis._id,
+      extracted: normalizedOutput.extracted,
+      evaluation: normalizedOutput.evaluation,
+      rawOutput,
+      provider: aiConfig.provider,
+      model: aiConfig.model,
+    });
+
+    return {
+      resumeAnalysis: completedAnalysis,
+      resumeSource,
+    };
+  } catch (error) {
+    await failResumeAnalysis({
+      analysisId: pendingAnalysis._id,
+      errorMessage: error.message,
+    });
+
+    throw error;
+  }
+};
+
+const reviewManagedApplicationResumeMatch = async ({
+  userId,
+  role,
+  applicationId,
+}) => {
+  const { company, application } = await getManagedApplicationForAiReview({
+    userId,
+    role,
+    applicationId,
+  });
+
+  const job = application.jobId.toObject
+    ? application.jobId.toObject()
+    : application.jobId;
+
+  const candidateProfile = application.candidateId.toObject
+    ? application.candidateId.toObject()
+    : application.candidateId;
+
+  const resumeSource = buildApplicationResumeSource(application);
+  const jobSignature = buildJobMatchSignature(job);
+
+  const cachedReview = application.resumeReviewSnapshot;
+
+  if (
+    cachedReview &&
+    cachedReview.jobSignature === jobSignature &&
+    cachedReview.resumeSignature === resumeSource.resumeSignature
+  ) {
+    return {
+      reused: true,
+      application: {
+        _id: application._id,
+        status: application.status,
+      },
+      job: {
+        _id: job._id,
+        title: job.title,
+      },
+      review: formatApplicationResumeReview(application),
+      usage: await getAiUsageState({
+        userId,
+        featureKey: AI_FEATURE_KEYS.COMPANY_RESUME_REVIEW,
+      }),
+    };
+  }
+
+  const aiConfig = ensureAiProviderReady();
+
+  const usage = await consumeAiUsage({
+    userId,
+    companyId: company._id,
+    featureKey: AI_FEATURE_KEYS.COMPANY_RESUME_REVIEW,
+  });
+
+  const { resumeAnalysis } = await getOrCreateApplicationResumeAnalysis({
+    application,
+    candidateProfile,
+    aiConfig,
+  });
+
+  const deterministicMatch = calculateJobCandidateMatch(job, candidateProfile, {
+    resumeAnalysis,
+  });
+
+  const rawOutput = await generateAiJson({
+    prompt: buildApplicationResumeReviewPrompt({
+      job,
+      candidateProfile,
+      resumeAnalysis,
+      match: deterministicMatch,
+    }),
+    systemInstruction: buildAiSystemInstruction("AI Resume Match Review"),
+    temperature: 0.2,
+    maxOutputTokens: 2048,
+  });
+
+  const normalizedOutput = normalizeApplicationResumeReviewOutput(rawOutput);
+
+  application.resumeReviewSnapshot = {
+    resumeAnalysisId: resumeAnalysis._id,
+
+    enhancedMatchScore: deterministicMatch.matchScore,
+    matchBasis: deterministicMatch.matchBasis,
+    alignmentLevel: deterministicMatch.matchLabel,
+    profileScore: deterministicMatch.profileScore,
+    resumeBoost: deterministicMatch.resumeBoost,
+    confidenceScore: deterministicMatch.confidenceScore,
+    confidenceLevel: deterministicMatch.confidenceLevel,
+    matchedSkills: deterministicMatch.matchedSkills,
+    missingSkills: deterministicMatch.missingSkills,
+    resumeEvidence: deterministicMatch.resumeEvidence,
+
+    summary: normalizedOutput.summary,
+    matchedEvidence: normalizedOutput.matchedEvidence,
+    missingOrWeakAreas: normalizedOutput.missingOrWeakAreas,
+    resumeStrengths: normalizedOutput.resumeStrengths,
+    interviewFocus: normalizedOutput.interviewFocus,
+    riskNotes: normalizedOutput.riskNotes,
+
+    jobSignature,
+    resumeSignature: resumeSource.resumeSignature,
+    provider: aiConfig.provider,
+    model: aiConfig.model,
+    rawOutput,
+    generatedAt: new Date(),
+  };
+
+  await application.save();
+
+  return {
+    reused: false,
+    application: {
+      _id: application._id,
+      status: application.status,
+    },
+    job: {
+      _id: job._id,
+      title: job.title,
+    },
+    review: formatApplicationResumeReview(application),
+    usage,
+  };
+};
+
 export {
   analyzeMyCandidateResume,
   getMyCandidateResumeAnalysis,
@@ -525,4 +873,7 @@ export {
   normalizeJobResumeFitOutput,
   formatResumeAnalysis,
   formatJobResumeFit,
+  reviewManagedApplicationResumeMatch,
+  normalizeApplicationResumeReviewOutput,
+  formatApplicationResumeReview,
 };

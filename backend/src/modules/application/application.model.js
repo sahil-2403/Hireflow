@@ -112,6 +112,164 @@ const matchSnapshotSchema = new mongoose.Schema(
   },
 );
 
+const resumeMatchedEvidenceSchema = new mongoose.Schema(
+  {
+    requirement: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    evidence: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
+const resumeReviewSnapshotSchema = new mongoose.Schema(
+  {
+    resumeAnalysisId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ResumeAnalysis",
+      default: null,
+    },
+
+    enhancedMatchScore: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+    },
+
+    matchBasis: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    alignmentLevel: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    profileScore: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+    },
+
+    resumeBoost: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    confidenceScore: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+    },
+
+    confidenceLevel: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    matchedSkills: {
+      type: [String],
+      default: [],
+    },
+
+    missingSkills: {
+      type: [String],
+      default: [],
+    },
+
+    resumeEvidence: {
+      type: [String],
+      default: [],
+    },
+
+    summary: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    matchedEvidence: {
+      type: [resumeMatchedEvidenceSchema],
+      default: [],
+    },
+
+    missingOrWeakAreas: {
+      type: [String],
+      default: [],
+    },
+
+    resumeStrengths: {
+      type: [String],
+      default: [],
+    },
+
+    interviewFocus: {
+      type: [String],
+      default: [],
+    },
+
+    riskNotes: {
+      type: [String],
+      default: [],
+    },
+
+    jobSignature: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    resumeSignature: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    provider: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    model: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    rawOutput: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+      select: false,
+    },
+
+    generatedAt: {
+      type: Date,
+      required: true,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
 const applicationSchema = new mongoose.Schema(
   {
     jobId: {
@@ -175,6 +333,12 @@ const applicationSchema = new mongoose.Schema(
 
     matchSnapshot: {
       type: matchSnapshotSchema,
+      default: null,
+      select: false,
+    },
+
+    resumeReviewSnapshot: {
+      type: resumeReviewSnapshotSchema,
       default: null,
       select: false,
     },
