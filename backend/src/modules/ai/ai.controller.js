@@ -8,6 +8,8 @@ import {
   reviewManagedApplicationResumeMatch,
 } from "./ai.service.js";
 
+import { generateJobPostAssistantSuggestions } from "./aiJobPost.service.js";
+
 const getAuthUserId = (req) => {
   return req.user?._id || req.user?.id;
 };
@@ -71,9 +73,28 @@ const checkCandidateJobResumeFit = asyncHandler(async (req, res) => {
     .json(new ApiResponse(statusCode, message, result));
 });
 
+const generateJobPostSuggestions = asyncHandler(async (req, res) => {
+  const result = await generateJobPostAssistantSuggestions({
+    userId: getAuthUserId(req),
+    role: req.user.role,
+    jobDraft: req.body,
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        "AI Job Post Assistant suggestions generated successfully",
+        result,
+      ),
+    );
+});
+
 export {
   analyzeCandidateResume,
   checkCandidateJobResumeFit,
   getCandidateResumeAnalysis,
   reviewApplicationResumeMatch,
+  generateJobPostSuggestions,
 };

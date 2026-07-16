@@ -5,9 +5,14 @@ import { ROLES } from "../../config/constants.js";
 import authenticate from "../../shared/middleware/authenticate.js";
 import authorize from "../../shared/middleware/authorize.js";
 
+import validate from "../../shared/middleware/validate.js";
+
+import { jobPostSuggestionSchema } from "./ai.validation.js";
+
 import {
   analyzeCandidateResume,
   checkCandidateJobResumeFit,
+  generateJobPostSuggestions,
   getCandidateResumeAnalysis,
   reviewApplicationResumeMatch,
 } from "./ai.controller.js";
@@ -26,6 +31,13 @@ router.get(
   "/candidates/resume/analysis",
   authorize(ROLES.CANDIDATE),
   getCandidateResumeAnalysis,
+);
+
+router.post(
+  "/jobs/post-suggestions",
+  authorize(ROLES.OWNER, ROLES.RECRUITER),
+  validate(jobPostSuggestionSchema),
+  generateJobPostSuggestions,
 );
 
 router.post(

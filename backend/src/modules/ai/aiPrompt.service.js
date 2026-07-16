@@ -117,6 +117,57 @@ const APPLICATION_RESUME_REVIEW_OUTPUT_SHAPE = {
   riskNotes: [],
 };
 
+const JOB_POST_ASSISTANT_OUTPUT_SHAPE = {
+  improvedTitle: "",
+  improvedDescription: "",
+  improvedResponsibilities: [],
+  improvedRequirements: [],
+  recommendedSkills: [],
+  qualityNotes: [],
+  missingInformation: [],
+};
+
+const buildJobPostAssistantPrompt = ({ company, jobDraft }) => {
+  return buildJsonPrompt({
+    task: [
+      "Improve this job post draft so it is clear, professional, inclusive, and useful to suitable candidates.",
+      "Preserve the company's actual requirements and facts.",
+      "Do not invent salary, benefits, technologies, responsibilities, experience requirements, or company policies.",
+      "Separate missing information from suggested rewritten content.",
+      "Use concise language and avoid unnecessary buzzwords.",
+      "Return suggestions only. The user will decide which suggestions to apply.",
+    ].join(" "),
+
+    context: {
+      company: {
+        name: company.name,
+        industry: company.industry,
+        companySize: company.companySize,
+        description: company.description,
+        headquarters: company.headquarters,
+      },
+
+      jobDraft: {
+        title: jobDraft.title,
+        description: jobDraft.description,
+        responsibilities: jobDraft.responsibilities,
+        requirements: jobDraft.requirements,
+        skills: jobDraft.skills,
+        location: jobDraft.location,
+        employmentType: jobDraft.employmentType,
+        workplaceType: jobDraft.workplaceType,
+        experienceLevel: jobDraft.experienceLevel,
+        salaryMin: jobDraft.salaryMin,
+        salaryMax: jobDraft.salaryMax,
+        salaryCurrency: jobDraft.salaryCurrency,
+        isSalaryVisible: jobDraft.isSalaryVisible,
+      },
+    },
+
+    outputShape: JOB_POST_ASSISTANT_OUTPUT_SHAPE,
+  });
+};
+
 const buildApplicationResumeReviewPrompt = ({
   job,
   candidateProfile,
@@ -272,7 +323,9 @@ export {
   buildResumeAnalysisPrompt,
   buildJobResumeFitPrompt,
   buildApplicationResumeReviewPrompt,
+  buildJobPostAssistantPrompt,
   RESUME_ANALYSIS_OUTPUT_SHAPE,
   JOB_RESUME_FIT_OUTPUT_SHAPE,
   APPLICATION_RESUME_REVIEW_OUTPUT_SHAPE,
+  JOB_POST_ASSISTANT_OUTPUT_SHAPE,
 };
