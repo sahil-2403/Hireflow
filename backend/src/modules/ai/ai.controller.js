@@ -4,6 +4,7 @@ import asyncHandler from "../../shared/utils/asyncHandler.js";
 import {
   analyzeMyCandidateResume,
   getMyCandidateResumeAnalysis,
+  checkMyCandidateJobResumeFit,
 } from "./ai.service.js";
 
 const getAuthUserId = (req) => {
@@ -34,4 +35,25 @@ const getCandidateResumeAnalysis = asyncHandler(async (req, res) => {
     );
 });
 
-export { analyzeCandidateResume, getCandidateResumeAnalysis };
+const checkCandidateJobResumeFit = asyncHandler(async (req, res) => {
+  const result = await checkMyCandidateJobResumeFit({
+    userId: getAuthUserId(req),
+    jobId: req.params.jobId,
+  });
+
+  const statusCode = result.reused ? 200 : 201;
+
+  const message = result.reused
+    ? "AI Resume Fit already available for this job"
+    : "AI Resume Fit generated successfully";
+
+  return res
+    .status(statusCode)
+    .json(new ApiResponse(statusCode, message, result));
+});
+
+export {
+  analyzeCandidateResume,
+  checkCandidateJobResumeFit,
+  getCandidateResumeAnalysis,
+};

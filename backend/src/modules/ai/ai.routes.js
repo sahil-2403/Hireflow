@@ -7,6 +7,7 @@ import authorize from "../../shared/middleware/authorize.js";
 
 import {
   analyzeCandidateResume,
+  checkCandidateJobResumeFit,
   getCandidateResumeAnalysis,
 } from "./ai.controller.js";
 
@@ -24,6 +25,12 @@ router.get(
   "/candidates/resume/analysis",
   authorize(ROLES.CANDIDATE),
   getCandidateResumeAnalysis,
+);
+
+router.post(
+  "/jobs/:jobId/resume-fit",
+  authorize(ROLES.CANDIDATE),
+  checkCandidateJobResumeFit,
 );
 
 export default router;
