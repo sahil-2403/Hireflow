@@ -38,4 +38,95 @@ const buildJsonPrompt = ({ task, context, outputShape }) => {
   ].join("\n");
 };
 
-export { buildAiSystemInstruction, buildJsonOnlyInstruction, buildJsonPrompt };
+const RESUME_ANALYSIS_OUTPUT_SHAPE = {
+  extracted: {
+    fullName: null,
+    email: null,
+    phone: null,
+    location: null,
+    summary: null,
+    targetRoles: [],
+    skills: [],
+    programmingLanguages: [],
+    frameworks: [],
+    databases: [],
+    tools: [],
+    projects: [
+      {
+        name: null,
+        description: null,
+        technologies: [],
+        impact: null,
+        links: [],
+      },
+    ],
+    experience: [
+      {
+        title: null,
+        company: null,
+        duration: null,
+        highlights: [],
+      },
+    ],
+    education: [
+      {
+        degree: null,
+        institution: null,
+        year: null,
+      },
+    ],
+    certifications: [],
+    links: [],
+  },
+  evaluation: {
+    resumeScore: 0,
+    strengths: [],
+    weaknesses: [],
+    missingKeywords: [],
+    atsIssues: [],
+    improvementSuggestions: [],
+    recommendedProfileUpdates: {
+      headline: null,
+      summary: null,
+      skills: [],
+      targetJobTitles: [],
+    },
+  },
+};
+
+const buildResumeAnalysisPrompt = ({ candidateProfile }) => {
+  return buildJsonPrompt({
+    task: [
+      "Analyze the attached candidate resume PDF.",
+      "Extract structured resume information.",
+      "Evaluate resume quality for job-search readiness.",
+      "Suggest practical improvements for the candidate profile and resume.",
+      "Only include evidence that is visible in the resume. If something is not clear, list it as missing or unclear.",
+    ].join(" "),
+    context: {
+      candidateProfile: {
+        headline: candidateProfile.headline,
+        summary: candidateProfile.summary,
+        skills: candidateProfile.skills,
+        experienceLevel: candidateProfile.experienceLevel,
+        location: candidateProfile.location,
+        targetJobTitles: candidateProfile.targetJobTitles,
+        preferredLocations: candidateProfile.preferredLocations,
+        preferredWorkplaceTypes: candidateProfile.preferredWorkplaceTypes,
+        preferredEmploymentTypes: candidateProfile.preferredEmploymentTypes,
+        linkedinUrl: candidateProfile.linkedinUrl,
+        githubUrl: candidateProfile.githubUrl,
+        portfolioUrl: candidateProfile.portfolioUrl,
+      },
+    },
+    outputShape: RESUME_ANALYSIS_OUTPUT_SHAPE,
+  });
+};
+
+export {
+  buildAiSystemInstruction,
+  buildJsonOnlyInstruction,
+  buildJsonPrompt,
+  buildResumeAnalysisPrompt,
+  RESUME_ANALYSIS_OUTPUT_SHAPE,
+};

@@ -32,6 +32,10 @@ const assertAiReady = () => {
   return config;
 };
 
+const ensureAiProviderReady = () => {
+  return assertAiReady();
+};
+
 const normalizeGeminiModelName = (model) => {
   if (model.startsWith("models/")) {
     return model;
@@ -50,22 +54,25 @@ const buildGeminiGenerateContentUrl = ({ baseUrl, model, apiKey }) => {
 };
 
 const buildGeminiRequestBody = ({
-  prompt,
+  prompt = null,
+  parts = null,
   systemInstruction,
   responseMimeType = "application/json",
   responseSchema = null,
   temperature = 0.2,
   maxOutputTokens = 2048,
 }) => {
+  const contentParts = parts || [
+    {
+      text: prompt,
+    },
+  ];
+
   const body = {
     contents: [
       {
         role: "user",
-        parts: [
-          {
-            text: prompt,
-          },
-        ],
+        parts: contentParts,
       },
     ],
 
@@ -138,7 +145,8 @@ const parseAiJson = (text) => {
 };
 
 const generateAiText = async ({
-  prompt,
+  prompt = null,
+  parts = null,
   systemInstruction = null,
   responseMimeType = "text/plain",
   responseSchema = null,
@@ -167,6 +175,7 @@ const generateAiText = async ({
         body: JSON.stringify(
           buildGeminiRequestBody({
             prompt,
+            parts,
             systemInstruction,
             responseMimeType,
             responseSchema,
@@ -203,7 +212,8 @@ const generateAiText = async ({
 };
 
 const generateAiJson = async ({
-  prompt,
+  prompt = null,
+  parts = null,
   systemInstruction = null,
   responseSchema = null,
   temperature = 0.2,
@@ -211,6 +221,7 @@ const generateAiJson = async ({
 }) => {
   const text = await generateAiText({
     prompt,
+    parts,
     systemInstruction,
     responseMimeType: "application/json",
     responseSchema,
@@ -222,6 +233,7 @@ const generateAiJson = async ({
 };
 
 export {
+  ensureAiProviderReady,
   generateAiText,
   generateAiJson,
   buildGeminiGenerateContentUrl,
