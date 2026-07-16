@@ -46,3 +46,23 @@ export const COMPANY_SIZE = Object.freeze({
   FIVE_HUNDRED_ONE_TO_THOUSAND: "501-1000",
   ABOVE_THOUSAND: "1000+",
 });
+
+export const AI_FEATURE_KEYS = Object.freeze({
+  RESUME_ANALYSIS: "resume_analysis",
+  JOB_RESUME_FIT: "job_resume_fit",
+  COMPANY_RESUME_REVIEW: "company_resume_review",
+  JOB_POST_SUGGESTION: "job_post_suggestion",
+  INTERVIEW_KIT: "interview_kit",
+  SHORTLIST: "shortlist",
+  CANDIDATE_COMPARISON: "candidate_comparison",
+});
+
+export const AI_FEATURE_LABELS = Object.freeze({
+  [AI_FEATURE_KEYS.RESUME_ANALYSIS]: "AI Resume Insights",
+  [AI_FEATURE_KEYS.JOB_RESUME_FIT]: "AI Resume Fit",
+  [AI_FEATURE_KEYS.COMPANY_RESUME_REVIEW]: "AI Resume Match Review",
+  [AI_FEATURE_KEYS.JOB_POST_SUGGESTION]: "AI Job Post Assistant",
+  [AI_FEATURE_KEYS.INTERVIEW_KIT]: "AI Interview Kit",
+  [AI_FEATURE_KEYS.SHORTLIST]: "AI Suggested Shortlist",
+  [AI_FEATURE_KEYS.CANDIDATE_COMPARISON]: "AI Candidate Comparison",
+});

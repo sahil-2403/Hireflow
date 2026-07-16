@@ -28,6 +28,23 @@ process.env.GLOBAL_RATE_LIMIT_MAX_REQUESTS = "10000";
 process.env.AUTH_RATE_LIMIT_WINDOW_MINUTES = "15";
 process.env.AUTH_RATE_LIMIT_MAX_REQUESTS = "10000";
 
+process.env.AI_ENABLED = "false";
+process.env.AI_PROVIDER = "gemini";
+process.env.AI_MODEL = "";
+process.env.GEMINI_API_KEY = "";
+process.env.AI_REQUEST_TIMEOUT_MS = "30000";
+
+process.env.AI_RESUME_ANALYSIS_DAILY_LIMIT = "1";
+process.env.AI_JOB_RESUME_FIT_DAILY_LIMIT = "3";
+process.env.AI_COMPANY_RESUME_REVIEW_DAILY_LIMIT = "10";
+process.env.AI_JOB_POST_SUGGESTION_DAILY_LIMIT = "5";
+process.env.AI_INTERVIEW_KIT_DAILY_LIMIT = "10";
+process.env.AI_SHORTLIST_DAILY_LIMIT = "3";
+process.env.AI_CANDIDATE_COMPARISON_DAILY_LIMIT = "5";
+
+process.env.AI_MAX_SHORTLIST_CANDIDATES = "10";
+process.env.AI_MAX_COMPARISON_CANDIDATES = "3";
+
 process.env.SMTP_HOST = "smtp.example.com";
 process.env.SMTP_PORT = "587";
 process.env.SMTP_SECURE = "false";
