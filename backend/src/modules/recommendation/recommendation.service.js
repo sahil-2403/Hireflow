@@ -5,11 +5,14 @@ import Job from "../job/job.model.js";
 
 import ApiError from "../../shared/errors/ApiError.js";
 
+import { findLatestCompletedResumeAnalysis } from "../resumeAnalysis/resumeAnalysis.service.js";
+
 import {
   EMPLOYMENT_TYPE,
   EXPERIENCE_LEVEL,
   JOB_STATUS,
   WORKPLACE_TYPE,
+  RESUME_ANALYSIS_SOURCE_TYPES,
 } from "../../config/constants.js";
 
 import { calculateJobCandidateMatch } from "../../shared/services/matchScore.service.js";
@@ -147,8 +150,10 @@ const sortRecommendedJobs = (jobs, sortBy, order) => {
   });
 };
 
-const buildRecommendedJobResponse = (job, candidate) => {
-  const match = calculateJobCandidateMatch(job, candidate);
+const buildRecommendedJobResponse = (job, candidate, resumeAnalysis = null) => {
+  const match = calculateJobCandidateMatch(job, candidate, {
+    resumeAnalysis,
+  });
 
   return {
     _id: job._id,
@@ -169,10 +174,14 @@ const buildRecommendedJobResponse = (job, candidate) => {
     match: {
       matchScore: match.matchScore,
       matchLabel: match.matchLabel,
+      matchBasis: match.matchBasis,
+      profileScore: match.profileScore,
+      resumeBoost: match.resumeBoost,
       confidenceScore: match.confidenceScore,
       confidenceLevel: match.confidenceLevel,
       matchedSkills: match.matchedSkills,
       missingSkills: match.missingSkills,
+      resumeEvidence: match.resumeEvidence,
       warnings: match.warnings,
       calculatedAt: match.calculatedAt,
     },
@@ -194,6 +203,11 @@ const listRecommendedJobs = async (userId, query) => {
 
   const filters = buildJobFilters(query);
 
+  const resumeAnalysis = await findLatestCompletedResumeAnalysis({
+    candidateUserId: userId,
+    sourceType: RESUME_ANALYSIS_SOURCE_TYPES.CANDIDATE_PROFILE_RESUME,
+  });
+
   const jobs = await Job.find(filters)
     .populate({
       path: "companyId",
@@ -203,7 +217,7 @@ const listRecommendedJobs = async (userId, query) => {
     .lean();
 
   const recommendedJobs = jobs.map((job) =>
-    buildRecommendedJobResponse(job, candidate),
+    buildRecommendedJobResponse(job, candidate, resumeAnalysis),
   );
 
   const sortedJobs = sortRecommendedJobs(recommendedJobs, sortBy, order);
@@ -247,7 +261,14 @@ const getRecommendedJobMatch = async (userId, jobId) => {
     throw new ApiError(404, "Open job not found");
   }
 
-  const match = calculateJobCandidateMatch(job, candidate);
+  const resumeAnalysis = await findLatestCompletedResumeAnalysis({
+    candidateUserId: userId,
+    sourceType: RESUME_ANALYSIS_SOURCE_TYPES.CANDIDATE_PROFILE_RESUME,
+  });
+
+  const match = calculateJobCandidateMatch(job, candidate, {
+    resumeAnalysis,
+  });
 
   return {
     job: {

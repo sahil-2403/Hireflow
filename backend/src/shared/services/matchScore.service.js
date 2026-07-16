@@ -31,10 +31,128 @@ const EXPERIENCE_RANK = Object.freeze({
   lead: 3,
 });
 
+const MATCH_BASIS = Object.freeze({
+  PROFILE: "profile",
+  PROFILE_AND_RESUME: "profile_and_resume",
+});
+
 const neutralScore = (maximumScore) => roundToTwo(maximumScore / 2);
 
 const addMessage = (messages, message) => {
   if (message) messages.push(message);
+};
+
+const getResumeAnalysisData = (resumeAnalysis) => {
+  if (!resumeAnalysis || !isObject(resumeAnalysis)) {
+    return null;
+  }
+
+  const extracted = resumeAnalysis.extracted || {};
+  const evaluation = resumeAnalysis.evaluation || {};
+
+  return {
+    extracted,
+    evaluation,
+  };
+};
+
+const collectResumeSkills = (resumeAnalysis) => {
+  const data = getResumeAnalysisData(resumeAnalysis);
+
+  if (!data) {
+    return [];
+  }
+
+  const { extracted } = data;
+
+  const projectTechnologies = Array.isArray(extracted.projects)
+    ? extracted.projects.flatMap((project) => project?.technologies || [])
+    : [];
+
+  return unique([
+    ...(extracted.skills || []),
+    ...(extracted.programmingLanguages || []),
+    ...(extracted.frameworks || []),
+    ...(extracted.databases || []),
+    ...(extracted.tools || []),
+    ...projectTechnologies,
+  ]);
+};
+
+const collectResumeTargetRoles = (resumeAnalysis) => {
+  const data = getResumeAnalysisData(resumeAnalysis);
+
+  if (!data) {
+    return [];
+  }
+
+  return unique(data.extracted.targetRoles || []);
+};
+
+const buildResumeEvidence = ({ job, resumeAnalysis, matchedSkills }) => {
+  const data = getResumeAnalysisData(resumeAnalysis);
+
+  if (!data) {
+    return [];
+  }
+
+  const { extracted } = data;
+  const evidence = [];
+
+  if (matchedSkills.length > 0) {
+    evidence.push(
+      `Resume analysis supports ${matchedSkills.length} matched skill${
+        matchedSkills.length === 1 ? "" : "s"
+      }: ${matchedSkills.slice(0, 5).join(", ")}.`,
+    );
+  }
+
+  if (Array.isArray(extracted.projects) && extracted.projects.length > 0) {
+    const jobSkillKeys = new Set(buildSkillMap(job.skills).keys());
+
+    const relevantProjects = extracted.projects
+      .map((project) => {
+        const projectSkills = buildSkillMap(project?.technologies || []);
+
+        const overlap = [...projectSkills.keys()].filter((skillKey) =>
+          jobSkillKeys.has(skillKey),
+        );
+
+        return {
+          name: project?.name,
+          overlap,
+        };
+      })
+      .filter((project) => project.overlap.length > 0);
+
+    for (const project of relevantProjects.slice(0, 3)) {
+      evidence.push(
+        project.name
+          ? `Resume project "${project.name}" includes technologies relevant to this role.`
+          : "One resume project includes technologies relevant to this role.",
+      );
+    }
+  }
+
+  return unique(evidence);
+};
+
+const buildEnhancedCandidate = (candidate, resumeAnalysis) => {
+  const resumeSkills = collectResumeSkills(resumeAnalysis);
+  const resumeTargetRoles = collectResumeTargetRoles(resumeAnalysis);
+
+  if (resumeSkills.length === 0 && resumeTargetRoles.length === 0) {
+    return candidate;
+  }
+
+  return {
+    ...candidate,
+    skills: unique([...(candidate.skills || []), ...resumeSkills]),
+    targetJobTitles: unique([
+      ...(candidate.targetJobTitles || []),
+      ...resumeTargetRoles,
+    ]),
+  };
 };
 
 const calculateSkills = (job, candidate, reasons, warnings) => {
@@ -321,7 +439,9 @@ const calculatePreference = ({
   };
 };
 
-const calculateConfidenceScore = (job, candidate) => {
+const calculateConfidenceScore = (job, candidate, resumeAnalysis = null) => {
+  const resumeData = getResumeAnalysisData(resumeAnalysis);
+
   const checks = [
     [6, hasText(job.title)],
     [6, hasText(job.description)],
@@ -347,10 +467,28 @@ const calculateConfidenceScore = (job, candidate) => {
     [2, hasList(candidate.preferredEmploymentTypes)],
   ];
 
-  return checks.reduce(
+  const baseConfidence = checks.reduce(
     (total, [weight, complete]) => total + (complete ? weight : 0),
     0,
   );
+
+  if (!resumeData) {
+    return baseConfidence;
+  }
+
+  const resumeBoostChecks = [
+    [4, hasList(resumeData.extracted.skills)],
+    [2, hasList(resumeData.extracted.projects)],
+    [2, hasList(resumeData.extracted.targetRoles)],
+    [2, Number.isFinite(Number(resumeData.evaluation.resumeScore))],
+  ];
+
+  const resumeConfidenceBoost = resumeBoostChecks.reduce(
+    (total, [weight, complete]) => total + (complete ? weight : 0),
+    0,
+  );
+
+  return Math.min(baseConfidence + resumeConfidenceBoost, 100);
 };
 
 const addConfidenceWarnings = (job, candidate, warnings) => {
@@ -387,21 +525,7 @@ const addConfidenceWarnings = (job, candidate, warnings) => {
   }
 };
 
-export const calculateJobCandidateMatch = (
-  job,
-  candidate,
-  { calculatedAt = new Date() } = {},
-) => {
-  if (!isObject(job)) {
-    throw new TypeError("calculateJobCandidateMatch requires a job object");
-  }
-
-  if (!isObject(candidate)) {
-    throw new TypeError(
-      "calculateJobCandidateMatch requires a candidate object",
-    );
-  }
-
+const calculateProfileOnlyMatch = (job, candidate, calculatedAt) => {
   const reasons = [];
   const warnings = [];
 
@@ -435,6 +559,7 @@ export const calculateJobCandidateMatch = (
     location.score +
     workplaceType.score +
     employmentType.score;
+
   const matchScore = Math.max(0, Math.min(100, Math.round(rawScore)));
   const confidenceScore = calculateConfidenceScore(job, candidate);
   const timestamp = new Date(calculatedAt);
@@ -470,5 +595,82 @@ export const calculateJobCandidateMatch = (
     candidateSignature: buildCandidateMatchSignature(candidate),
     engineVersion: MATCH_ENGINE_VERSION,
     calculatedAt: timestamp,
+  };
+};
+
+export const calculateJobCandidateMatch = (
+  job,
+  candidate,
+  { calculatedAt = new Date(), resumeAnalysis = null } = {},
+) => {
+  if (!isObject(job)) {
+    throw new TypeError("calculateJobCandidateMatch requires a job object");
+  }
+
+  if (!isObject(candidate)) {
+    throw new TypeError(
+      "calculateJobCandidateMatch requires a candidate object",
+    );
+  }
+
+  const profileMatch = calculateProfileOnlyMatch(job, candidate, calculatedAt);
+  const resumeData = getResumeAnalysisData(resumeAnalysis);
+
+  if (!resumeData) {
+    return {
+      ...profileMatch,
+      matchBasis: MATCH_BASIS.PROFILE,
+      profileScore: profileMatch.matchScore,
+      resumeBoost: 0,
+      resumeEvidence: [],
+      resumeAnalysisId: null,
+    };
+  }
+
+  const enhancedCandidate = buildEnhancedCandidate(candidate, resumeAnalysis);
+  const enhancedMatch = calculateProfileOnlyMatch(
+    job,
+    enhancedCandidate,
+    calculatedAt,
+  );
+
+  const resumeBoost = Math.max(
+    0,
+    enhancedMatch.matchScore - profileMatch.matchScore,
+  );
+
+  const resumeEvidence = buildResumeEvidence({
+    job,
+    resumeAnalysis,
+    matchedSkills: enhancedMatch.matchedSkills,
+  });
+
+  const reasons = unique([
+    ...enhancedMatch.reasons,
+    ...(resumeBoost > 0
+      ? [
+          "Stored resume analysis improved the match by adding resume-based skills or target roles.",
+        ]
+      : [
+          "Stored resume analysis was considered, but it did not increase the profile match score.",
+        ]),
+  ]);
+
+  return {
+    ...enhancedMatch,
+    matchBasis: MATCH_BASIS.PROFILE_AND_RESUME,
+    profileScore: profileMatch.matchScore,
+    resumeBoost,
+    resumeEvidence,
+    resumeAnalysisId: resumeAnalysis._id?.toString?.() || null,
+    confidenceScore: calculateConfidenceScore(
+      job,
+      enhancedCandidate,
+      resumeAnalysis,
+    ),
+    confidenceLevel: getConfidenceLevel(
+      calculateConfidenceScore(job, enhancedCandidate, resumeAnalysis),
+    ),
+    reasons,
   };
 };

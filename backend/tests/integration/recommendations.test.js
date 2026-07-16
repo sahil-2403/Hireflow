@@ -3,6 +3,7 @@ import request from "supertest";
 import app from "../../src/app.js";
 
 import Job from "../../src/modules/job/job.model.js";
+import ResumeAnalysis from "../../src/modules/resumeAnalysis/resumeAnalysis.model.js";
 
 import {
   ROLES,
@@ -467,4 +468,72 @@ describe("Recommendation API", () => {
       "You are not allowed to perform this action",
     );
   });
+});
+
+test("recommended jobs use AI resume analysis when available", async () => {
+  const { owner, company } = await setupCompany("airesume");
+
+  const { candidateUser, candidateProfile, candidateSession } =
+    await setupCandidate("airesume", {
+      skills: ["React"],
+      targetJobTitles: ["React Developer"],
+      resumeUrl: "https://example.com/resume.pdf",
+      resumePublicId: "resume-public-id",
+    });
+
+  await ResumeAnalysis.create({
+    candidateUserId: candidateUser._id,
+    candidateProfileId: candidateProfile._id,
+    sourceType: "candidate_profile_resume",
+    resumeUrl: candidateProfile.resumeUrl,
+    resumePublicId: candidateProfile.resumePublicId,
+    resumeSignature: "resume-signature-airesume",
+    status: "completed",
+    extracted: {
+      skills: ["Node.js", "MongoDB", "Express.js"],
+      frameworks: ["Express.js"],
+      databases: ["MongoDB"],
+      targetRoles: ["MERN Developer"],
+      projects: [
+        {
+          name: "HireFlow",
+          technologies: ["React", "Node.js", "MongoDB", "Express.js"],
+        },
+      ],
+    },
+    evaluation: {
+      resumeScore: 82,
+    },
+    provider: "gemini",
+    model: "gemini-test-model",
+    analyzedAt: new Date(),
+  });
+
+  await createRecommendationJob({
+    companyId: company._id,
+    createdBy: owner._id,
+    title: "Junior MERN Developer",
+    skills: ["React", "Node.js", "MongoDB", "Express.js"],
+    experienceLevel: EXPERIENCE_LEVEL.ENTRY,
+    employmentType: EMPLOYMENT_TYPE.FULL_TIME,
+    workplaceType: WORKPLACE_TYPE.HYBRID,
+    location: "Pune",
+  });
+
+  const response = await candidateSession.agent
+    .get("/api/v1/recommendations/jobs")
+    .expect(200);
+
+  expect(response.body.data.jobs).toHaveLength(1);
+
+  expect(response.body.data.jobs[0].match).toEqual(
+    expect.objectContaining({
+      matchBasis: "profile_and_resume",
+      profileScore: expect.any(Number),
+      resumeBoost: expect.any(Number),
+      resumeEvidence: expect.any(Array),
+    }),
+  );
+
+  expect(response.body.data.jobs[0].match.resumeBoost).toBeGreaterThan(0);
 });
