@@ -38,93 +38,64 @@ const buildJsonPrompt = ({ task, context, outputShape }) => {
   ].join("\n");
 };
 
-const RESUME_ANALYSIS_OUTPUT_SHAPE = {
-  extracted: {
-    fullName: null,
-    email: null,
-    phone: null,
-    location: null,
-    summary: null,
-    targetRoles: [],
-    skills: [],
-    programmingLanguages: [],
-    frameworks: [],
-    databases: [],
-    tools: [],
-    projects: [
-      {
-        name: null,
-        description: null,
-        technologies: [],
-        impact: null,
-        links: [],
+const buildInterviewKitPrompt = ({
+  job,
+  candidateProfile,
+  resumeAnalysis,
+  match,
+  resumeReview = null,
+}) => {
+  return buildJsonPrompt({
+    task: [
+      "Generate an interview kit for this candidate and job.",
+      "Questions must verify job-related skills, project depth, resume evidence, and weak areas.",
+      "Use the deterministic match and resume review only as guidance.",
+      "Do not recommend hiring or rejecting the candidate.",
+      "Keep questions practical and suitable for a recruiter or interviewer.",
+    ].join(" "),
+
+    context: {
+      job: {
+        title: job.title,
+        description: job.description,
+        requirements: job.requirements,
+        skills: job.skills,
+        location: job.location,
+        employmentType: job.employmentType,
+        workplaceType: job.workplaceType,
+        experienceLevel: job.experienceLevel,
       },
-    ],
-    experience: [
-      {
-        title: null,
-        company: null,
-        duration: null,
-        highlights: [],
+
+      candidateProfile: {
+        headline: candidateProfile.headline,
+        summary: candidateProfile.summary,
+        skills: candidateProfile.skills,
+        experienceLevel: candidateProfile.experienceLevel,
+        location: candidateProfile.location,
+        targetJobTitles: candidateProfile.targetJobTitles,
       },
-    ],
-    education: [
-      {
-        degree: null,
-        institution: null,
-        year: null,
+
+      resumeAnalysis: {
+        extracted: resumeAnalysis.extracted,
+        evaluation: resumeAnalysis.evaluation,
       },
-    ],
-    certifications: [],
-    links: [],
-  },
-  evaluation: {
-    resumeScore: 0,
-    strengths: [],
-    weaknesses: [],
-    missingKeywords: [],
-    atsIssues: [],
-    improvementSuggestions: [],
-    recommendedProfileUpdates: {
-      headline: null,
-      summary: null,
-      skills: [],
-      targetJobTitles: [],
+
+      deterministicMatch: {
+        matchScore: match.matchScore,
+        matchLabel: match.matchLabel,
+        matchBasis: match.matchBasis,
+        profileScore: match.profileScore,
+        resumeBoost: match.resumeBoost,
+        matchedSkills: match.matchedSkills,
+        missingSkills: match.missingSkills,
+        resumeEvidence: match.resumeEvidence,
+      },
+
+      resumeReview,
     },
-  },
-};
 
-const JOB_RESUME_FIT_OUTPUT_SHAPE = {
-  summary: "",
-  matchedRequirements: [],
-  missingRequirements: [],
-  resumeImprovements: [],
-  profileImprovements: [],
-  beforeApplyingChecklist: [],
-};
-
-const APPLICATION_RESUME_REVIEW_OUTPUT_SHAPE = {
-  summary: "",
-  matchedEvidence: [
-    {
-      requirement: "",
-      evidence: "",
-    },
-  ],
-  missingOrWeakAreas: [],
-  resumeStrengths: [],
-  interviewFocus: [],
-  riskNotes: [],
-};
-
-const JOB_POST_ASSISTANT_OUTPUT_SHAPE = {
-  improvedTitle: "",
-  improvedDescription: "",
-  improvedResponsibilities: [],
-  improvedRequirements: [],
-  recommendedSkills: [],
-  qualityNotes: [],
-  missingInformation: [],
+    outputShape: INTERVIEW_KIT_OUTPUT_SHAPE,
+  });
 };
 
 const buildJobPostAssistantPrompt = ({ company, jobDraft }) => {
@@ -316,6 +287,123 @@ const buildResumeAnalysisPrompt = ({ candidateProfile }) => {
   });
 };
 
+const RESUME_ANALYSIS_OUTPUT_SHAPE = {
+  extracted: {
+    fullName: null,
+    email: null,
+    phone: null,
+    location: null,
+    summary: null,
+    targetRoles: [],
+    skills: [],
+    programmingLanguages: [],
+    frameworks: [],
+    databases: [],
+    tools: [],
+    projects: [
+      {
+        name: null,
+        description: null,
+        technologies: [],
+        impact: null,
+        links: [],
+      },
+    ],
+    experience: [
+      {
+        title: null,
+        company: null,
+        duration: null,
+        highlights: [],
+      },
+    ],
+    education: [
+      {
+        degree: null,
+        institution: null,
+        year: null,
+      },
+    ],
+    certifications: [],
+    links: [],
+  },
+  evaluation: {
+    resumeScore: 0,
+    strengths: [],
+    weaknesses: [],
+    missingKeywords: [],
+    atsIssues: [],
+    improvementSuggestions: [],
+    recommendedProfileUpdates: {
+      headline: null,
+      summary: null,
+      skills: [],
+      targetJobTitles: [],
+    },
+  },
+};
+
+const JOB_RESUME_FIT_OUTPUT_SHAPE = {
+  summary: "",
+  matchedRequirements: [],
+  missingRequirements: [],
+  resumeImprovements: [],
+  profileImprovements: [],
+  beforeApplyingChecklist: [],
+};
+
+const APPLICATION_RESUME_REVIEW_OUTPUT_SHAPE = {
+  summary: "",
+  matchedEvidence: [
+    {
+      requirement: "",
+      evidence: "",
+    },
+  ],
+  missingOrWeakAreas: [],
+  resumeStrengths: [],
+  interviewFocus: [],
+  riskNotes: [],
+};
+
+const JOB_POST_ASSISTANT_OUTPUT_SHAPE = {
+  improvedTitle: "",
+  improvedDescription: "",
+  improvedResponsibilities: [],
+  improvedRequirements: [],
+  recommendedSkills: [],
+  qualityNotes: [],
+  missingInformation: [],
+};
+
+const INTERVIEW_KIT_OUTPUT_SHAPE = {
+  technicalQuestions: [
+    {
+      question: "",
+      whyAsk: "",
+    },
+  ],
+  projectQuestions: [
+    {
+      question: "",
+      whyAsk: "",
+    },
+  ],
+  skillGapQuestions: [
+    {
+      question: "",
+      whyAsk: "",
+    },
+  ],
+  behavioralQuestions: [
+    {
+      question: "",
+      whyAsk: "",
+    },
+  ],
+  evaluationChecklist: [],
+};
+
 export {
   buildAiSystemInstruction,
   buildJsonOnlyInstruction,
@@ -324,6 +412,8 @@ export {
   buildJobResumeFitPrompt,
   buildApplicationResumeReviewPrompt,
   buildJobPostAssistantPrompt,
+  buildInterviewKitPrompt,
+  INTERVIEW_KIT_OUTPUT_SHAPE,
   RESUME_ANALYSIS_OUTPUT_SHAPE,
   JOB_RESUME_FIT_OUTPUT_SHAPE,
   APPLICATION_RESUME_REVIEW_OUTPUT_SHAPE,

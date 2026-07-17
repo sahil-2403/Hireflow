@@ -270,6 +270,98 @@ const resumeReviewSnapshotSchema = new mongoose.Schema(
   },
 );
 
+const interviewQuestionSchema = new mongoose.Schema(
+  {
+    question: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    whyAsk: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
+const interviewKitSnapshotSchema = new mongoose.Schema(
+  {
+    resumeAnalysisId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ResumeAnalysis",
+      default: null,
+    },
+
+    jobSignature: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    resumeSignature: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    technicalQuestions: {
+      type: [interviewQuestionSchema],
+      default: [],
+    },
+
+    projectQuestions: {
+      type: [interviewQuestionSchema],
+      default: [],
+    },
+
+    skillGapQuestions: {
+      type: [interviewQuestionSchema],
+      default: [],
+    },
+
+    behavioralQuestions: {
+      type: [interviewQuestionSchema],
+      default: [],
+    },
+
+    evaluationChecklist: {
+      type: [String],
+      default: [],
+    },
+
+    provider: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    model: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    rawOutput: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+      select: false,
+    },
+
+    generatedAt: {
+      type: Date,
+      required: true,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
 const applicationSchema = new mongoose.Schema(
   {
     jobId: {
@@ -339,6 +431,12 @@ const applicationSchema = new mongoose.Schema(
 
     resumeReviewSnapshot: {
       type: resumeReviewSnapshotSchema,
+      default: null,
+      select: false,
+    },
+
+    interviewKitSnapshot: {
+      type: interviewKitSnapshotSchema,
       default: null,
       select: false,
     },

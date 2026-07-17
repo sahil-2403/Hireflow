@@ -4,6 +4,7 @@ import asyncHandler from "../../shared/utils/asyncHandler.js";
 import {
   analyzeMyCandidateResume,
   checkMyCandidateJobResumeFit,
+  generateManagedApplicationInterviewKit,
   getMyCandidateResumeAnalysis,
   reviewManagedApplicationResumeMatch,
 } from "./ai.service.js";
@@ -91,10 +92,29 @@ const generateJobPostSuggestions = asyncHandler(async (req, res) => {
     );
 });
 
+const generateApplicationInterviewKit = asyncHandler(async (req, res) => {
+  const result = await generateManagedApplicationInterviewKit({
+    userId: getAuthUserId(req),
+    role: req.user.role,
+    applicationId: req.params.applicationId,
+  });
+
+  const statusCode = result.reused ? 200 : 201;
+
+  const message = result.reused
+    ? "AI Interview Kit already available for this application"
+    : "AI Interview Kit generated successfully";
+
+  return res
+    .status(statusCode)
+    .json(new ApiResponse(statusCode, message, result));
+});
+
 export {
   analyzeCandidateResume,
   checkCandidateJobResumeFit,
+  generateApplicationInterviewKit,
+  generateJobPostSuggestions,
   getCandidateResumeAnalysis,
   reviewApplicationResumeMatch,
-  generateJobPostSuggestions,
 };

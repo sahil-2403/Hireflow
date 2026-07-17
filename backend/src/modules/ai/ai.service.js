@@ -34,9 +34,10 @@ import {
 
 import {
   buildAiSystemInstruction,
+  buildApplicationResumeReviewPrompt,
+  buildInterviewKitPrompt,
   buildJobResumeFitPrompt,
   buildResumeAnalysisPrompt,
-  buildApplicationResumeReviewPrompt,
 } from "./aiPrompt.service.js";
 
 import { ensureAiProviderReady, generateAiJson } from "./aiProvider.service.js";
@@ -612,7 +613,7 @@ const getManagedApplicationForAiReview = async ({
     _id: applicationId,
     companyId: company._id,
   })
-    .select("+matchSnapshot +resumeReviewSnapshot")
+    .select("+matchSnapshot +resumeReviewSnapshot +interviewKitSnapshot")
     .populate({
       path: "jobId",
       select:
@@ -865,15 +866,194 @@ const reviewManagedApplicationResumeMatch = async ({
   };
 };
 
+const normalizeQuestionList = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        return {
+          question: item.trim(),
+          whyAsk: null,
+        };
+      }
+
+      return {
+        question: toStringOrNull(item?.question),
+        whyAsk: toStringOrNull(item?.whyAsk),
+      };
+    })
+    .filter((item) => item.question);
+};
+
+const normalizeInterviewKitOutput = (output) => {
+  return {
+    technicalQuestions: normalizeQuestionList(output?.technicalQuestions),
+    projectQuestions: normalizeQuestionList(output?.projectQuestions),
+    skillGapQuestions: normalizeQuestionList(output?.skillGapQuestions),
+    behavioralQuestions: normalizeQuestionList(output?.behavioralQuestions),
+    evaluationChecklist: toStringArray(output?.evaluationChecklist),
+  };
+};
+
+const formatApplicationInterviewKit = (application) => {
+  const kit = application.interviewKitSnapshot;
+
+  if (!kit) {
+    return null;
+  }
+
+  return {
+    applicationId: application._id.toString(),
+    jobId: application.jobId?._id?.toString?.() || application.jobId.toString(),
+    resumeAnalysisId: kit.resumeAnalysisId?.toString?.() || null,
+    technicalQuestions: kit.technicalQuestions,
+    projectQuestions: kit.projectQuestions,
+    skillGapQuestions: kit.skillGapQuestions,
+    behavioralQuestions: kit.behavioralQuestions,
+    evaluationChecklist: kit.evaluationChecklist,
+    provider: kit.provider,
+    model: kit.model,
+    generatedAt: kit.generatedAt,
+  };
+};
+
+const generateManagedApplicationInterviewKit = async ({
+  userId,
+  role,
+  applicationId,
+}) => {
+  const { company, application } = await getManagedApplicationForAiReview({
+    userId,
+    role,
+    applicationId,
+  });
+
+  const job = application.jobId.toObject
+    ? application.jobId.toObject()
+    : application.jobId;
+
+  const candidateProfile = application.candidateId.toObject
+    ? application.candidateId.toObject()
+    : application.candidateId;
+
+  const resumeSource = buildApplicationResumeSource(application);
+  const jobSignature = buildJobMatchSignature(job);
+
+  const cachedKit = application.interviewKitSnapshot;
+
+  if (
+    cachedKit &&
+    cachedKit.jobSignature === jobSignature &&
+    cachedKit.resumeSignature === resumeSource.resumeSignature
+  ) {
+    return {
+      reused: true,
+      application: {
+        _id: application._id,
+        status: application.status,
+      },
+      job: {
+        _id: job._id,
+        title: job.title,
+      },
+      interviewKit: formatApplicationInterviewKit(application),
+      usage: await getAiUsageState({
+        userId,
+        featureKey: AI_FEATURE_KEYS.INTERVIEW_KIT,
+      }),
+    };
+  }
+
+  const aiConfig = ensureAiProviderReady();
+
+  const usage = await consumeAiUsage({
+    userId,
+    companyId: company._id,
+    featureKey: AI_FEATURE_KEYS.INTERVIEW_KIT,
+  });
+
+  const { resumeAnalysis } = await getOrCreateApplicationResumeAnalysis({
+    application,
+    candidateProfile,
+    aiConfig,
+  });
+
+  const deterministicMatch = calculateJobCandidateMatch(job, candidateProfile, {
+    resumeAnalysis,
+  });
+
+  const resumeReview = application.resumeReviewSnapshot
+    ? {
+        summary: application.resumeReviewSnapshot.summary,
+        matchedEvidence: application.resumeReviewSnapshot.matchedEvidence,
+        missingOrWeakAreas: application.resumeReviewSnapshot.missingOrWeakAreas,
+        interviewFocus: application.resumeReviewSnapshot.interviewFocus,
+        riskNotes: application.resumeReviewSnapshot.riskNotes,
+      }
+    : null;
+
+  const rawOutput = await generateAiJson({
+    prompt: buildInterviewKitPrompt({
+      job,
+      candidateProfile,
+      resumeAnalysis,
+      match: deterministicMatch,
+      resumeReview,
+    }),
+    systemInstruction: buildAiSystemInstruction("AI Interview Kit"),
+    temperature: 0.25,
+    maxOutputTokens: 3072,
+  });
+
+  const normalizedOutput = normalizeInterviewKitOutput(rawOutput);
+
+  application.interviewKitSnapshot = {
+    resumeAnalysisId: resumeAnalysis._id,
+    jobSignature,
+    resumeSignature: resumeSource.resumeSignature,
+    technicalQuestions: normalizedOutput.technicalQuestions,
+    projectQuestions: normalizedOutput.projectQuestions,
+    skillGapQuestions: normalizedOutput.skillGapQuestions,
+    behavioralQuestions: normalizedOutput.behavioralQuestions,
+    evaluationChecklist: normalizedOutput.evaluationChecklist,
+    provider: aiConfig.provider,
+    model: aiConfig.model,
+    rawOutput,
+    generatedAt: new Date(),
+  };
+
+  await application.save();
+
+  return {
+    reused: false,
+    application: {
+      _id: application._id,
+      status: application.status,
+    },
+    job: {
+      _id: job._id,
+      title: job.title,
+    },
+    interviewKit: formatApplicationInterviewKit(application),
+    usage,
+  };
+};
+
 export {
   analyzeMyCandidateResume,
   getMyCandidateResumeAnalysis,
   checkMyCandidateJobResumeFit,
+  reviewManagedApplicationResumeMatch,
+  generateManagedApplicationInterviewKit,
   normalizeResumeAnalysisOutput,
   normalizeJobResumeFitOutput,
+  normalizeApplicationResumeReviewOutput,
+  normalizeInterviewKitOutput,
   formatResumeAnalysis,
   formatJobResumeFit,
-  reviewManagedApplicationResumeMatch,
-  normalizeApplicationResumeReviewOutput,
   formatApplicationResumeReview,
+  formatApplicationInterviewKit,
 };

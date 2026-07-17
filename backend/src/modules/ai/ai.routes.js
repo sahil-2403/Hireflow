@@ -12,6 +12,7 @@ import { jobPostSuggestionSchema } from "./ai.validation.js";
 import {
   analyzeCandidateResume,
   checkCandidateJobResumeFit,
+  generateApplicationInterviewKit,
   generateJobPostSuggestions,
   getCandidateResumeAnalysis,
   reviewApplicationResumeMatch,
@@ -50,6 +51,12 @@ router.post(
   "/applications/:applicationId/resume-review",
   authorize(ROLES.OWNER, ROLES.RECRUITER),
   reviewApplicationResumeMatch,
+);
+
+router.post(
+  "/applications/:applicationId/interview-kit",
+  authorize(ROLES.OWNER, ROLES.RECRUITER),
+  generateApplicationInterviewKit,
 );
 
 export default router;
