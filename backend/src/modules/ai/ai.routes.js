@@ -7,13 +7,17 @@ import authorize from "../../shared/middleware/authorize.js";
 
 import validate from "../../shared/middleware/validate.js";
 
-import { jobPostSuggestionSchema } from "./ai.validation.js";
+import {
+  jobPostSuggestionSchema,
+  suggestedShortlistSchema,
+} from "./ai.validation.js";
 
 import {
   analyzeCandidateResume,
   checkCandidateJobResumeFit,
   generateApplicationInterviewKit,
   generateJobPostSuggestions,
+  generateJobSuggestedShortlist,
   getCandidateResumeAnalysis,
   reviewApplicationResumeMatch,
 } from "./ai.controller.js";
@@ -39,6 +43,13 @@ router.post(
   authorize(ROLES.OWNER, ROLES.RECRUITER),
   validate(jobPostSuggestionSchema),
   generateJobPostSuggestions,
+);
+
+router.post(
+  "/jobs/:jobId/suggested-shortlist",
+  authorize(ROLES.OWNER, ROLES.RECRUITER),
+  validate(suggestedShortlistSchema),
+  generateJobSuggestedShortlist,
 );
 
 router.post(

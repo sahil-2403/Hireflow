@@ -10,6 +10,7 @@ import {
 } from "./ai.service.js";
 
 import { generateJobPostAssistantSuggestions } from "./aiJobPost.service.js";
+import { generateSuggestedShortlist } from "./aiShortlist.service.js";
 
 const getAuthUserId = (req) => {
   return req.user?._id || req.user?.id;
@@ -110,11 +111,31 @@ const generateApplicationInterviewKit = asyncHandler(async (req, res) => {
     .json(new ApiResponse(statusCode, message, result));
 });
 
+const generateJobSuggestedShortlist = asyncHandler(async (req, res) => {
+  const result = await generateSuggestedShortlist({
+    userId: getAuthUserId(req),
+    role: req.user.role,
+    jobId: req.params.jobId,
+    requestedLimit: req.body.limit,
+  });
+
+  const statusCode = result.reused ? 200 : 201;
+
+  const message = result.reused
+    ? "AI Suggested Shortlist already available for this job"
+    : "AI Suggested Shortlist generated successfully";
+
+  return res
+    .status(statusCode)
+    .json(new ApiResponse(statusCode, message, result));
+});
+
 export {
   analyzeCandidateResume,
   checkCandidateJobResumeFit,
   generateApplicationInterviewKit,
   generateJobPostSuggestions,
+  generateJobSuggestedShortlist,
   getCandidateResumeAnalysis,
   reviewApplicationResumeMatch,
 };

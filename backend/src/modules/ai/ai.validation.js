@@ -84,4 +84,8 @@ const jobPostSuggestionSchema = z
   })
   .superRefine(validateSalaryRange);
 
-export { jobPostSuggestionSchema };
+const suggestedShortlistSchema = z.object({
+  limit: z.number().int().min(1).max(50).optional().default(5),
+});
+
+export { jobPostSuggestionSchema, suggestedShortlistSchema };

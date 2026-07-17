@@ -6,6 +6,134 @@ const HIRING_SAFETY_RULES = [
   "Clearly separate evidence, gaps, and suggestions.",
 ];
 
+const RESUME_ANALYSIS_OUTPUT_SHAPE = {
+  extracted: {
+    fullName: null,
+    email: null,
+    phone: null,
+    location: null,
+    summary: null,
+    targetRoles: [],
+    skills: [],
+    programmingLanguages: [],
+    frameworks: [],
+    databases: [],
+    tools: [],
+    projects: [
+      {
+        name: null,
+        description: null,
+        technologies: [],
+        impact: null,
+        links: [],
+      },
+    ],
+    experience: [
+      {
+        title: null,
+        company: null,
+        duration: null,
+        highlights: [],
+      },
+    ],
+    education: [
+      {
+        degree: null,
+        institution: null,
+        year: null,
+      },
+    ],
+    certifications: [],
+    links: [],
+  },
+  evaluation: {
+    resumeScore: 0,
+    strengths: [],
+    weaknesses: [],
+    missingKeywords: [],
+    atsIssues: [],
+    improvementSuggestions: [],
+    recommendedProfileUpdates: {
+      headline: null,
+      summary: null,
+      skills: [],
+      targetJobTitles: [],
+    },
+  },
+};
+
+const JOB_RESUME_FIT_OUTPUT_SHAPE = {
+  summary: "",
+  matchedRequirements: [],
+  missingRequirements: [],
+  resumeImprovements: [],
+  profileImprovements: [],
+  beforeApplyingChecklist: [],
+};
+
+const APPLICATION_RESUME_REVIEW_OUTPUT_SHAPE = {
+  summary: "",
+  matchedEvidence: [
+    {
+      requirement: "",
+      evidence: "",
+    },
+  ],
+  missingOrWeakAreas: [],
+  resumeStrengths: [],
+  interviewFocus: [],
+  riskNotes: [],
+};
+
+const JOB_POST_ASSISTANT_OUTPUT_SHAPE = {
+  improvedTitle: "",
+  improvedDescription: "",
+  improvedResponsibilities: [],
+  improvedRequirements: [],
+  recommendedSkills: [],
+  qualityNotes: [],
+  missingInformation: [],
+};
+
+const INTERVIEW_KIT_OUTPUT_SHAPE = {
+  technicalQuestions: [
+    {
+      question: "",
+      whyAsk: "",
+    },
+  ],
+  projectQuestions: [
+    {
+      question: "",
+      whyAsk: "",
+    },
+  ],
+  skillGapQuestions: [
+    {
+      question: "",
+      whyAsk: "",
+    },
+  ],
+  behavioralQuestions: [
+    {
+      question: "",
+      whyAsk: "",
+    },
+  ],
+  evaluationChecklist: [],
+};
+
+const SUGGESTED_SHORTLIST_OUTPUT_SHAPE = {
+  candidates: [
+    {
+      applicationId: "",
+      summary: "",
+      strengths: [],
+      verificationPoints: [],
+    },
+  ],
+};
+
 const buildAiSystemInstruction = (purpose) => {
   return [
     "You are HireFlow's AI assistant for job matching and hiring workflow support.",
@@ -287,121 +415,51 @@ const buildResumeAnalysisPrompt = ({ candidateProfile }) => {
   });
 };
 
-const RESUME_ANALYSIS_OUTPUT_SHAPE = {
-  extracted: {
-    fullName: null,
-    email: null,
-    phone: null,
-    location: null,
-    summary: null,
-    targetRoles: [],
-    skills: [],
-    programmingLanguages: [],
-    frameworks: [],
-    databases: [],
-    tools: [],
-    projects: [
-      {
-        name: null,
-        description: null,
-        technologies: [],
-        impact: null,
-        links: [],
+const buildSuggestedShortlistPrompt = ({ job, candidates }) => {
+  return buildJsonPrompt({
+    task: [
+      "Explain the backend-selected suggested shortlist for this job.",
+      "The candidate selection and order were already determined by HireFlow's deterministic match engine.",
+      "Do not add candidates, remove candidates, or change their order.",
+      "Do not recommend hiring or rejecting any candidate.",
+      "For each application ID, provide a concise job-related summary, strengths, and points that should be verified during review or interview.",
+      "Only use the evidence provided in the context.",
+    ].join(" "),
+
+    context: {
+      job: {
+        title: job.title,
+        description: job.description,
+        requirements: job.requirements,
+        skills: job.skills,
+        location: job.location,
+        employmentType: job.employmentType,
+        workplaceType: job.workplaceType,
+        experienceLevel: job.experienceLevel,
       },
-    ],
-    experience: [
-      {
-        title: null,
-        company: null,
-        duration: null,
-        highlights: [],
-      },
-    ],
-    education: [
-      {
-        degree: null,
-        institution: null,
-        year: null,
-      },
-    ],
-    certifications: [],
-    links: [],
-  },
-  evaluation: {
-    resumeScore: 0,
-    strengths: [],
-    weaknesses: [],
-    missingKeywords: [],
-    atsIssues: [],
-    improvementSuggestions: [],
-    recommendedProfileUpdates: {
-      headline: null,
-      summary: null,
-      skills: [],
-      targetJobTitles: [],
-    },
-  },
-};
 
-const JOB_RESUME_FIT_OUTPUT_SHAPE = {
-  summary: "",
-  matchedRequirements: [],
-  missingRequirements: [],
-  resumeImprovements: [],
-  profileImprovements: [],
-  beforeApplyingChecklist: [],
-};
+      backendSelectedCandidates: candidates.map((candidate) => ({
+        applicationId: candidate.applicationId,
+        candidateName: candidate.candidateName,
+        headline: candidate.headline,
+        experienceLevel: candidate.experienceLevel,
+        profileSkills: candidate.profileSkills,
+        applicationStatus: candidate.applicationStatus,
 
-const APPLICATION_RESUME_REVIEW_OUTPUT_SHAPE = {
-  summary: "",
-  matchedEvidence: [
-    {
-      requirement: "",
-      evidence: "",
-    },
-  ],
-  missingOrWeakAreas: [],
-  resumeStrengths: [],
-  interviewFocus: [],
-  riskNotes: [],
-};
+        deterministicMatch: {
+          matchScore: candidate.matchScore,
+          matchLabel: candidate.matchLabel,
+          confidenceLevel: candidate.confidenceLevel,
+          matchedSkills: candidate.matchedSkills,
+          missingSkills: candidate.missingSkills,
+        },
 
-const JOB_POST_ASSISTANT_OUTPUT_SHAPE = {
-  improvedTitle: "",
-  improvedDescription: "",
-  improvedResponsibilities: [],
-  improvedRequirements: [],
-  recommendedSkills: [],
-  qualityNotes: [],
-  missingInformation: [],
-};
+        existingResumeReview: candidate.resumeReview,
+      })),
+    },
 
-const INTERVIEW_KIT_OUTPUT_SHAPE = {
-  technicalQuestions: [
-    {
-      question: "",
-      whyAsk: "",
-    },
-  ],
-  projectQuestions: [
-    {
-      question: "",
-      whyAsk: "",
-    },
-  ],
-  skillGapQuestions: [
-    {
-      question: "",
-      whyAsk: "",
-    },
-  ],
-  behavioralQuestions: [
-    {
-      question: "",
-      whyAsk: "",
-    },
-  ],
-  evaluationChecklist: [],
+    outputShape: SUGGESTED_SHORTLIST_OUTPUT_SHAPE,
+  });
 };
 
 export {
@@ -413,6 +471,8 @@ export {
   buildApplicationResumeReviewPrompt,
   buildJobPostAssistantPrompt,
   buildInterviewKitPrompt,
+  buildSuggestedShortlistPrompt,
+  SUGGESTED_SHORTLIST_OUTPUT_SHAPE,
   INTERVIEW_KIT_OUTPUT_SHAPE,
   RESUME_ANALYSIS_OUTPUT_SHAPE,
   JOB_RESUME_FIT_OUTPUT_SHAPE,
