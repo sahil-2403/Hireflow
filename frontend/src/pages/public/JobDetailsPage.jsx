@@ -25,6 +25,8 @@ import SkillMatchList from "../../components/application/SkillMatchList";
 
 import CompanyLogo from "../../components/common/CompanyLogo";
 
+import CandidateJobResumeFitCard from "../../components/ai/CandidateJobResumeFitCard";
+
 const SectionList = ({ items }) => {
   return (
     <ul className="grid gap-3">
@@ -437,11 +439,20 @@ const JobDetailsPage = () => {
 
         <aside className="grid gap-6 self-start lg:sticky lg:top-24">
           {canApply && (
-            <CandidateMatchCard
-              status={matchState.status}
-              matchData={matchState.data}
-              errorMessage={matchState.errorMessage}
-            />
+            <>
+              <CandidateMatchCard
+                status={matchState.status}
+                matchData={matchState.data}
+                errorMessage={matchState.errorMessage}
+              />
+
+              <CandidateJobResumeFitCard
+                jobId={jobId}
+                availabilityStatus={matchState.status}
+                availability={matchState.data?.aiResumeFit || null}
+                availabilityError={matchState.errorMessage}
+              />
+            </>
           )}
 
           {!isAuthenticated && (

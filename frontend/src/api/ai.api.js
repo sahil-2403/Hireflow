@@ -12,4 +12,14 @@ const generateCandidateResumeInsights = async () => {
   return response.data;
 };
 
-export { generateCandidateResumeInsights, getCandidateResumeInsights };
+const generateCandidateJobResumeFit = async (jobId) => {
+  const response = await apiClient.post(`/ai/jobs/${jobId}/resume-fit`);
+
+  return response.data;
+};
+
+export {
+  generateCandidateJobResumeFit,
+  generateCandidateResumeInsights,
+  getCandidateResumeInsights,
+};

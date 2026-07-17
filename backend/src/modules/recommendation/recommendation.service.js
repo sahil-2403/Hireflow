@@ -2,20 +2,30 @@ import mongoose from "mongoose";
 
 import Candidate from "../candidate/candidate.model.js";
 import Job from "../job/job.model.js";
+import JobResumeFit from "../jobResumeFit/jobResumeFit.model.js";
 
 import ApiError from "../../shared/errors/ApiError.js";
 
-import { findLatestCompletedResumeAnalysis } from "../resumeAnalysis/resumeAnalysis.service.js";
+import {
+  buildCandidateProfileResumeSource,
+  findLatestCompletedResumeAnalysis,
+} from "../resumeAnalysis/resumeAnalysis.service.js";
 
 import {
+  AI_FEATURE_KEYS,
   EMPLOYMENT_TYPE,
   EXPERIENCE_LEVEL,
   JOB_STATUS,
-  WORKPLACE_TYPE,
   RESUME_ANALYSIS_SOURCE_TYPES,
+  WORKPLACE_TYPE,
 } from "../../config/constants.js";
 
-import { calculateJobCandidateMatch } from "../../shared/services/matchScore.service.js";
+import { getAiUsageState } from "../aiUsage/aiUsage.service.js";
+
+import {
+  buildJobMatchSignature,
+  calculateJobCandidateMatch,
+} from "../../shared/services/matchScore.service.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
@@ -188,6 +198,147 @@ const buildRecommendedJobResponse = (job, candidate, resumeAnalysis = null) => {
   };
 };
 
+const formatJobResumeFit = (fit) => {
+  if (!fit) {
+    return null;
+  }
+
+  return {
+    id: fit._id.toString(),
+    jobId: fit.jobId.toString(),
+    resumeAnalysisId: fit.resumeAnalysisId?.toString?.() || null,
+
+    enhancedMatchScore: fit.enhancedMatchScore,
+    matchLabel: fit.matchLabel,
+    matchBasis: fit.matchBasis,
+    profileScore: fit.profileScore,
+    resumeBoost: fit.resumeBoost,
+    confidenceScore: fit.confidenceScore,
+    confidenceLevel: fit.confidenceLevel,
+
+    matchedSkills: fit.matchedSkills || [],
+    missingSkills: fit.missingSkills || [],
+    resumeEvidence: fit.resumeEvidence || [],
+
+    summary: fit.summary,
+
+    matchedRequirements: fit.matchedRequirements || [],
+
+    missingRequirements: fit.missingRequirements || [],
+
+    resumeImprovements: fit.resumeImprovements || [],
+
+    profileImprovements: fit.profileImprovements || [],
+
+    beforeApplyingChecklist: fit.beforeApplyingChecklist || [],
+
+    provider: fit.provider,
+    model: fit.model,
+    generatedAt: fit.generatedAt,
+    createdAt: fit.createdAt,
+    updatedAt: fit.updatedAt,
+  };
+};
+
+const getCurrentCandidateResumeContext = async ({
+  candidateUserId,
+  candidate,
+}) => {
+  if (!candidate?.resumeUrl) {
+    return {
+      resumeSource: null,
+      resumeAnalysis: null,
+    };
+  }
+
+  const resumeSource = buildCandidateProfileResumeSource(candidate);
+
+  const resumeAnalysis = await findLatestCompletedResumeAnalysis({
+    candidateUserId,
+
+    sourceType: RESUME_ANALYSIS_SOURCE_TYPES.CANDIDATE_PROFILE_RESUME,
+
+    resumeSignature: resumeSource.resumeSignature,
+  });
+
+  return {
+    resumeSource,
+    resumeAnalysis,
+  };
+};
+
+const buildAiResumeFitEligibility = async ({
+  userId,
+  candidate,
+  job,
+  resumeSource,
+  resumeAnalysis,
+}) => {
+  const usage = await getAiUsageState({
+    userId,
+    featureKey: AI_FEATURE_KEYS.JOB_RESUME_FIT,
+  });
+
+  const baseEligibility = {
+    hasCandidateProfile: true,
+    hasResume: Boolean(candidate.resumeUrl),
+    hasResumeInsights: Boolean(resumeAnalysis),
+
+    canGenerate: false,
+    blockReason: null,
+
+    fit: null,
+    usage,
+  };
+
+  if (!candidate.resumeUrl) {
+    return {
+      ...baseEligibility,
+      blockReason: "missing_resume",
+    };
+  }
+
+  if (!resumeAnalysis || !resumeSource) {
+    return {
+      ...baseEligibility,
+      blockReason: "missing_resume_insights",
+    };
+  }
+
+  const jobSignature = buildJobMatchSignature(job);
+
+  const cachedFit = await JobResumeFit.findOne({
+    candidateUserId: userId,
+    jobId: job._id,
+    resumeAnalysisId: resumeAnalysis._id,
+    jobSignature,
+    resumeSignature: resumeSource.resumeSignature,
+  })
+    .sort({
+      generatedAt: -1,
+    })
+    .lean();
+
+  if (cachedFit) {
+    return {
+      ...baseEligibility,
+      fit: formatJobResumeFit(cachedFit),
+    };
+  }
+
+  if (usage.remaining <= 0) {
+    return {
+      ...baseEligibility,
+      blockReason: "daily_limit",
+    };
+  }
+
+  return {
+    ...baseEligibility,
+    canGenerate: true,
+  };
+};
+
 const listRecommendedJobs = async (userId, query) => {
   const candidate = await Candidate.findOne({
     userId,
@@ -203,9 +354,9 @@ const listRecommendedJobs = async (userId, query) => {
 
   const filters = buildJobFilters(query);
 
-  const resumeAnalysis = await findLatestCompletedResumeAnalysis({
+  const { resumeAnalysis } = await getCurrentCandidateResumeContext({
     candidateUserId: userId,
-    sourceType: RESUME_ANALYSIS_SOURCE_TYPES.CANDIDATE_PROFILE_RESUME,
+    candidate,
   });
 
   const jobs = await Job.find(filters)
@@ -244,29 +395,40 @@ const getRecommendedJobMatch = async (userId, jobId) => {
     throw new ApiError(400, "Invalid job ID");
   }
 
-  const candidate = await Candidate.findOne({
-    userId,
-  }).lean();
+  const [candidate, job] = await Promise.all([
+    Candidate.findOne({
+      userId,
+    }).lean(),
+
+    Job.findOne({
+      _id: jobId,
+      status: JOB_STATUS.OPEN,
+    }).lean(),
+  ]);
 
   if (!candidate) {
     throw new ApiError(404, "Candidate profile not found");
   }
 
-  const job = await Job.findOne({
-    _id: jobId,
-    status: JOB_STATUS.OPEN,
-  }).lean();
-
   if (!job) {
     throw new ApiError(404, "Open job not found");
   }
 
-  const resumeAnalysis = await findLatestCompletedResumeAnalysis({
-    candidateUserId: userId,
-    sourceType: RESUME_ANALYSIS_SOURCE_TYPES.CANDIDATE_PROFILE_RESUME,
-  });
+  const { resumeSource, resumeAnalysis } =
+    await getCurrentCandidateResumeContext({
+      candidateUserId: userId,
+      candidate,
+    });
 
   const match = calculateJobCandidateMatch(job, candidate, {
+    resumeAnalysis,
+  });
+
+  const aiResumeFit = await buildAiResumeFitEligibility({
+    userId,
+    candidate,
+    job,
+    resumeSource,
     resumeAnalysis,
   });
 
@@ -277,6 +439,8 @@ const getRecommendedJobMatch = async (userId, jobId) => {
     },
 
     match,
+
+    aiResumeFit,
   };
 };
 

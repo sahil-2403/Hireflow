@@ -4,6 +4,7 @@ import app from "../../src/app.js";
 
 import Job from "../../src/modules/job/job.model.js";
 import ResumeAnalysis from "../../src/modules/resumeAnalysis/resumeAnalysis.model.js";
+import { buildCandidateProfileResumeSource } from "../../src/modules/resumeAnalysis/resumeAnalysis.service.js";
 
 import {
   ROLES,
@@ -420,6 +421,25 @@ describe("Recommendation API", () => {
         warnings: expect.any(Array),
       }),
     );
+
+    expect(response.body.data.aiResumeFit).toEqual(
+      expect.objectContaining({
+        hasCandidateProfile: true,
+        hasResume: true,
+        hasResumeInsights: false,
+        canGenerate: false,
+        blockReason: "missing_resume_insights",
+        fit: null,
+
+        usage: expect.objectContaining({
+          featureKey: "job_resume_fit",
+          limit: expect.any(Number),
+          used: expect.any(Number),
+          remaining: expect.any(Number),
+          resetAt: expect.any(String),
+        }),
+      }),
+    );
   });
 
   test("specific job match rejects invalid job id", async () => {
@@ -481,13 +501,15 @@ test("recommended jobs use AI resume analysis when available", async () => {
       resumePublicId: "resume-public-id",
     });
 
+  const resumeSource = buildCandidateProfileResumeSource(candidateProfile);
+
   await ResumeAnalysis.create({
     candidateUserId: candidateUser._id,
     candidateProfileId: candidateProfile._id,
-    sourceType: "candidate_profile_resume",
-    resumeUrl: candidateProfile.resumeUrl,
-    resumePublicId: candidateProfile.resumePublicId,
-    resumeSignature: "resume-signature-airesume",
+    sourceType: resumeSource.sourceType,
+    resumeUrl: resumeSource.resumeUrl,
+    resumePublicId: resumeSource.resumePublicId,
+    resumeSignature: resumeSource.resumeSignature,
     status: "completed",
     extracted: {
       skills: ["Node.js", "MongoDB", "Express.js"],
