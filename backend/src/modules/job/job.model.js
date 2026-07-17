@@ -134,6 +134,43 @@ jobSchema.index({
   skills: "text",
 });
 
+/*
+ * Supports general open-job retrieval and
+ * stable newest-job pagination.
+ */
+jobSchema.index(
+  {
+    status: 1,
+    createdAt: -1,
+    _id: 1,
+  },
+  {
+    name: "jobs_status_created_at",
+  },
+);
+
+/*
+ * Supports common recommendation filters
+ * before the bounded Stage 1 ranking pool.
+ *
+ * Field order follows the most common
+ * filtering flow:
+ * status → workplace → employment → experience.
+ */
+jobSchema.index(
+  {
+    status: 1,
+    workplaceType: 1,
+    employmentType: 1,
+    experienceLevel: 1,
+    createdAt: -1,
+    _id: 1,
+  },
+  {
+    name: "jobs_recommendation_filters",
+  },
+);
+
 const Job = mongoose.model("Job", jobSchema);
 
 export default Job;

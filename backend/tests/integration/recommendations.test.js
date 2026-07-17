@@ -113,6 +113,57 @@ const createRecommendationJob = async ({
   });
 };
 
+const createRecommendationJobsBulk = async ({
+  count,
+  companyId,
+  createdBy,
+  titlePrefix = "Bulk Recommendation Job",
+  skills = ["JavaScript", "React", "Node.js"],
+  location = "Pune, Maharashtra",
+  employmentType = EMPLOYMENT_TYPE.FULL_TIME,
+  workplaceType = WORKPLACE_TYPE.HYBRID,
+  experienceLevel = EXPERIENCE_LEVEL.ENTRY,
+  salaryStart = 300000,
+  status = JOB_STATUS.OPEN,
+}) => {
+  const jobs = Array.from(
+    {
+      length: count,
+    },
+    (_, index) => ({
+      companyId,
+      createdBy,
+
+      title: `${titlePrefix} ${String(index + 1).padStart(3, "0")}`,
+
+      description:
+        "This bulk recommendation test job description is long enough for validation and matching.",
+
+      responsibilities: ["Build production-ready application features"],
+
+      requirements: ["Strong programming fundamentals", ...skills],
+
+      skills,
+      location,
+      employmentType,
+      workplaceType,
+      experienceLevel,
+
+      salaryMin: salaryStart + index * 1000,
+      salaryMax: salaryStart + index * 1000 + 100000,
+
+      salaryCurrency: "INR",
+      isSalaryVisible: true,
+
+      status,
+
+      closedAt: status === JOB_STATUS.CLOSED ? new Date() : null,
+    }),
+  );
+
+  return Job.insertMany(jobs);
+};
+
 describe("Recommendation API", () => {
   test("candidate can list recommended jobs with match information", async () => {
     const { owner, company } = await setupCompany("list");
@@ -140,6 +191,14 @@ describe("Recommendation API", () => {
     expect(response.body.message).toBe("Recommended jobs fetched successfully");
 
     expect(response.body.data.pagination.total).toBe(2);
+
+    expect(response.body.data.ranking).toEqual({
+      strategy: "two_stage_exact_rerank",
+      candidatePoolSize: 2,
+      candidatePoolLimit: 200,
+      exactScoredJobs: 2,
+    });
+
     expect(response.body.data.jobs).toHaveLength(2);
 
     const jobIds = response.body.data.jobs.map((job) => job._id);
@@ -487,6 +546,376 @@ describe("Recommendation API", () => {
     expect(response.body.message).toBe(
       "You are not allowed to perform this action",
     );
+  });
+
+  test("match-score recommendations score no more than the configured candidate pool", async () => {
+    const { owner, company } = await setupCompany("poollimit");
+
+    const { candidateSession } = await setupCandidate("poollimit", {
+      skills: ["javascript", "react", "node.js"],
+
+      targetJobTitles: ["MERN Developer"],
+
+      preferredLocations: ["Pune"],
+
+      preferredWorkplaceTypes: [WORKPLACE_TYPE.HYBRID],
+
+      preferredEmploymentTypes: [EMPLOYMENT_TYPE.FULL_TIME],
+    });
+
+    await createRecommendationJobsBulk({
+      count: 205,
+      companyId: company._id,
+      createdBy: owner._id,
+      titlePrefix: "Pool MERN Developer",
+    });
+
+    const response = await candidateSession.agent
+      .get("/api/v1/recommendations/jobs")
+      .query({
+        limit: 20,
+      })
+      .expect(200);
+
+    expect(response.body.data.jobs).toHaveLength(20);
+
+    expect(response.body.data.ranking).toEqual({
+      strategy: "two_stage_exact_rerank",
+      candidatePoolSize: 200,
+      candidatePoolLimit: 200,
+      exactScoredJobs: 200,
+    });
+
+    expect(response.body.data.pagination).toEqual({
+      page: 1,
+      limit: 20,
+      total: 200,
+      totalPages: 10,
+      hasNextPage: true,
+      hasPreviousPage: false,
+    });
+  }, 30000);
+
+  test("an older highly relevant job ranks above a newer unrelated job", async () => {
+    const { owner, company } = await setupCompany("olderrelevant");
+
+    const { candidateSession } = await setupCandidate("olderrelevant", {
+      skills: ["javascript", "react", "node.js", "mongodb"],
+
+      targetJobTitles: ["MERN Developer"],
+
+      preferredLocations: ["Pune"],
+
+      preferredWorkplaceTypes: [WORKPLACE_TYPE.HYBRID],
+
+      preferredEmploymentTypes: [EMPLOYMENT_TYPE.FULL_TIME],
+    });
+
+    const relevantJob = await createRecommendationJob({
+      companyId: company._id,
+      createdBy: owner._id,
+
+      title: "MERN Developer",
+
+      skills: ["JavaScript", "React", "Node.js", "MongoDB"],
+
+      location: "Pune, Maharashtra",
+
+      workplaceType: WORKPLACE_TYPE.HYBRID,
+    });
+
+    await Job.updateOne(
+      {
+        _id: relevantJob._id,
+      },
+      {
+        $set: {
+          createdAt: new Date("2025-01-01T00:00:00.000Z"),
+        },
+      },
+    );
+
+    const unrelatedJob = await createRecommendationJob({
+      companyId: company._id,
+      createdBy: owner._id,
+
+      title: "Senior Java Architect",
+
+      skills: ["Java", "Spring Boot", "Oracle"],
+
+      location: "Delhi, India",
+
+      workplaceType: WORKPLACE_TYPE.ONSITE,
+    });
+
+    const response = await candidateSession.agent
+      .get("/api/v1/recommendations/jobs")
+      .expect(200);
+
+    expect(response.body.data.jobs[0]._id).toBe(relevantJob._id.toString());
+
+    expect(response.body.data.jobs[0].match.matchScore).toBeGreaterThan(
+      response.body.data.jobs[1].match.matchScore,
+    );
+
+    expect(response.body.data.jobs[1]._id).toBe(unrelatedJob._id.toString());
+  });
+
+  test("explicit filters are applied before the recommendation pool limit", async () => {
+    const { owner, company } = await setupCompany("filterbeforepool");
+
+    const { candidateSession } = await setupCandidate("filterbeforepool");
+
+    await createRecommendationJobsBulk({
+      count: 205,
+      companyId: company._id,
+      createdBy: owner._id,
+
+      titlePrefix: "Onsite Bulk Role",
+
+      workplaceType: WORKPLACE_TYPE.ONSITE,
+
+      location: "Bengaluru, Karnataka",
+    });
+
+    const remoteJob = await createRecommendationJob({
+      companyId: company._id,
+      createdBy: owner._id,
+
+      title: "Remote Filtered MERN Role",
+
+      workplaceType: WORKPLACE_TYPE.REMOTE,
+
+      location: "Mumbai, Maharashtra",
+    });
+
+    const response = await candidateSession.agent
+      .get("/api/v1/recommendations/jobs")
+      .query({
+        workplaceType: WORKPLACE_TYPE.REMOTE,
+      })
+      .expect(200);
+
+    expect(response.body.data.jobs).toHaveLength(1);
+
+    expect(response.body.data.jobs[0]._id).toBe(remoteJob._id.toString());
+
+    expect(response.body.data.ranking).toEqual({
+      strategy: "two_stage_exact_rerank",
+
+      candidatePoolSize: 1,
+      candidatePoolLimit: 200,
+      exactScoredJobs: 1,
+    });
+
+    expect(response.body.data.pagination.total).toBe(1);
+  }, 30000);
+
+  test("match-score pagination does not repeat jobs between pages", async () => {
+    const { owner, company } = await setupCompany("stablepages");
+
+    const { candidateSession } = await setupCandidate("stablepages", {
+      skills: ["javascript", "react", "node.js"],
+
+      targetJobTitles: ["MERN Developer"],
+    });
+
+    await createRecommendationJobsBulk({
+      count: 25,
+      companyId: company._id,
+      createdBy: owner._id,
+      titlePrefix: "Stable MERN Developer",
+    });
+
+    const firstPage = await candidateSession.agent
+      .get("/api/v1/recommendations/jobs")
+      .query({
+        page: 1,
+        limit: 10,
+      })
+      .expect(200);
+
+    const secondPage = await candidateSession.agent
+      .get("/api/v1/recommendations/jobs")
+      .query({
+        page: 2,
+        limit: 10,
+      })
+      .expect(200);
+
+    const firstPageIds = firstPage.body.data.jobs.map((job) => job._id);
+
+    const secondPageIds = secondPage.body.data.jobs.map((job) => job._id);
+
+    expect(firstPageIds).toHaveLength(10);
+    expect(secondPageIds).toHaveLength(10);
+
+    expect(
+      firstPageIds.filter((jobId) => secondPageIds.includes(jobId)),
+    ).toEqual([]);
+
+    expect(firstPage.body.data.pagination.total).toBe(25);
+
+    expect(secondPage.body.data.pagination).toEqual({
+      page: 2,
+      limit: 10,
+      total: 25,
+      totalPages: 3,
+      hasNextPage: true,
+      hasPreviousPage: true,
+    });
+  });
+
+  test("equal match scores use stable created-date and job-id tie breaking", async () => {
+    const { owner, company } = await setupCompany("stableties");
+
+    const { candidateSession } = await setupCandidate("stableties", {
+      skills: ["javascript", "react", "node.js"],
+
+      targetJobTitles: ["Software Developer"],
+    });
+
+    const jobs = await createRecommendationJobsBulk({
+      count: 4,
+      companyId: company._id,
+      createdBy: owner._id,
+
+      titlePrefix: "Software Developer",
+
+      skills: ["JavaScript", "React", "Node.js"],
+    });
+
+    const sameCreatedAt = new Date("2026-01-01T00:00:00.000Z");
+
+    await Job.updateMany(
+      {
+        _id: {
+          $in: jobs.map((job) => job._id),
+        },
+      },
+      {
+        $set: {
+          title: "Software Developer",
+          createdAt: sameCreatedAt,
+        },
+      },
+    );
+
+    const firstResponse = await candidateSession.agent
+      .get("/api/v1/recommendations/jobs")
+      .expect(200);
+
+    const secondResponse = await candidateSession.agent
+      .get("/api/v1/recommendations/jobs")
+      .expect(200);
+
+    const firstIds = firstResponse.body.data.jobs.map((job) => job._id);
+
+    const secondIds = secondResponse.body.data.jobs.map((job) => job._id);
+
+    const scores = firstResponse.body.data.jobs.map(
+      (job) => job.match.matchScore,
+    );
+
+    expect(new Set(scores).size).toBe(1);
+
+    expect(firstIds).toEqual(secondIds);
+
+    expect(firstIds).toEqual(
+      [...firstIds].sort((first, second) => first.localeCompare(second)),
+    );
+  });
+
+  test("non-match sorting paginates in MongoDB before calculating visible match scores", async () => {
+    const { owner, company } = await setupCompany("databasesort");
+
+    const { candidateSession } = await setupCandidate("databasesort");
+
+    await createRecommendationJobsBulk({
+      count: 25,
+      companyId: company._id,
+      createdBy: owner._id,
+
+      titlePrefix: "Salary Sorted Job",
+
+      salaryStart: 300000,
+    });
+
+    const response = await candidateSession.agent
+      .get("/api/v1/recommendations/jobs")
+      .query({
+        sortBy: "salaryMin",
+        order: "asc",
+        page: 2,
+        limit: 5,
+      })
+      .expect(200);
+
+    expect(response.body.data.jobs).toHaveLength(5);
+
+    expect(response.body.data.ranking).toEqual({
+      strategy: "database_paginated",
+      candidatePoolSize: 5,
+      candidatePoolLimit: 5,
+      exactScoredJobs: 5,
+    });
+
+    expect(response.body.data.pagination).toEqual({
+      page: 2,
+      limit: 5,
+      total: 25,
+      totalPages: 5,
+      hasNextPage: true,
+      hasPreviousPage: true,
+    });
+
+    const salaries = response.body.data.jobs.map((job) => job.salaryMin);
+
+    expect(salaries).toEqual([305000, 306000, 307000, 308000, 309000]);
+
+    for (const job of response.body.data.jobs) {
+      expect(job.match).toEqual(
+        expect.objectContaining({
+          matchScore: expect.any(Number),
+          matchLabel: expect.any(String),
+        }),
+      );
+    }
+  });
+
+  test("recommended jobs page size is capped at twenty", async () => {
+    const { owner, company } = await setupCompany("maxpagesize");
+
+    const { candidateSession } = await setupCandidate("maxpagesize");
+
+    await createRecommendationJobsBulk({
+      count: 25,
+      companyId: company._id,
+      createdBy: owner._id,
+
+      titlePrefix: "Maximum Page Job",
+    });
+
+    const response = await candidateSession.agent
+      .get("/api/v1/recommendations/jobs")
+      .query({
+        sortBy: "createdAt",
+        limit: 100,
+      })
+      .expect(200);
+
+    expect(response.body.data.jobs).toHaveLength(20);
+
+    expect(response.body.data.pagination.limit).toBe(20);
+
+    expect(response.body.data.pagination.total).toBe(25);
+
+    expect(response.body.data.ranking).toEqual({
+      strategy: "database_paginated",
+      candidatePoolSize: 20,
+      candidatePoolLimit: 20,
+      exactScoredJobs: 20,
+    });
   });
 });
 
