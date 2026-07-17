@@ -11,6 +11,7 @@ import {
 
 import { generateJobPostAssistantSuggestions } from "./aiJobPost.service.js";
 import { generateSuggestedShortlist } from "./aiShortlist.service.js";
+import { generateCandidateComparison } from "./aiComparison.service.js";
 
 const getAuthUserId = (req) => {
   return req.user?._id || req.user?.id;
@@ -130,6 +131,25 @@ const generateJobSuggestedShortlist = asyncHandler(async (req, res) => {
     .json(new ApiResponse(statusCode, message, result));
 });
 
+const generateJobCandidateComparison = asyncHandler(async (req, res) => {
+  const result = await generateCandidateComparison({
+    userId: getAuthUserId(req),
+    role: req.user.role,
+    jobId: req.params.jobId,
+    applicationIds: req.body.applicationIds,
+  });
+
+  const statusCode = result.reused ? 200 : 201;
+
+  const message = result.reused
+    ? "AI Candidate Comparison already available"
+    : "AI Candidate Comparison generated successfully";
+
+  return res
+    .status(statusCode)
+    .json(new ApiResponse(statusCode, message, result));
+});
+
 export {
   analyzeCandidateResume,
   checkCandidateJobResumeFit,
@@ -138,4 +158,5 @@ export {
   generateJobSuggestedShortlist,
   getCandidateResumeAnalysis,
   reviewApplicationResumeMatch,
+  generateJobCandidateComparison,
 };

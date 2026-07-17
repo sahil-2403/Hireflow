@@ -8,6 +8,7 @@ import authorize from "../../shared/middleware/authorize.js";
 import validate from "../../shared/middleware/validate.js";
 
 import {
+  candidateComparisonSchema,
   jobPostSuggestionSchema,
   suggestedShortlistSchema,
 } from "./ai.validation.js";
@@ -16,6 +17,7 @@ import {
   analyzeCandidateResume,
   checkCandidateJobResumeFit,
   generateApplicationInterviewKit,
+  generateJobCandidateComparison,
   generateJobPostSuggestions,
   generateJobSuggestedShortlist,
   getCandidateResumeAnalysis,
@@ -50,6 +52,13 @@ router.post(
   authorize(ROLES.OWNER, ROLES.RECRUITER),
   validate(suggestedShortlistSchema),
   generateJobSuggestedShortlist,
+);
+
+router.post(
+  "/jobs/:jobId/candidate-comparison",
+  authorize(ROLES.OWNER, ROLES.RECRUITER),
+  validate(candidateComparisonSchema),
+  generateJobCandidateComparison,
 );
 
 router.post(

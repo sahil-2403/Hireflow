@@ -88,4 +88,26 @@ const suggestedShortlistSchema = z.object({
   limit: z.number().int().min(1).max(50).optional().default(5),
 });
 
-export { jobPostSuggestionSchema, suggestedShortlistSchema };
+const objectIdSchema = z
+  .string()
+  .trim()
+  .regex(/^[a-f\d]{24}$/i, "Invalid application ID");
+
+const candidateComparisonSchema = z
+  .object({
+    applicationIds: z.array(objectIdSchema).min(2).max(50),
+  })
+  .transform((data) => ({
+    ...data,
+    applicationIds: [...new Set(data.applicationIds)],
+  }))
+  .refine((data) => data.applicationIds.length >= 2, {
+    path: ["applicationIds"],
+    message: "Select at least 2 different applications",
+  });
+
+export {
+  jobPostSuggestionSchema,
+  suggestedShortlistSchema,
+  candidateComparisonSchema,
+};

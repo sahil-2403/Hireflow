@@ -134,6 +134,21 @@ const SUGGESTED_SHORTLIST_OUTPUT_SHAPE = {
   ],
 };
 
+const CANDIDATE_COMPARISON_OUTPUT_SHAPE = {
+  comparisonSummary: "",
+  sharedStrengths: [],
+  keyDifferences: [],
+  interviewFocus: [],
+  candidates: [
+    {
+      applicationId: "",
+      summary: "",
+      strongestEvidence: [],
+      concernsToVerify: [],
+    },
+  ],
+};
+
 const buildAiSystemInstruction = (purpose) => {
   return [
     "You are HireFlow's AI assistant for job matching and hiring workflow support.",
@@ -462,6 +477,55 @@ const buildSuggestedShortlistPrompt = ({ job, candidates }) => {
   });
 };
 
+const buildCandidateComparisonPrompt = ({ job, candidates }) => {
+  return buildJsonPrompt({
+    task: [
+      "Create a side-by-side explanation of the selected candidates for this job.",
+      "HireFlow's deterministic match engine has already calculated all scores and ordered the candidates.",
+      "Do not alter scores, add candidates, remove candidates, or change candidate order.",
+      "Do not recommend hiring or rejecting a candidate.",
+      "Do not identify a winner or make a final selection.",
+      "Explain job-related strengths, meaningful differences, and areas that should be verified during interviews.",
+      "Use only the supplied profile, match, and resume-review evidence.",
+    ].join(" "),
+
+    context: {
+      job: {
+        title: job.title,
+        description: job.description,
+        requirements: job.requirements,
+        skills: job.skills,
+        location: job.location,
+        employmentType: job.employmentType,
+        workplaceType: job.workplaceType,
+        experienceLevel: job.experienceLevel,
+      },
+
+      backendSelectedCandidates: candidates.map((candidate) => ({
+        applicationId: candidate.applicationId,
+        candidateName: candidate.candidateName,
+        headline: candidate.headline,
+        experienceLevel: candidate.experienceLevel,
+        profileSkills: candidate.profileSkills,
+        applicationStatus: candidate.applicationStatus,
+
+        deterministicMatch: {
+          matchScore: candidate.matchScore,
+          matchLabel: candidate.matchLabel,
+          confidenceScore: candidate.confidenceScore,
+          confidenceLevel: candidate.confidenceLevel,
+          matchedSkills: candidate.matchedSkills,
+          missingSkills: candidate.missingSkills,
+        },
+
+        existingResumeReview: candidate.resumeReview,
+      })),
+    },
+
+    outputShape: CANDIDATE_COMPARISON_OUTPUT_SHAPE,
+  });
+};
+
 export {
   buildAiSystemInstruction,
   buildJsonOnlyInstruction,
@@ -472,6 +536,8 @@ export {
   buildJobPostAssistantPrompt,
   buildInterviewKitPrompt,
   buildSuggestedShortlistPrompt,
+  buildCandidateComparisonPrompt,
+  CANDIDATE_COMPARISON_OUTPUT_SHAPE,
   SUGGESTED_SHORTLIST_OUTPUT_SHAPE,
   INTERVIEW_KIT_OUTPUT_SHAPE,
   RESUME_ANALYSIS_OUTPUT_SHAPE,
