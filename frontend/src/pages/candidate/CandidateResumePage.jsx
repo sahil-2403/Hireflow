@@ -19,6 +19,8 @@ import PageHero from "../../components/ui/PageHero";
 import Alert from "../../components/ui/Alert";
 import Pill from "../../components/ui/Pill";
 
+import CandidateResumeInsightsCard from "../../components/ai/CandidateResumeInsightsCard";
+
 const MAX_RESUME_SIZE = 5 * 1024 * 1024;
 
 const formatFileSize = (bytes) => {
@@ -502,6 +504,11 @@ const CandidateResumePage = () => {
       {apiError && <Alert variant="error">{apiError}</Alert>}
 
       {successMessage && <Alert variant="success">{successMessage}</Alert>}
+
+      <CandidateResumeInsightsCard
+        hasResume={hasResume}
+        resumeUrl={profile?.resumeUrl}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card>

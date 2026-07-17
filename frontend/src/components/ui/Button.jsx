@@ -6,6 +6,12 @@ const variantClasses = {
   ghost: "text-slate-700 hover:bg-slate-100 disabled:opacity-70",
   danger:
     "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-70",
+  ai: [
+    "bg-linear-to-r from-violet-600 via-indigo-600 to-blue-600",
+    "text-white shadow-sm shadow-violet-200",
+    "hover:from-violet-700 hover:via-indigo-700 hover:to-blue-700",
+    "disabled:opacity-60",
+  ].join(" "),
 };
 
 const sizeClasses = {
