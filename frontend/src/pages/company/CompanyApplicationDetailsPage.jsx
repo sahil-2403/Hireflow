@@ -24,6 +24,8 @@ import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import PageHero from "../../components/ui/PageHero";
 import Alert from "../../components/ui/Alert";
 
+import CompanyApplicationResumeReviewCard from "../../components/ai/CompanyApplicationResumeReviewCard";
+
 import { getApplicationStatusLabel } from "../../features/applications/application.constants";
 
 const getCandidateName = (candidate) => {
@@ -295,6 +297,11 @@ const CompanyApplicationDetailsPage = () => {
               </div>
             </CardBody>
           </Card>
+
+          <CompanyApplicationResumeReviewCard
+            applicationId={applicationId}
+            availability={details.aiResumeReview}
+          />
 
           <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
             <Card>

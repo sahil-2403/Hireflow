@@ -18,8 +18,21 @@ const generateCandidateJobResumeFit = async (jobId) => {
   return response.data;
 };
 
+const generateApplicationResumeReview = async (applicationId) => {
+  const response = await apiClient.post(
+    `/ai/applications/${applicationId}/resume-review`,
+    {},
+    {
+      timeout: 120000,
+    },
+  );
+
+  return response.data;
+};
+
 export {
   generateCandidateJobResumeFit,
   generateCandidateResumeInsights,
   getCandidateResumeInsights,
+  generateApplicationResumeReview,
 };

@@ -6,7 +6,11 @@ import Job from "../job/job.model.js";
 
 import ApiError from "../../shared/errors/ApiError.js";
 
-import { JOB_STATUS, APPLICATION_STATUS } from "../../config/constants.js";
+import {
+  AI_FEATURE_KEYS,
+  APPLICATION_STATUS,
+  JOB_STATUS,
+} from "../../config/constants.js";
 
 import { getStaffCompany } from "../../shared/utils/companyAccess.js";
 
@@ -15,6 +19,14 @@ import {
   createApplicationMatchSnapshot,
   shouldRefreshApplicationMatchSnapshot,
 } from "./applicationMatch.service.js";
+
+import { getAiUsageState } from "../aiUsage/aiUsage.service.js";
+
+import { buildApplicationResumeSource } from "../resumeAnalysis/resumeAnalysis.service.js";
+
+import { buildJobMatchSignature } from "../../shared/services/matchScore.service.js";
+
+import { formatApplicationResumeReview } from "../ai/ai.service.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
@@ -617,6 +629,86 @@ const buildManagedApplicationDetailResponse = (application) => {
   };
 };
 
+const buildAiResumeReviewEligibility = async ({ userId, application }) => {
+  const usage = await getAiUsageState({
+    userId,
+    featureKey: AI_FEATURE_KEYS.COMPANY_RESUME_REVIEW,
+  });
+
+  const hasResume = Boolean(application?.resumeUrl);
+
+  const hasJobData = Boolean(application?.jobId);
+
+  const hasCandidateData = Boolean(application?.candidateId);
+
+  const baseEligibility = {
+    hasResume,
+    hasJobData,
+    hasCandidateData,
+
+    canGenerate: false,
+    blockReason: null,
+
+    review: null,
+    usage,
+  };
+
+  /*
+   * Review the resume submitted with the
+   * application, not the candidate's latest
+   * profile resume.
+   */
+  if (!hasResume) {
+    return {
+      ...baseEligibility,
+      blockReason: "missing_resume",
+    };
+  }
+
+  if (!hasJobData || !hasCandidateData) {
+    return {
+      ...baseEligibility,
+      blockReason: "incomplete_application_data",
+    };
+  }
+
+  const resumeSource = buildApplicationResumeSource(application);
+
+  const job = application.jobId.toObject
+    ? application.jobId.toObject()
+    : application.jobId;
+
+  const jobSignature = buildJobMatchSignature(job);
+
+  const cachedReview = application.resumeReviewSnapshot;
+
+  const hasFreshCachedReview = Boolean(
+    cachedReview &&
+    cachedReview.jobSignature === jobSignature &&
+    cachedReview.resumeSignature === resumeSource.resumeSignature,
+  );
+
+  if (hasFreshCachedReview) {
+    return {
+      ...baseEligibility,
+
+      review: formatApplicationResumeReview(application),
+    };
+  }
+
+  if (usage.remaining <= 0) {
+    return {
+      ...baseEligibility,
+      blockReason: "daily_limit",
+    };
+  }
+
+  return {
+    ...baseEligibility,
+    canGenerate: true,
+  };
+};
+
 const buildLegacyManagedApplicationResponse = (application) => {
   const applicationResponse = {
     ...application,
@@ -1105,7 +1197,7 @@ const getManagedJobApplicationDetails = async (
     companyId: company._id,
     jobId: job._id,
   })
-    .select("+matchSnapshot")
+    .select("+matchSnapshot +resumeReviewSnapshot")
     .lean();
 
   if (!application) {
@@ -1119,7 +1211,16 @@ const getManagedJobApplicationDetails = async (
     JOB_APPLICATION_DETAIL_POPULATE_OPTIONS,
   );
 
-  return buildManagedApplicationDetailResponse(populatedApplication);
+  const aiResumeReview = await buildAiResumeReviewEligibility({
+    userId,
+    application: populatedApplication,
+  });
+
+  return {
+    ...buildManagedApplicationDetailResponse(populatedApplication),
+
+    aiResumeReview,
+  };
 };
 
 const updateApplicationStatus = async (

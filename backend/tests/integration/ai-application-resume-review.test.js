@@ -278,6 +278,38 @@ describe("AI Application Resume Match Review API", () => {
       candidateUser,
     });
 
+    const eligibilityResponse = await ownerSession.agent
+      .get(
+        `/api/v1/applications/manage/jobs/${job._id}/applications/${application._id}`,
+      )
+      .expect(200);
+
+    expect(eligibilityResponse.body.data.aiResumeReview).toEqual(
+      expect.objectContaining({
+        hasResume: true,
+        hasJobData: true,
+        hasCandidateData: true,
+
+        canGenerate: true,
+        blockReason: null,
+        review: null,
+
+        usage: expect.objectContaining({
+          featureKey: "company_resume_review",
+
+          limit: 10,
+          used: 0,
+          remaining: 10,
+        }),
+      }),
+    );
+
+    /*
+     * The read-only eligibility request must
+     * not invoke the provider.
+     */
+    expect(generateAiJson).not.toHaveBeenCalled();
+
     const response = await postWithCsrf(
       ownerSession.agent,
       `/api/v1/ai/applications/${application._id}/resume-review`,
@@ -287,6 +319,42 @@ describe("AI Application Resume Match Review API", () => {
 
     expect(response.body.message).toBe(
       "AI Resume Match Review generated successfully",
+    );
+
+    const cachedDetailsResponse = await ownerSession.agent
+      .get(
+        `/api/v1/applications/manage/jobs/${job._id}/applications/${application._id}`,
+      )
+      .expect(200);
+
+    expect(cachedDetailsResponse.body.data.aiResumeReview).toEqual(
+      expect.objectContaining({
+        hasResume: true,
+
+        canGenerate: false,
+        blockReason: null,
+
+        review: expect.objectContaining({
+          applicationId: application._id.toString(),
+
+          jobId: job._id.toString(),
+
+          enhancedMatchScore: expect.any(Number),
+
+          matchBasis: "profile_and_resume",
+
+          summary: expect.any(String),
+
+          matchedEvidence: expect.any(Array),
+
+          interviewFocus: expect.any(Array),
+        }),
+
+        usage: expect.objectContaining({
+          used: 1,
+          remaining: 9,
+        }),
+      }),
     );
 
     expect(response.body.data.reused).toBe(false);
