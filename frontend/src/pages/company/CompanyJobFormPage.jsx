@@ -11,6 +11,8 @@ import {
   updateManagedJob,
 } from "../../api/job.api";
 
+import { getMyCompany } from "../../api/company.api";
+
 import { createJobSchema } from "../../features/jobs/job.schemas";
 
 import {
@@ -32,6 +34,8 @@ import SelectInput from "../../components/ui/SelectInput";
 import PageHero from "../../components/ui/PageHero";
 
 import CompanySetupRequired from "../../components/company/CompanySetupRequired";
+
+import CompanyJobPostAssistantCard from "../../components/ai/CompanyJobPostAssistantCard";
 
 const defaultValues = {
   title: "",
@@ -156,9 +160,9 @@ const CompanyJobFormPage = () => {
 
   const isEditMode = Boolean(jobId);
 
-  const [pageStatus, setPageStatus] = useState(
-    isEditMode ? "loading" : "ready",
-  );
+  const [pageStatus, setPageStatus] = useState("loading");
+
+  const [aiJobPostAvailability, setAiJobPostAvailability] = useState(null);
 
   const [apiError, setApiError] = useState("");
 
@@ -168,6 +172,9 @@ const CompanyJobFormPage = () => {
     register,
     handleSubmit,
     reset,
+    control,
+    getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(createJobSchema),
@@ -175,24 +182,36 @@ const CompanyJobFormPage = () => {
   });
 
   useEffect(() => {
-    if (!isEditMode) {
-      return;
-    }
-
     let shouldIgnore = false;
 
-    const loadJob = async () => {
+    const loadPage = async () => {
       try {
         setPageStatus("loading");
         setApiError("");
+        setIsCompanyMissing(false);
 
-        const result = await getManagedJobById(jobId);
+        /*
+         * The existing company GET supplies
+         * both company-profile eligibility
+         * and AI usage.
+         */
+        const [companyResult, jobResult] = await Promise.all([
+          getMyCompany(),
+
+          isEditMode ? getManagedJobById(jobId) : Promise.resolve(null),
+        ]);
 
         if (shouldIgnore) {
           return;
         }
 
-        reset(getDefaultValuesFromJob(result.data));
+        setAiJobPostAvailability(
+          companyResult.data?.aiJobPostAssistant || null,
+        );
+
+        if (isEditMode) {
+          reset(getDefaultValuesFromJob(jobResult.data));
+        }
 
         setPageStatus("ready");
       } catch (error) {
@@ -202,13 +221,23 @@ const CompanyJobFormPage = () => {
 
         const normalizedError = getApiError(error);
 
+        if (isCompanyProfileMissingError(normalizedError)) {
+          setIsCompanyMissing(true);
+
+          setAiJobPostAvailability(null);
+
+          setPageStatus("ready");
+
+          return;
+        }
+
         setApiError(normalizedError.message);
 
         setPageStatus("error");
       }
     };
 
-    loadJob();
+    loadPage();
 
     return () => {
       shouldIgnore = true;
@@ -294,6 +323,13 @@ const CompanyJobFormPage = () => {
         hidden={isCompanyMissing}
       >
         {apiError && <Alert variant="error">{apiError}</Alert>}
+
+        <CompanyJobPostAssistantCard
+          control={control}
+          getValues={getValues}
+          setValue={setValue}
+          availability={aiJobPostAvailability}
+        />
 
         <Card>
           <FormSectionTitle

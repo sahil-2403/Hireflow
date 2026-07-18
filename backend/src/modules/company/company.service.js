@@ -15,6 +15,8 @@ import {
   getStaffCompany,
 } from "../../shared/utils/companyAccess.js";
 
+import { getJobPostAssistantUsage } from "../ai/aiJobPost.service.js";
+
 const getMyCompany = async (userId, role) => {
   const company = await getStaffCompany(
     userId,
@@ -22,7 +24,24 @@ const getMyCompany = async (userId, role) => {
     "You are not allowed to access company resources",
   );
 
-  return company;
+  const usage = await getJobPostAssistantUsage(userId);
+
+  const companyData =
+    typeof company.toObject === "function" ? company.toObject() : company;
+
+  return {
+    ...companyData,
+
+    aiJobPostAssistant: {
+      hasCompanyProfile: true,
+
+      canGenerate: usage.remaining > 0,
+
+      blockReason: usage.remaining > 0 ? null : "daily_limit",
+
+      usage,
+    },
+  };
 };
 
 const createCompany = async (ownerId, companyData, file = null) => {

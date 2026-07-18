@@ -153,11 +153,58 @@ describe("AI Job Post Assistant API", () => {
   test("company admin can generate AI Job Post Assistant suggestions", async () => {
     const { session } = await createOwnerCompanyAndSession("generate");
 
+    const eligibilityResponse = await session.agent
+      .get("/api/v1/company")
+      .expect(200);
+
+    expect(eligibilityResponse.body.data.aiJobPostAssistant).toEqual(
+      expect.objectContaining({
+        hasCompanyProfile: true,
+
+        canGenerate: true,
+        blockReason: null,
+
+        usage: expect.objectContaining({
+          featureKey: "job_post_suggestion",
+
+          limit: 2,
+          used: 0,
+          remaining: 2,
+
+          resetAt: expect.any(String),
+        }),
+      }),
+    );
+
+    /*
+     * Reading company and usage state must
+     * not invoke the AI provider.
+     */
+    expect(generateAiJson).not.toHaveBeenCalled();
+
     const response = await postWithCsrf(
       session.agent,
       "/api/v1/ai/jobs/post-suggestions",
       buildJobDraft("generate"),
       200,
+    );
+
+    const updatedEligibilityResponse = await session.agent
+      .get("/api/v1/company")
+      .expect(200);
+
+    expect(updatedEligibilityResponse.body.data.aiJobPostAssistant).toEqual(
+      expect.objectContaining({
+        hasCompanyProfile: true,
+
+        canGenerate: true,
+        blockReason: null,
+
+        usage: expect.objectContaining({
+          used: 1,
+          remaining: 1,
+        }),
+      }),
     );
 
     expect(response.body.message).toBe(
