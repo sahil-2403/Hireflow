@@ -28,6 +28,8 @@ import { buildJobMatchSignature } from "../../shared/services/matchScore.service
 
 import { formatApplicationResumeReview } from "../ai/ai.service.js";
 
+import { getSuggestedShortlistAvailability } from "../ai/aiShortlist.service.js";
+
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
@@ -1117,7 +1119,7 @@ const listManagedJobApplications = async (userId, role, jobId, query) => {
     companyId: company._id,
     jobId: job._id,
   })
-    .select("+matchSnapshot")
+    .select("+matchSnapshot +resumeReviewSnapshot")
     .lean();
 
   const refreshedApplications = await refreshApplicationMatches(applications);
@@ -1128,6 +1130,18 @@ const listManagedJobApplications = async (userId, role, jobId, query) => {
   );
 
   const summary = buildApplicationStatusSummary(populatedApplications);
+
+  const aiSuggestedShortlist = await getSuggestedShortlistAvailability({
+    userId,
+    job,
+
+    /*
+     * Use all applications for the job,
+     * not only the currently filtered or
+     * paginated rows.
+     */
+    applications: populatedApplications,
+  });
 
   const filteredApplications = populatedApplications.filter((application) => {
     if (status && application.status !== status) {
@@ -1162,6 +1176,7 @@ const listManagedJobApplications = async (userId, role, jobId, query) => {
       createdAt: job.createdAt,
     },
     summary,
+    aiSuggestedShortlist,
     applications: paginatedApplications.map(buildManagedApplicationListItem),
     pagination: {
       page,

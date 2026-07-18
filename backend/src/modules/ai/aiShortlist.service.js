@@ -37,6 +37,8 @@ const ELIGIBLE_SHORTLIST_STATUSES = [
   APPLICATION_STATUS.INTERVIEW,
 ];
 
+const DEFAULT_SUGGESTED_SHORTLIST_LIMIT = 5;
+
 const toStringOrNull = (value) => {
   if (typeof value !== "string") {
     return null;
@@ -98,6 +100,21 @@ const getCurrentResumeReview = ({
   }
 
   return review;
+};
+
+const getCompleteEligibleApplications = (applications) => {
+  if (!Array.isArray(applications)) {
+    return [];
+  }
+
+  return applications.filter((application) => {
+    return (
+      ELIGIBLE_SHORTLIST_STATUSES.includes(application.status) &&
+      application.candidateId &&
+      application.candidateUserId &&
+      application.resumeUrl
+    );
+  });
 };
 
 const refreshApplicationMatchSnapshots = async ({ applications, job }) => {
@@ -204,7 +221,11 @@ const buildRankedCandidate = ({ application, jobSignature }) => {
     matchedSkills,
     missingSkills,
 
-    matchCalculatedAt: matchSnapshot?.calculatedAt || null,
+    matchEngineVersion: matchSnapshot?.engineVersion || null,
+
+    matchJobSignature: matchSnapshot?.jobSignature || null,
+
+    matchCandidateSignature: matchSnapshot?.candidateSignature || null,
 
     resumeReview: resumeReview
       ? {
@@ -214,6 +235,10 @@ const buildRankedCandidate = ({ application, jobSignature }) => {
           interviewFocus: resumeReview.interviewFocus || [],
         }
       : null,
+
+    resumeReviewJobSignature: resumeReview?.jobSignature || null,
+
+    resumeReviewResumeSignature: resumeReview?.resumeSignature || null,
 
     resumeReviewGeneratedAt: resumeReview?.generatedAt || null,
   };
@@ -241,11 +266,25 @@ const buildCandidateSetSignature = ({ jobSignature, candidates }) => {
 
     candidates: candidates.map((candidate) => ({
       applicationId: candidate.applicationId,
+
       candidateId: candidate.candidateId,
+
       applicationStatus: candidate.applicationStatus,
+
       matchScore: candidate.matchScore,
+
       confidenceScore: candidate.confidenceScore,
-      matchCalculatedAt: candidate.matchCalculatedAt,
+
+      matchEngineVersion: candidate.matchEngineVersion,
+
+      matchJobSignature: candidate.matchJobSignature,
+
+      matchCandidateSignature: candidate.matchCandidateSignature,
+
+      resumeReviewJobSignature: candidate.resumeReviewJobSignature,
+
+      resumeReviewResumeSignature: candidate.resumeReviewResumeSignature,
+
       resumeReviewGeneratedAt: candidate.resumeReviewGeneratedAt,
     })),
   };
@@ -254,6 +293,61 @@ const buildCandidateSetSignature = ({ jobSignature, candidates }) => {
     .createHash("sha256")
     .update(JSON.stringify(signaturePayload))
     .digest("hex");
+};
+
+const buildShortlistCandidateContext = ({
+  job,
+  applications,
+  requestedLimit,
+}) => {
+  const normalizedRequestedLimit =
+    Number.isInteger(requestedLimit) && requestedLimit > 0
+      ? requestedLimit
+      : DEFAULT_SUGGESTED_SHORTLIST_LIMIT;
+
+  const completeApplications = getCompleteEligibleApplications(applications);
+
+  const jobSignature = buildJobMatchSignature(job);
+
+  const rankedCandidates = sortRankedCandidates(
+    completeApplications.map((application) =>
+      buildRankedCandidate({
+        application,
+        jobSignature,
+      }),
+    ),
+  );
+
+  const aiConfig = getAiConfig();
+
+  const maxShortlistCandidates = aiConfig.maxShortlistCandidates;
+
+  const effectiveLimit =
+    maxShortlistCandidates > 0
+      ? Math.min(
+          normalizedRequestedLimit,
+          maxShortlistCandidates,
+          rankedCandidates.length,
+        )
+      : 0;
+
+  const candidateSetSignature = buildCandidateSetSignature({
+    jobSignature,
+    candidates: rankedCandidates,
+  });
+
+  return {
+    completeApplications,
+    rankedCandidates,
+
+    jobSignature,
+    candidateSetSignature,
+
+    requestedLimit: normalizedRequestedLimit,
+
+    effectiveLimit,
+    maxShortlistCandidates,
+  };
 };
 
 const normalizeSuggestedShortlistOutput = ({ output, selectedCandidates }) => {
@@ -329,6 +423,94 @@ const formatSuggestedShortlist = (shortlist) => {
   };
 };
 
+const getSuggestedShortlistAvailability = async ({
+  userId,
+  job,
+  applications,
+  requestedLimit = DEFAULT_SUGGESTED_SHORTLIST_LIMIT,
+}) => {
+  const usage = await getAiUsageState({
+    userId,
+    featureKey: AI_FEATURE_KEYS.SHORTLIST,
+  });
+
+  const {
+    rankedCandidates,
+    jobSignature,
+    candidateSetSignature,
+    effectiveLimit,
+    maxShortlistCandidates,
+  } = buildShortlistCandidateContext({
+    job,
+    applications,
+    requestedLimit,
+  });
+
+  const baseAvailability = {
+    eligibleApplicationCount: rankedCandidates.length,
+
+    requestedLimit: effectiveLimit,
+
+    canGenerate: false,
+    blockReason: null,
+
+    shortlist: null,
+    usage,
+  };
+
+  if (rankedCandidates.length === 0) {
+    return {
+      ...baseAvailability,
+
+      blockReason: "no_eligible_applications",
+    };
+  }
+
+  if (maxShortlistCandidates <= 0) {
+    return {
+      ...baseAvailability,
+
+      blockReason: "feature_unavailable",
+    };
+  }
+
+  const cachedShortlist = await JobShortlist.findOne({
+    jobId: job._id,
+    jobSignature,
+    candidateSetSignature,
+    requestedLimit: effectiveLimit,
+  }).sort({
+    generatedAt: -1,
+  });
+
+  /*
+   * A valid cached shortlist remains
+   * available even after today's usage
+   * limit has been exhausted.
+   */
+  if (cachedShortlist) {
+    return {
+      ...baseAvailability,
+
+      shortlist: formatSuggestedShortlist(cachedShortlist),
+    };
+  }
+
+  if (usage.remaining <= 0) {
+    return {
+      ...baseAvailability,
+
+      blockReason: "daily_limit",
+    };
+  }
+
+  return {
+    ...baseAvailability,
+
+    canGenerate: true,
+  };
+};
+
 const generateSuggestedShortlist = async ({
   userId,
   role,
@@ -365,7 +547,7 @@ const generateSuggestedShortlist = async ({
     .populate({
       path: "candidateId",
       select:
-        "firstName lastName headline summary skills experienceLevel location resumeUrl targetJobTitles preferredLocations preferredWorkplaceTypes preferredEmploymentTypes",
+        "firstName lastName headline summary skills experienceLevel location resumeUrl linkedinUrl githubUrl portfolioUrl targetJobTitles preferredLocations preferredWorkplaceTypes preferredEmploymentTypes",
     })
     .populate({
       path: "candidateUserId",
@@ -373,12 +555,7 @@ const generateSuggestedShortlist = async ({
     })
     .lean();
 
-  const completeApplications = applications.filter(
-    (application) =>
-      application.candidateId &&
-      application.candidateUserId &&
-      application.resumeUrl,
-  );
+  const completeApplications = getCompleteEligibleApplications(applications);
 
   if (completeApplications.length === 0) {
     throw new ApiError(400, "No eligible applications found for this job");
@@ -389,35 +566,25 @@ const generateSuggestedShortlist = async ({
     job,
   });
 
-  const jobSignature = buildJobMatchSignature(job);
+  const {
+    jobSignature,
+    rankedCandidates,
+    candidateSetSignature,
+    effectiveLimit,
+    maxShortlistCandidates,
+  } = buildShortlistCandidateContext({
+    job,
 
-  const rankedCandidates = sortRankedCandidates(
-    completeApplications.map((application) =>
-      buildRankedCandidate({
-        application,
-        jobSignature,
-      }),
-    ),
-  );
+    applications: completeApplications,
 
-  const aiConfig = getAiConfig();
+    requestedLimit,
+  });
 
-  if (aiConfig.maxShortlistCandidates <= 0) {
+  if (maxShortlistCandidates <= 0) {
     throw new ApiError(503, "AI shortlist candidate limit is not configured");
   }
 
-  const effectiveLimit = Math.min(
-    requestedLimit,
-    aiConfig.maxShortlistCandidates,
-    rankedCandidates.length,
-  );
-
   const selectedCandidates = rankedCandidates.slice(0, effectiveLimit);
-
-  const candidateSetSignature = buildCandidateSetSignature({
-    jobSignature,
-    candidates: rankedCandidates,
-  });
 
   const cachedShortlist = await JobShortlist.findOne({
     jobId: job._id,
@@ -502,6 +669,7 @@ const generateSuggestedShortlist = async ({
 
 export {
   generateSuggestedShortlist,
+  getSuggestedShortlistAvailability,
   normalizeSuggestedShortlistOutput,
   formatSuggestedShortlist,
 };

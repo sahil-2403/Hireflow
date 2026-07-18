@@ -38,10 +38,25 @@ const generateJobPostAssistantSuggestions = async (jobDraft) => {
   return response.data;
 };
 
+const generateSuggestedShortlist = async (jobId, limit) => {
+  const response = await apiClient.post(
+    `/ai/jobs/${jobId}/suggested-shortlist`,
+    {
+      limit,
+    },
+    {
+      timeout: 120000,
+    },
+  );
+
+  return response.data;
+};
+
 export {
   generateCandidateJobResumeFit,
   generateCandidateResumeInsights,
   getCandidateResumeInsights,
   generateApplicationResumeReview,
   generateJobPostAssistantSuggestions,
+  generateSuggestedShortlist,
 };

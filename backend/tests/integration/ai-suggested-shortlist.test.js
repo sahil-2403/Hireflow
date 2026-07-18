@@ -84,7 +84,7 @@ const createShortlistJob = async ({ companyId, createdBy, suffix }) => {
 
 const createCandidateApplication = async ({ job, suffix, skills }) => {
   const userData = {
-    username: `shortlist_candidate_${suffix}`,
+    username: `cand_${suffix}`,
     email: `shortlist.candidate.${suffix}@example.com`,
     password: "Password123",
     role: ROLES.CANDIDATE,
@@ -244,6 +244,201 @@ describe("AI Suggested Shortlist API", () => {
     expect(candidates[0].matchScore).toBeGreaterThan(candidates[1].matchScore);
 
     expect(generateAiJson).toHaveBeenCalledTimes(1);
+    expect(await JobShortlist.countDocuments()).toBe(1);
+  });
+
+  test("applicants GET exposes AI Suggested Shortlist eligibility and cached result", async () => {
+    const { owner, company, session } =
+      await createOwnerCompanyAndSession("availability");
+
+    const job = await createShortlistJob({
+      companyId: company._id,
+      createdBy: owner._id,
+      suffix: "availability",
+    });
+
+    const strong = await createCandidateApplication({
+      job,
+      suffix: "availability-strong",
+
+      skills: ["React", "Node.js", "MongoDB", "Express.js"],
+    });
+
+    /*
+     * These fields are part of the normal
+     * candidate match signature. The shortlist
+     * query must load them too.
+     */
+    await Candidate.findByIdAndUpdate(strong.candidate._id, {
+      $set: {
+        linkedinUrl: "https://linkedin.com/in/availability-strong",
+
+        githubUrl: "https://github.com/availability-strong",
+
+        portfolioUrl: "https://availability-strong.example.com",
+      },
+    });
+
+    const medium = await createCandidateApplication({
+      job,
+      suffix: "availability-medium",
+
+      skills: ["React", "Node.js"],
+    });
+
+    generateAiJson.mockResolvedValue({
+      candidates: [
+        {
+          applicationId: strong.application._id.toString(),
+
+          summary: "Candidate has broad MERN skill coverage.",
+
+          strengths: ["Strong overlap with the required stack"],
+
+          verificationPoints: ["Verify project depth"],
+        },
+        {
+          applicationId: medium.application._id.toString(),
+
+          summary: "Candidate has relevant frontend and backend fundamentals.",
+
+          strengths: ["React and Node.js overlap"],
+
+          verificationPoints: ["Verify MongoDB experience"],
+        },
+      ],
+    });
+
+    /*
+     * First page load: eligible, but no
+     * shortlist has been generated.
+     */
+    const initialResponse = await session.agent
+      .get(`/api/v1/applications/manage/jobs/${job._id}/applications`)
+      .expect(200);
+
+    expect(initialResponse.body.data.aiSuggestedShortlist).toEqual(
+      expect.objectContaining({
+        eligibleApplicationCount: 2,
+        requestedLimit: 2,
+
+        canGenerate: true,
+        blockReason: null,
+
+        shortlist: null,
+
+        usage: expect.objectContaining({
+          featureKey: "shortlist",
+          limit: 3,
+          used: 0,
+          remaining: 3,
+        }),
+      }),
+    );
+
+    expect(generateAiJson).not.toHaveBeenCalled();
+
+    const requestedLimit =
+      initialResponse.body.data.aiSuggestedShortlist.requestedLimit;
+
+    /*
+     * Generate once using the exact
+     * effective limit returned by the GET.
+     */
+    await postWithCsrf(
+      session.agent,
+
+      `/api/v1/ai/jobs/${job._id}/suggested-shortlist`,
+
+      {
+        limit: requestedLimit,
+      },
+
+      201,
+    );
+
+    expect(generateAiJson).toHaveBeenCalledTimes(1);
+
+    /*
+     * Later page load: cached shortlist is
+     * returned without another provider call.
+     */
+    const cachedResponse = await session.agent
+      .get(`/api/v1/applications/manage/jobs/${job._id}/applications`)
+      .expect(200);
+
+    expect(cachedResponse.body.data.aiSuggestedShortlist).toEqual(
+      expect.objectContaining({
+        eligibleApplicationCount: 2,
+        requestedLimit: 2,
+
+        canGenerate: false,
+        blockReason: null,
+
+        shortlist: expect.objectContaining({
+          jobId: job._id.toString(),
+
+          requestedLimit: 2,
+
+          totalEligibleCandidates: 2,
+
+          candidates: expect.arrayContaining([
+            expect.objectContaining({
+              applicationId: strong.application._id.toString(),
+            }),
+
+            expect.objectContaining({
+              applicationId: medium.application._id.toString(),
+            }),
+          ]),
+        }),
+
+        usage: expect.objectContaining({
+          used: 1,
+          remaining: 2,
+        }),
+      }),
+    );
+
+    expect(generateAiJson).toHaveBeenCalledTimes(1);
+
+    const cachedShortlistId =
+      cachedResponse.body.data.aiSuggestedShortlist.shortlist.id;
+
+    /*
+     * Changing applicant pagination and sorting
+     * must still return the same cached shortlist.
+     */
+    const pageSwitchResponse = await session.agent
+      .get(
+        `/api/v1/applications/manage/jobs/${job._id}/applications?page=2&limit=1&sortBy=appliedAt&order=asc`,
+      )
+      .expect(200);
+
+    expect(pageSwitchResponse.body.data.aiSuggestedShortlist.shortlist).toEqual(
+      expect.objectContaining({
+        id: cachedShortlistId,
+
+        jobId: job._id.toString(),
+
+        requestedLimit: 2,
+      }),
+    );
+
+    /*
+     * A normal refresh must also return the
+     * same cached result.
+     */
+    const refreshResponse = await session.agent
+      .get(`/api/v1/applications/manage/jobs/${job._id}/applications`)
+      .expect(200);
+
+    expect(refreshResponse.body.data.aiSuggestedShortlist.shortlist.id).toBe(
+      cachedShortlistId,
+    );
+
+    expect(generateAiJson).toHaveBeenCalledTimes(1);
+
     expect(await JobShortlist.countDocuments()).toBe(1);
   });
 

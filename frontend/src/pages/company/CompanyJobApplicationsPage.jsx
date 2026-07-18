@@ -23,6 +23,8 @@ import Pill from "../../components/ui/Pill";
 import SelectInput from "../../components/ui/SelectInput";
 import TextInput from "../../components/ui/TextInput";
 
+import CompanySuggestedShortlistCard from "../../components/ai/CompanySuggestedShortlistCard";
+
 import { APPLICATION_STATUS_FILTERS } from "../../features/applications/application.constants";
 
 const SORT_OPTIONS = [
@@ -234,6 +236,8 @@ const CompanyJobApplicationsPage = () => {
 
   const summary = applicationsData?.summary;
 
+  const aiSuggestedShortlist = applicationsData?.aiSuggestedShortlist;
+
   const activeFilterChips = useMemo(() => {
     return getActiveFilterChips({
       search,
@@ -340,6 +344,11 @@ const CompanyJobApplicationsPage = () => {
               </div>
             </CardBody>
           </Card>
+
+          <CompanySuggestedShortlistCard
+            jobId={jobId}
+            availability={aiSuggestedShortlist}
+          />
 
           {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
 
