@@ -29,6 +29,9 @@ import CompanyLogo from "../../components/common/CompanyLogo";
 
 import MatchScoreBadge from "../../components/application/MatchScoreBadge";
 
+import AiBadge from "../../components/ai/AiBadge";
+import AiCard from "../../components/ai/AiCard";
+
 import { ROLES } from "../../features/auth/auth.constants";
 
 import useAuth from "../../hooks/useAuth";
@@ -309,6 +312,15 @@ const getActiveFilterChips = (filters) => {
 const JobCard = ({ job, showMatch = false }) => {
   const jobId = getJobId(job);
 
+  const isAiEnhanced =
+    showMatch && job.match?.matchBasis === "profile_and_resume";
+
+  const resumeBoost = Number(job.match?.resumeBoost) || 0;
+
+  const resumeEvidence = Array.isArray(job.match?.resumeEvidence)
+    ? job.match.resumeEvidence
+    : [];
+
   return (
     <Card
       as="article"
@@ -335,6 +347,10 @@ const JobCard = ({ job, showMatch = false }) => {
 
                 {showMatch && job.match && (
                   <MatchScoreBadge match={job.match} size="sm" />
+                )}
+
+                {isAiEnhanced && (
+                  <AiBadge className="text-[10px]">AI-enhanced</AiBadge>
                 )}
               </div>
 
@@ -392,6 +408,35 @@ const JobCard = ({ job, showMatch = false }) => {
                       <Pill>+{job.match.matchedSkills.length - 4}</Pill>
                     )}
                   </div>
+                </div>
+              )}
+
+              {isAiEnhanced && (
+                <div className="mt-4 rounded-2xl border border-violet-200/80 bg-linear-to-r from-violet-50 to-blue-50 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-black uppercase tracking-wider text-violet-700">
+                      Resume Insights applied
+                    </p>
+
+                    {resumeBoost > 0 && (
+                      <Pill variant="violet">
+                        +{resumeBoost} match{" "}
+                        {resumeBoost === 1 ? "point" : "points"}
+                      </Pill>
+                    )}
+                  </div>
+
+                  <p className="mt-2 text-xs leading-5 text-slate-700">
+                    {resumeEvidence[0] ||
+                      "Stored resume skills and target roles were considered when calculating this match."}
+                  </p>
+
+                  {resumeEvidence.length > 1 && (
+                    <p className="mt-1 text-[11px] font-semibold text-violet-600">
+                      +{resumeEvidence.length - 1} more resume-based{" "}
+                      {resumeEvidence.length - 1 === 1 ? "signal" : "signals"}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -500,6 +545,62 @@ const SearchTipsCard = () => {
         </div>
       </CardBody>
     </Card>
+  );
+};
+
+const SuggestedJobsEnhancementCard = ({ enhancement }) => {
+  const isEnabled = enhancement?.enabled === true;
+
+  return (
+    <AiCard>
+      <div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
+        <div>
+          <AiBadge>AI-enhanced Suggested Jobs</AiBadge>
+
+          <h2 className="mt-3 text-xl font-black text-slate-950">
+            {isEnabled
+              ? "Your Resume Insights are improving these suggestions"
+              : "Make your suggested jobs more personalized"}
+          </h2>
+
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
+            {isEnabled
+              ? "HireFlow combines your candidate profile with stored AI Resume Insights, then uses the deterministic match engine to rank relevant jobs."
+              : "Your suggestions currently use candidate profile data only. Generate AI Resume Insights to include resume skills, technologies, projects, and target roles."}
+          </p>
+
+          {isEnabled && (
+            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
+              Browsing these suggestions does not create another AI request or
+              consume additional daily usage.
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3 md:min-w-55">
+          <div className="rounded-xl border border-white/80 bg-white/70 px-4 py-3 text-center shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+              Suggestion mode
+            </p>
+
+            <p className="mt-1 text-sm font-black text-violet-700">
+              {isEnabled ? "Profile + Resume Insights" : "Profile only"}
+            </p>
+          </div>
+
+          <Button
+            as={Link}
+            to="/candidate/resume"
+            variant={isEnabled ? "secondary" : "ai"}
+            fullWidth
+          >
+            {isEnabled
+              ? "Review AI Resume Insights"
+              : "Generate AI Resume Insights"}
+          </Button>
+        </div>
+      </div>
+    </AiCard>
   );
 };
 
@@ -841,7 +942,9 @@ const JobsPage = () => {
         }
         description={
           isRecommendedMode
-            ? "Open roles ranked using your skills, target roles, and job preferences."
+            ? jobsData?.aiEnhancement?.enabled
+              ? "Open roles ranked using your profile and stored AI Resume Insights."
+              : "Open roles ranked using your skills, target roles, and job preferences."
             : "Search your preferred job by role, location, or skill."
         }
       />
@@ -864,6 +967,10 @@ const JobsPage = () => {
             </Button>
           </CardBody>
         </Card>
+      )}
+
+      {isRecommendedMode && status === "success" && (
+        <SuggestedJobsEnhancementCard enhancement={jobsData?.aiEnhancement} />
       )}
 
       <JobsSearchControls

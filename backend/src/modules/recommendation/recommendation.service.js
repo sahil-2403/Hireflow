@@ -214,6 +214,20 @@ const buildDatabaseSort = ({ sortBy, order }) => {
   };
 };
 
+const buildAiSuggestedJobsEnhancement = (resumeAnalysis) => {
+  const isEnabled = Boolean(resumeAnalysis);
+
+  return {
+    enabled: isEnabled,
+
+    source: isEnabled ? "stored_resume_insights" : "candidate_profile",
+
+    matchBasis: isEnabled ? "profile_and_resume" : "profile",
+
+    resumeAnalysisId: resumeAnalysis?._id?.toString?.() || null,
+  };
+};
+
 const buildPaginationResponse = ({ page, limit, total }) => {
   return {
     page,
@@ -824,6 +838,8 @@ const listRecommendedJobs = async (userId, query) => {
     candidate,
   });
 
+  const aiEnhancement = buildAiSuggestedJobsEnhancement(resumeAnalysis);
+
   /*
    * Match-score sorting needs two-stage
    * recommendation ranking.
@@ -878,6 +894,8 @@ const listRecommendedJobs = async (userId, query) => {
 
         exactScoredJobs: exactlyScoredJobs.length,
       },
+
+      aiEnhancement,
     };
   }
 
@@ -931,6 +949,8 @@ const listRecommendedJobs = async (userId, query) => {
 
       exactScoredJobs: jobsWithMatches.length,
     },
+
+    aiEnhancement,
   };
 };
 

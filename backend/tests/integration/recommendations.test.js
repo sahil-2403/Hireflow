@@ -230,6 +230,13 @@ describe("Recommendation API", () => {
         }),
       }),
     );
+
+    expect(response.body.data.aiEnhancement).toEqual({
+      enabled: false,
+      source: "candidate_profile",
+      matchBasis: "profile",
+      resumeAnalysisId: null,
+    });
   });
 
   test("recommended jobs are sorted by match score descending by default", async () => {
@@ -932,7 +939,7 @@ test("recommended jobs use AI resume analysis when available", async () => {
 
   const resumeSource = buildCandidateProfileResumeSource(candidateProfile);
 
-  await ResumeAnalysis.create({
+  const resumeAnalysis = await ResumeAnalysis.create({
     candidateUserId: candidateUser._id,
     candidateProfileId: candidateProfile._id,
     sourceType: resumeSource.sourceType,
@@ -987,4 +994,14 @@ test("recommended jobs use AI resume analysis when available", async () => {
   );
 
   expect(response.body.data.jobs[0].match.resumeBoost).toBeGreaterThan(0);
+
+  expect(response.body.data.aiEnhancement).toEqual({
+    enabled: true,
+
+    source: "stored_resume_insights",
+
+    matchBasis: "profile_and_resume",
+
+    resumeAnalysisId: resumeAnalysis._id.toString(),
+  });
 });
