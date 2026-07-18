@@ -25,6 +25,7 @@ import PageHero from "../../components/ui/PageHero";
 import Alert from "../../components/ui/Alert";
 
 import CompanyApplicationResumeReviewCard from "../../components/ai/CompanyApplicationResumeReviewCard";
+import CompanyApplicationInterviewKitCard from "../../components/ai/CompanyApplicationInterviewKitCard";
 
 import { getApplicationStatusLabel } from "../../features/applications/application.constants";
 
@@ -301,6 +302,11 @@ const CompanyApplicationDetailsPage = () => {
           <CompanyApplicationResumeReviewCard
             applicationId={applicationId}
             availability={details.aiResumeReview}
+          />
+
+          <CompanyApplicationInterviewKitCard
+            applicationId={applicationId}
+            availability={details.aiInterviewKit}
           />
 
           <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">

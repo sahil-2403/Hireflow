@@ -26,7 +26,10 @@ import { buildApplicationResumeSource } from "../resumeAnalysis/resumeAnalysis.s
 
 import { buildJobMatchSignature } from "../../shared/services/matchScore.service.js";
 
-import { formatApplicationResumeReview } from "../ai/ai.service.js";
+import {
+  formatApplicationInterviewKit,
+  formatApplicationResumeReview,
+} from "../ai/ai.service.js";
 
 import { getSuggestedShortlistAvailability } from "../ai/aiShortlist.service.js";
 
@@ -711,6 +714,91 @@ const buildAiResumeReviewEligibility = async ({ userId, application }) => {
   };
 };
 
+const buildAiInterviewKitEligibility = async ({ userId, application }) => {
+  const usage = await getAiUsageState({
+    userId,
+    featureKey: AI_FEATURE_KEYS.INTERVIEW_KIT,
+  });
+
+  const hasResume = Boolean(application?.resumeUrl);
+
+  const hasJobData = Boolean(application?.jobId);
+
+  const hasCandidateData = Boolean(application?.candidateId);
+
+  const baseEligibility = {
+    hasResume,
+    hasJobData,
+    hasCandidateData,
+
+    canGenerate: false,
+    blockReason: null,
+
+    interviewKit: null,
+    usage,
+  };
+
+  /*
+   * The Interview Kit is based on the
+   * resume submitted with this application.
+   */
+  if (!hasResume) {
+    return {
+      ...baseEligibility,
+      blockReason: "missing_resume",
+    };
+  }
+
+  if (!hasJobData || !hasCandidateData) {
+    return {
+      ...baseEligibility,
+
+      blockReason: "incomplete_application_data",
+    };
+  }
+
+  const resumeSource = buildApplicationResumeSource(application);
+
+  const job =
+    typeof application.jobId.toObject === "function"
+      ? application.jobId.toObject()
+      : application.jobId;
+
+  const jobSignature = buildJobMatchSignature(job);
+
+  const cachedKit = application.interviewKitSnapshot;
+
+  const hasFreshCachedKit = Boolean(
+    cachedKit &&
+    cachedKit.jobSignature === jobSignature &&
+    cachedKit.resumeSignature === resumeSource.resumeSignature,
+  );
+
+  /*
+   * A valid cached kit remains available
+   * even after today's usage is exhausted.
+   */
+  if (hasFreshCachedKit) {
+    return {
+      ...baseEligibility,
+
+      interviewKit: formatApplicationInterviewKit(application),
+    };
+  }
+
+  if (usage.remaining <= 0) {
+    return {
+      ...baseEligibility,
+      blockReason: "daily_limit",
+    };
+  }
+
+  return {
+    ...baseEligibility,
+    canGenerate: true,
+  };
+};
+
 const buildLegacyManagedApplicationResponse = (application) => {
   const applicationResponse = {
     ...application,
@@ -1212,7 +1300,11 @@ const getManagedJobApplicationDetails = async (
     companyId: company._id,
     jobId: job._id,
   })
-    .select("+matchSnapshot +resumeReviewSnapshot")
+    .select(
+      ["+matchSnapshot", "+resumeReviewSnapshot", "+interviewKitSnapshot"].join(
+        " ",
+      ),
+    )
     .lean();
 
   if (!application) {
@@ -1226,15 +1318,25 @@ const getManagedJobApplicationDetails = async (
     JOB_APPLICATION_DETAIL_POPULATE_OPTIONS,
   );
 
-  const aiResumeReview = await buildAiResumeReviewEligibility({
-    userId,
-    application: populatedApplication,
-  });
+  const [aiResumeReview, aiInterviewKit] = await Promise.all([
+    buildAiResumeReviewEligibility({
+      userId,
+
+      application: populatedApplication,
+    }),
+
+    buildAiInterviewKitEligibility({
+      userId,
+
+      application: populatedApplication,
+    }),
+  ]);
 
   return {
     ...buildManagedApplicationDetailResponse(populatedApplication),
 
     aiResumeReview,
+    aiInterviewKit,
   };
 };
 

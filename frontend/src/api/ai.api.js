@@ -30,6 +30,18 @@ const generateApplicationResumeReview = async (applicationId) => {
   return response.data;
 };
 
+const generateApplicationInterviewKit = async (applicationId) => {
+  const response = await apiClient.post(
+    `/ai/applications/${applicationId}/interview-kit`,
+    {},
+    {
+      timeout: 120000,
+    },
+  );
+
+  return response.data;
+};
+
 const generateJobPostAssistantSuggestions = async (jobDraft) => {
   const response = await apiClient.post("/ai/jobs/post-suggestions", jobDraft, {
     timeout: 120000,
@@ -59,4 +71,5 @@ export {
   generateApplicationResumeReview,
   generateJobPostAssistantSuggestions,
   generateSuggestedShortlist,
+  generateApplicationInterviewKit,
 };

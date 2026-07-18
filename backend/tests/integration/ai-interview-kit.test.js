@@ -252,6 +252,39 @@ describe("AI Interview Kit API", () => {
       candidateUser,
     });
 
+    const eligibilityResponse = await ownerSession.agent
+      .get(
+        `/api/v1/applications/manage/jobs/${job._id}/applications/${application._id}`,
+      )
+      .expect(200);
+
+    expect(eligibilityResponse.body.data.aiInterviewKit).toEqual(
+      expect.objectContaining({
+        hasResume: true,
+        hasJobData: true,
+        hasCandidateData: true,
+
+        canGenerate: true,
+        blockReason: null,
+
+        interviewKit: null,
+
+        usage: expect.objectContaining({
+          featureKey: "interview_kit",
+
+          limit: 10,
+          used: 0,
+          remaining: 10,
+        }),
+      }),
+    );
+
+    /*
+     * Reading application details must not
+     * invoke the AI provider.
+     */
+    expect(generateAiJson).not.toHaveBeenCalled();
+
     const response = await postWithCsrf(
       ownerSession.agent,
       `/api/v1/ai/applications/${application._id}/interview-kit`,
@@ -298,6 +331,65 @@ describe("AI Interview Kit API", () => {
     );
 
     expect(savedApplication.interviewKitSnapshot).not.toBeNull();
+
+    const cachedDetailsResponse = await ownerSession.agent
+      .get(
+        `/api/v1/applications/manage/jobs/${job._id}/applications/${application._id}`,
+      )
+      .expect(200);
+
+    expect(cachedDetailsResponse.body.data.aiInterviewKit).toEqual(
+      expect.objectContaining({
+        hasResume: true,
+        hasJobData: true,
+        hasCandidateData: true,
+
+        canGenerate: false,
+        blockReason: null,
+
+        interviewKit: expect.objectContaining({
+          applicationId: application._id.toString(),
+
+          jobId: job._id.toString(),
+
+          technicalQuestions: expect.any(Array),
+
+          projectQuestions: expect.any(Array),
+
+          skillGapQuestions: expect.any(Array),
+
+          behavioralQuestions: expect.any(Array),
+
+          evaluationChecklist: expect.any(Array),
+
+          generatedAt: expect.any(String),
+        }),
+
+        usage: expect.objectContaining({
+          featureKey: "interview_kit",
+
+          used: 1,
+          remaining: 9,
+        }),
+      }),
+    );
+
+    expect(
+      cachedDetailsResponse.body.data.aiInterviewKit.interviewKit
+        .technicalQuestions[0],
+    ).toEqual(
+      expect.objectContaining({
+        question: expect.any(String),
+
+        whyAsk: expect.any(String),
+      }),
+    );
+
+    /*
+     * Fetching the cached kit through the GET
+     * must not make a second AI request.
+     */
+    expect(generateAiJson).toHaveBeenCalledTimes(1);
   });
 
   test("same application reuses cached AI Interview Kit", async () => {
