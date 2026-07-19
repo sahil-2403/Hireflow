@@ -64,6 +64,20 @@ const generateSuggestedShortlist = async (jobId, limit) => {
   return response.data;
 };
 
+const generateCandidateComparison = async (jobId, applicationIds) => {
+  const response = await apiClient.post(
+    `/ai/jobs/${jobId}/candidate-comparison`,
+    {
+      applicationIds,
+    },
+    {
+      timeout: 120000,
+    },
+  );
+
+  return response.data;
+};
+
 export {
   generateCandidateJobResumeFit,
   generateCandidateResumeInsights,
@@ -72,4 +86,5 @@ export {
   generateJobPostAssistantSuggestions,
   generateSuggestedShortlist,
   generateApplicationInterviewKit,
+  generateCandidateComparison,
 };

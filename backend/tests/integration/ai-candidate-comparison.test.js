@@ -207,6 +207,21 @@ describe("AI Candidate Comparison API", () => {
       skills: ["React", "Node.js", "MongoDB", "Express.js"],
     });
 
+    /*
+     * These fields are part of the normal
+     * candidate match signature. The comparison
+     * query must load them as well.
+     */
+    await Candidate.findByIdAndUpdate(strong.candidate._id, {
+      $set: {
+        linkedinUrl: "https://linkedin.com/in/comparison-strong",
+
+        githubUrl: "https://github.com/comparison-strong",
+
+        portfolioUrl: "https://comparison-strong.example.com",
+      },
+    });
+
     const medium = await createCandidateApplication({
       job,
       suffix: "medium",
@@ -239,6 +254,43 @@ describe("AI Candidate Comparison API", () => {
         },
       ],
     });
+
+    const initialResponse = await session.agent
+      .get(`/api/v1/applications/manage/jobs/${job._id}/applications`)
+      .expect(200);
+
+    expect(initialResponse.body.data.aiCandidateComparison).toEqual(
+      expect.objectContaining({
+        minimumCandidates: 2,
+        maximumCandidates: 3,
+
+        eligibleApplicationCount: 2,
+
+        eligibleApplicationIds: expect.arrayContaining([
+          strong.application._id.toString(),
+          medium.application._id.toString(),
+        ]),
+
+        canGenerate: true,
+        blockReason: null,
+
+        comparison: null,
+
+        usage: expect.objectContaining({
+          featureKey: "candidate_comparison",
+
+          limit: 5,
+          used: 0,
+          remaining: 5,
+        }),
+      }),
+    );
+
+    /*
+     * Loading the applicants page must not
+     * invoke the AI provider.
+     */
+    expect(generateAiJson).not.toHaveBeenCalled();
 
     const response = await postWithCsrf(
       session.agent,
@@ -294,6 +346,73 @@ describe("AI Candidate Comparison API", () => {
       }),
     );
 
+    expect(generateAiJson).toHaveBeenCalledTimes(1);
+
+    const cachedResponse = await session.agent
+      .get(`/api/v1/applications/manage/jobs/${job._id}/applications`)
+      .expect(200);
+
+    expect(cachedResponse.body.data.aiCandidateComparison).toEqual(
+      expect.objectContaining({
+        minimumCandidates: 2,
+        maximumCandidates: 3,
+
+        eligibleApplicationCount: 2,
+
+        comparison: expect.objectContaining({
+          jobId: job._id.toString(),
+
+          selectedCandidateCount: 2,
+
+          candidates: expect.arrayContaining([
+            expect.objectContaining({
+              applicationId: strong.application._id.toString(),
+            }),
+
+            expect.objectContaining({
+              applicationId: medium.application._id.toString(),
+            }),
+          ]),
+        }),
+
+        usage: expect.objectContaining({
+          used: 1,
+          remaining: 4,
+        }),
+      }),
+    );
+
+    const cachedComparisonId =
+      cachedResponse.body.data.aiCandidateComparison.comparison.id;
+
+    /*
+     * Search, sorting, and pagination must not
+     * change the cached comparison.
+     */
+    const pageSwitchResponse = await session.agent
+      .get(
+        `/api/v1/applications/manage/jobs/${job._id}/applications?page=2&limit=1&sortBy=appliedAt&order=asc`,
+      )
+      .expect(200);
+
+    expect(
+      pageSwitchResponse.body.data.aiCandidateComparison.comparison.id,
+    ).toBe(cachedComparisonId);
+
+    const filteredResponse = await session.agent
+      .get(
+        `/api/v1/applications/manage/jobs/${job._id}/applications?search=strong`,
+      )
+      .expect(200);
+
+    expect(filteredResponse.body.data.aiCandidateComparison.comparison.id).toBe(
+      cachedComparisonId,
+    );
+
+    /*
+     * All GET requests must reuse stored data
+     * without another AI request.
+     */
     expect(generateAiJson).toHaveBeenCalledTimes(1);
 
     expect(await CandidateComparison.countDocuments()).toBe(1);

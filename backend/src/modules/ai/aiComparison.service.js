@@ -108,6 +108,16 @@ const getCurrentResumeReview = ({
   return review;
 };
 
+const getCompleteComparisonApplications = (applications) => {
+  if (!Array.isArray(applications)) {
+    return [];
+  }
+
+  return applications.filter((application) => {
+    return Boolean(application.candidateId && application.candidateUserId);
+  });
+};
+
 const refreshApplicationMatchSnapshots = async ({ applications, job }) => {
   const updates = [];
 
@@ -209,9 +219,11 @@ const buildComparisonCandidate = ({ application, jobSignature }) => {
     matchedSkills,
     missingSkills,
 
-    candidateSignature: matchSnapshot?.candidateSignature || null,
+    matchEngineVersion: matchSnapshot?.engineVersion || null,
 
-    matchCalculatedAt: matchSnapshot?.calculatedAt || null,
+    matchJobSignature: matchSnapshot?.jobSignature || null,
+
+    matchCandidateSignature: matchSnapshot?.candidateSignature || null,
 
     resumeReview: resumeReview
       ? {
@@ -222,6 +234,10 @@ const buildComparisonCandidate = ({ application, jobSignature }) => {
           riskNotes: resumeReview.riskNotes || [],
         }
       : null,
+
+    resumeReviewJobSignature: resumeReview?.jobSignature || null,
+
+    resumeReviewResumeSignature: resumeReview?.resumeSignature || null,
 
     resumeReviewGeneratedAt: resumeReview?.generatedAt || null,
   };
@@ -249,12 +265,25 @@ const buildCandidateSetSignature = ({ jobSignature, candidates }) => {
 
     candidates: candidates.map((candidate) => ({
       applicationId: candidate.applicationId,
+
       candidateId: candidate.candidateId,
+
       applicationStatus: candidate.applicationStatus,
+
       matchScore: candidate.matchScore,
+
       confidenceScore: candidate.confidenceScore,
-      candidateSignature: candidate.candidateSignature,
-      matchCalculatedAt: candidate.matchCalculatedAt,
+
+      matchEngineVersion: candidate.matchEngineVersion,
+
+      matchJobSignature: candidate.matchJobSignature,
+
+      matchCandidateSignature: candidate.matchCandidateSignature,
+
+      resumeReviewJobSignature: candidate.resumeReviewJobSignature,
+
+      resumeReviewResumeSignature: candidate.resumeReviewResumeSignature,
+
       resumeReviewGeneratedAt: candidate.resumeReviewGeneratedAt,
     })),
   };
@@ -263,6 +292,33 @@ const buildCandidateSetSignature = ({ jobSignature, candidates }) => {
     .createHash("sha256")
     .update(JSON.stringify(payload))
     .digest("hex");
+};
+
+const buildComparisonCandidateContext = ({ job, applications }) => {
+  const completeApplications = getCompleteComparisonApplications(applications);
+
+  const jobSignature = buildJobMatchSignature(job);
+
+  const selectedCandidates = sortComparisonCandidates(
+    completeApplications.map((application) =>
+      buildComparisonCandidate({
+        application,
+        jobSignature,
+      }),
+    ),
+  );
+
+  const candidateSetSignature = buildCandidateSetSignature({
+    jobSignature,
+    candidates: selectedCandidates,
+  });
+
+  return {
+    completeApplications,
+    selectedCandidates,
+    jobSignature,
+    candidateSetSignature,
+  };
 };
 
 const getSharedMatchedSkills = (candidates) => {
@@ -397,6 +453,121 @@ const formatCandidateComparison = (comparison) => {
   };
 };
 
+const getCandidateComparisonAvailability = async ({
+  userId,
+  job,
+  applications,
+}) => {
+  const usage = await getAiUsageState({
+    userId,
+
+    featureKey: AI_FEATURE_KEYS.CANDIDATE_COMPARISON,
+  });
+
+  const aiConfig = getAiConfig();
+
+  const maximumCandidates = Number(aiConfig.maxComparisonCandidates) || 0;
+
+  const minimumCandidates = 2;
+
+  const completeApplications = getCompleteComparisonApplications(applications);
+
+  const eligibleApplicationIds = completeApplications.map((application) =>
+    application._id.toString(),
+  );
+
+  const baseAvailability = {
+    minimumCandidates,
+    maximumCandidates,
+
+    eligibleApplicationCount: completeApplications.length,
+
+    eligibleApplicationIds,
+
+    canGenerate: false,
+    blockReason: null,
+
+    comparison: null,
+    usage,
+  };
+
+  let cachedComparison = null;
+
+  /*
+   * Search a small recent window so a
+   * stale latest result does not hide an
+   * older still-valid comparison.
+   */
+  if (completeApplications.length >= minimumCandidates) {
+    const jobSignature = buildJobMatchSignature(job);
+
+    const applicationById = new Map(
+      completeApplications.map((application) => [
+        application._id.toString(),
+        application,
+      ]),
+    );
+
+    const recentComparisons = await CandidateComparison.find({
+      jobId: job._id,
+      jobSignature,
+    })
+      .sort({
+        generatedAt: -1,
+      })
+      .limit(10);
+
+    for (const comparison of recentComparisons) {
+      const comparisonApplications = comparison.applicationIds
+        .map((applicationId) => applicationById.get(applicationId.toString()))
+        .filter(Boolean);
+
+      if (comparisonApplications.length !== comparison.applicationIds.length) {
+        continue;
+      }
+
+      const { candidateSetSignature } = buildComparisonCandidateContext({
+        job,
+
+        applications: comparisonApplications,
+      });
+
+      if (candidateSetSignature === comparison.candidateSetSignature) {
+        cachedComparison = formatCandidateComparison(comparison);
+
+        break;
+      }
+    }
+  }
+
+  let blockReason = null;
+  let canGenerate = false;
+
+  if (maximumCandidates < minimumCandidates) {
+    blockReason = "feature_unavailable";
+  } else if (completeApplications.length < minimumCandidates) {
+    blockReason = "insufficient_candidates";
+  } else if (usage.remaining <= 0) {
+    blockReason = "daily_limit";
+  } else {
+    canGenerate = true;
+  }
+
+  return {
+    ...baseAvailability,
+
+    canGenerate,
+    blockReason,
+
+    /*
+     * A valid cached result remains
+     * visible even when today's limit is
+     * exhausted.
+     */
+    comparison: cachedComparison,
+  };
+};
+
 const generateCandidateComparison = async ({
   userId,
   role,
@@ -466,7 +637,7 @@ const generateCandidateComparison = async ({
     .populate({
       path: "candidateId",
       select:
-        "firstName lastName headline summary skills experienceLevel location resumeUrl targetJobTitles preferredLocations preferredWorkplaceTypes preferredEmploymentTypes",
+        "firstName lastName headline summary skills experienceLevel location resumeUrl linkedinUrl githubUrl portfolioUrl targetJobTitles preferredLocations preferredWorkplaceTypes preferredEmploymentTypes",
     })
     .populate({
       path: "candidateUserId",
@@ -497,21 +668,11 @@ const generateCandidateComparison = async ({
     job,
   });
 
-  const jobSignature = buildJobMatchSignature(job);
-
-  const selectedCandidates = sortComparisonCandidates(
-    applications.map((application) =>
-      buildComparisonCandidate({
-        application,
-        jobSignature,
-      }),
-    ),
-  );
-
-  const candidateSetSignature = buildCandidateSetSignature({
-    jobSignature,
-    candidates: selectedCandidates,
-  });
+  const { jobSignature, selectedCandidates, candidateSetSignature } =
+    buildComparisonCandidateContext({
+      job,
+      applications,
+    });
 
   const cachedComparison = await CandidateComparison.findOne({
     jobId: job._id,
@@ -622,5 +783,6 @@ const generateCandidateComparison = async ({
 export {
   formatCandidateComparison,
   generateCandidateComparison,
+  getCandidateComparisonAvailability,
   normalizeCandidateComparisonOutput,
 };

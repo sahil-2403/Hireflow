@@ -24,6 +24,7 @@ import SelectInput from "../../components/ui/SelectInput";
 import TextInput from "../../components/ui/TextInput";
 
 import CompanySuggestedShortlistCard from "../../components/ai/CompanySuggestedShortlistCard";
+import CompanyCandidateComparisonCard from "../../components/ai/CompanyCandidateComparisonCard";
 
 import { APPLICATION_STATUS_FILTERS } from "../../features/applications/application.constants";
 
@@ -125,6 +126,11 @@ const CompanyJobApplicationsPage = () => {
   const [search, setSearch] = useState("");
 
   const [page, setPage] = useState(1);
+
+  const [comparisonSelectionState, setComparisonSelectionState] = useState({
+    jobId: null,
+    candidates: [],
+  });
 
   useEffect(() => {
     let shouldIgnore = false;
@@ -238,6 +244,8 @@ const CompanyJobApplicationsPage = () => {
 
   const aiSuggestedShortlist = applicationsData?.aiSuggestedShortlist;
 
+  const aiCandidateComparison = applicationsData?.aiCandidateComparison;
+
   const activeFilterChips = useMemo(() => {
     return getActiveFilterChips({
       search,
@@ -245,6 +253,100 @@ const CompanyJobApplicationsPage = () => {
       sortValue,
     });
   }, [search, selectedStatus, sortValue]);
+
+  const selectedComparisonCandidates =
+    comparisonSelectionState.jobId === jobId
+      ? comparisonSelectionState.candidates
+      : [];
+
+  const eligibleComparisonIdSet = new Set(
+    aiCandidateComparison?.eligibleApplicationIds || [],
+  );
+
+  const selectedComparisonIdSet = new Set(
+    selectedComparisonCandidates.map((candidate) => candidate.applicationId),
+  );
+
+  const maximumComparisonCandidates =
+    Number(aiCandidateComparison?.maximumCandidates) || 0;
+
+  const handleToggleComparisonCandidate = (application) => {
+    const applicationId = String(application._id);
+
+    if (!eligibleComparisonIdSet.has(applicationId)) {
+      return;
+    }
+
+    setComparisonSelectionState((currentState) => {
+      const currentCandidates =
+        currentState.jobId === jobId ? currentState.candidates : [];
+
+      const alreadySelected = currentCandidates.some(
+        (candidate) => candidate.applicationId === applicationId,
+      );
+
+      if (alreadySelected) {
+        return {
+          jobId,
+
+          candidates: currentCandidates.filter(
+            (candidate) => candidate.applicationId !== applicationId,
+          ),
+        };
+      }
+
+      if (
+        maximumComparisonCandidates < 2 ||
+        currentCandidates.length >= maximumComparisonCandidates
+      ) {
+        return {
+          jobId,
+          candidates: currentCandidates,
+        };
+      }
+
+      const candidateName = getCandidateName(application.candidate);
+
+      return {
+        jobId,
+
+        candidates: [
+          ...currentCandidates,
+
+          {
+            applicationId,
+            candidateName,
+
+            headline: application.candidate?.headline || null,
+
+            match: application.match || null,
+          },
+        ],
+      };
+    });
+  };
+
+  const handleRemoveComparisonCandidate = (applicationId) => {
+    setComparisonSelectionState((currentState) => {
+      const currentCandidates =
+        currentState.jobId === jobId ? currentState.candidates : [];
+
+      return {
+        jobId,
+
+        candidates: currentCandidates.filter(
+          (candidate) => candidate.applicationId !== applicationId,
+        ),
+      };
+    });
+  };
+
+  const handleClearComparisonCandidates = () => {
+    setComparisonSelectionState({
+      jobId,
+      candidates: [],
+    });
+  };
 
   return (
     <div className="grid gap-6">
@@ -350,6 +452,14 @@ const CompanyJobApplicationsPage = () => {
             availability={aiSuggestedShortlist}
           />
 
+          <CompanyCandidateComparisonCard
+            jobId={jobId}
+            availability={aiCandidateComparison}
+            selectedApplications={selectedComparisonCandidates}
+            onRemoveSelected={handleRemoveComparisonCandidate}
+            onClearSelected={handleClearComparisonCandidates}
+          />
+
           {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
 
           <Card>
@@ -430,12 +540,63 @@ const CompanyJobApplicationsPage = () => {
                 const candidate = application.candidate;
                 const candidateUser = application.candidateUser;
                 const candidateName = getCandidateName(candidate);
+                const applicationId = String(application._id);
+
+                const isComparisonEligible =
+                  eligibleComparisonIdSet.has(applicationId);
+
+                const isSelectedForComparison =
+                  selectedComparisonIdSet.has(applicationId);
+
+                const comparisonLimitReached =
+                  maximumComparisonCandidates > 0 &&
+                  selectedComparisonCandidates.length >=
+                    maximumComparisonCandidates;
+
+                const comparisonCheckboxDisabled =
+                  !isComparisonEligible ||
+                  maximumComparisonCandidates < 2 ||
+                  (comparisonLimitReached && !isSelectedForComparison);
 
                 return (
                   <Card key={application._id}>
                     <CardBody className="p-5 sm:p-6">
                       <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr_1fr_auto] lg:items-center">
-                        <div className="flex gap-3 ">
+                        <div className="flex gap-3">
+                          <label
+                            className={[
+                              "mt-1 flex h-fit shrink-0 items-center gap-2",
+                              "rounded-xl border px-3 py-2",
+                              "text-xs font-black transition",
+
+                              isSelectedForComparison
+                                ? "border-violet-300 bg-violet-50 text-violet-700"
+                                : "border-slate-200 bg-white text-slate-600",
+
+                              comparisonCheckboxDisabled
+                                ? "cursor-not-allowed opacity-50"
+                                : "cursor-pointer hover:border-violet-300 hover:bg-violet-50",
+                            ].join(" ")}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelectedForComparison}
+                              disabled={comparisonCheckboxDisabled}
+                              className="h-4 w-4 accent-violet-600"
+                              onChange={() =>
+                                handleToggleComparisonCandidate(application)
+                              }
+                            />
+
+                            <span className="text-[0.7rem]">Compare</span>
+
+                            <span className="sr-only">
+                              {isSelectedForComparison
+                                ? `Remove ${candidateName} from comparison`
+                                : `Select ${candidateName} for comparison`}
+                            </span>
+                          </label>
+
                           <ProfileAvatar
                             user={candidateUser}
                             name={candidateName}

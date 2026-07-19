@@ -20,8 +20,6 @@ import {
   shouldRefreshApplicationMatchSnapshot,
 } from "./applicationMatch.service.js";
 
-import { getAiUsageState } from "../aiUsage/aiUsage.service.js";
-
 import { buildApplicationResumeSource } from "../resumeAnalysis/resumeAnalysis.service.js";
 
 import { buildJobMatchSignature } from "../../shared/services/matchScore.service.js";
@@ -32,6 +30,10 @@ import {
 } from "../ai/ai.service.js";
 
 import { getSuggestedShortlistAvailability } from "../ai/aiShortlist.service.js";
+
+import { getAiUsageState } from "../aiUsage/aiUsage.service.js";
+
+import { getCandidateComparisonAvailability } from "../ai/aiComparison.service.js";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
@@ -1219,17 +1221,31 @@ const listManagedJobApplications = async (userId, role, jobId, query) => {
 
   const summary = buildApplicationStatusSummary(populatedApplications);
 
-  const aiSuggestedShortlist = await getSuggestedShortlistAvailability({
-    userId,
-    job,
+  const [aiSuggestedShortlist, aiCandidateComparison] = await Promise.all([
+    getSuggestedShortlistAvailability({
+      userId,
+      job,
 
-    /*
-     * Use all applications for the job,
-     * not only the currently filtered or
-     * paginated rows.
-     */
-    applications: populatedApplications,
-  });
+      /*
+       * Use all applications for the job,
+       * not only the filtered or paginated
+       * rows.
+       */
+      applications: populatedApplications,
+    }),
+
+    getCandidateComparisonAvailability({
+      userId,
+      job,
+
+      /*
+       * Comparison selection and cached-result
+       * validation must also use every
+       * application for this job.
+       */
+      applications: populatedApplications,
+    }),
+  ]);
 
   const filteredApplications = populatedApplications.filter((application) => {
     if (status && application.status !== status) {
@@ -1264,7 +1280,10 @@ const listManagedJobApplications = async (userId, role, jobId, query) => {
       createdAt: job.createdAt,
     },
     summary,
+
     aiSuggestedShortlist,
+    aiCandidateComparison,
+
     applications: paginatedApplications.map(buildManagedApplicationListItem),
     pagination: {
       page,
