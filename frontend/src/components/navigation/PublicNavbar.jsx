@@ -1,121 +1,42 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { NavLink } from "react-router-dom";
+import {
+  BriefcaseBusiness,
+  Building2,
+  FileText,
+  House,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  Menu,
+  Search,
+  UserPlus,
+  UserRound,
+  Users,
+  X,
+} from "lucide-react";
+
+import { NavLink, useLocation } from "react-router-dom";
+
+import { ROLES } from "../../features/auth/auth.constants";
+
+import { getDashboardPathForRole } from "../../features/auth/auth.utils";
 
 import useAuth from "../../hooks/useAuth";
 import useLogout from "../../hooks/useLogout";
-
-import { ROLES } from "../../features/auth/auth.constants";
-import { getDashboardPathForRole } from "../../features/auth/auth.utils";
 
 import getRoleDisplayName from "../../utils/getRoleDisplayName";
 
 import ProfileAvatar from "../common/ProfileAvatar";
 
-const Icon = ({ name, className = "h-4 w-4" }) => {
-  const icons = {
-    dashboard: (
-      <>
-        <path d="M4 4h6v6H4z" />
-        <path d="M14 4h6v6h-6z" />
-        <path d="M4 14h6v6H4z" />
-        <path d="M14 14h6v6h-6z" />
-      </>
-    ),
-    home: (
-      <>
-        <path d="M3 10.5 12 3l9 7.5" />
-        <path d="M5 10v10h14V10" />
-        <path d="M9 20v-6h6v6" />
-      </>
-    ),
-    user: (
-      <>
-        <path d="M20 21a8 8 0 0 0-16 0" />
-        <circle cx="12" cy="7" r="4" />
-      </>
-    ),
-    document: (
-      <>
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <path d="M14 2v6h6" />
-        <path d="M8 13h8" />
-        <path d="M8 17h6" />
-      </>
-    ),
-    briefcase: (
-      <>
-        <path d="M10 6V5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v1" />
-        <path d="M4 7h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
-        <path d="M4 12h16" />
-      </>
-    ),
-    search: (
-      <>
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-3.5-3.5" />
-      </>
-    ),
-    building: (
-      <>
-        <path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
-        <path d="M16 9h2a2 2 0 0 1 2 2v10" />
-        <path d="M8 7h4" />
-        <path d="M8 11h4" />
-        <path d="M8 15h4" />
-      </>
-    ),
-    users: (
-      <>
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </>
-    ),
-    plus: (
-      <>
-        <path d="M12 5v14" />
-        <path d="M5 12h14" />
-      </>
-    ),
-    menu: (
-      <>
-        <path d="M4 6h16" />
-        <path d="M4 12h16" />
-        <path d="M4 18h16" />
-      </>
-    ),
-    close: (
-      <>
-        <path d="M18 6 6 18" />
-        <path d="m6 6 12 12" />
-      </>
-    ),
-    logout: (
-      <>
-        <path d="M10 17l5-5-5-5" />
-        <path d="M15 12H3" />
-        <path d="M21 3v18" />
-      </>
-    ),
-  };
-
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {icons[name]}
-    </svg>
-  );
-};
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
 
 const getDisplayName = (user) => {
   return user?.firstName || user?.username || user?.email || "User";
@@ -127,28 +48,28 @@ const getDashboardNavLinksByRole = (role) => {
       {
         label: "Dashboard",
         path: "/candidate/dashboard",
-        icon: "dashboard",
+        icon: LayoutDashboard,
         end: true,
       },
       {
         label: "Profile",
         path: "/candidate/profile",
-        icon: "user",
+        icon: UserRound,
       },
       {
         label: "Resume",
         path: "/candidate/resume",
-        icon: "document",
+        icon: FileText,
       },
       {
         label: "Applications",
         path: "/candidate/applications",
-        icon: "briefcase",
+        icon: BriefcaseBusiness,
       },
       {
         label: "Browse Jobs",
         path: "/jobs",
-        icon: "search",
+        icon: Search,
       },
     ];
   }
@@ -158,33 +79,33 @@ const getDashboardNavLinksByRole = (role) => {
       {
         label: "Dashboard",
         path: "/company/dashboard",
-        icon: "dashboard",
+        icon: LayoutDashboard,
         end: true,
       },
       {
         label: "Profile",
         path: "/company/my-profile",
-        icon: "user",
+        icon: UserRound,
       },
       {
         label: "Jobs",
         path: "/company/jobs",
-        icon: "briefcase",
+        icon: BriefcaseBusiness,
       },
       {
         label: "Applications",
         path: "/company/applications",
-        icon: "document",
+        icon: FileText,
       },
       {
         label: "Company",
         path: "/company/profile",
-        icon: "building",
+        icon: Building2,
       },
       {
         label: "Recruiters",
         path: "/company/recruiters",
-        icon: "users",
+        icon: Users,
       },
     ];
   }
@@ -194,23 +115,23 @@ const getDashboardNavLinksByRole = (role) => {
       {
         label: "Dashboard",
         path: "/company/dashboard",
-        icon: "dashboard",
+        icon: LayoutDashboard,
         end: true,
       },
       {
         label: "Profile",
         path: "/company/my-profile",
-        icon: "user",
+        icon: UserRound,
       },
       {
         label: "Jobs",
         path: "/company/jobs",
-        icon: "briefcase",
+        icon: BriefcaseBusiness,
       },
       {
         label: "Applications",
         path: "/company/applications",
-        icon: "document",
+        icon: FileText,
       },
     ];
   }
@@ -218,18 +139,18 @@ const getDashboardNavLinksByRole = (role) => {
   return [];
 };
 
-const getPublicNavLinks = (isAuthenticated, role) => {
+const getPublicNavLinks = ({ isAuthenticated, role }) => {
   const links = [
     {
       label: "Home",
       path: "/",
-      icon: "home",
+      icon: House,
       end: true,
     },
     {
       label: "Jobs",
       path: "/jobs",
-      icon: "search",
+      icon: Search,
     },
   ];
 
@@ -237,55 +158,48 @@ const getPublicNavLinks = (isAuthenticated, role) => {
     links.push({
       label: "Dashboard",
       path: getDashboardPathForRole(role),
-      icon: "dashboard",
+      icon: LayoutDashboard,
     });
   }
 
   return links;
 };
 
-const getMobilePrimaryAction = (variant, role, isAuthenticated) => {
-  if (variant === "public") {
-    if (isAuthenticated) {
-      return {
-        label: "Dashboard",
-        path: getDashboardPathForRole(role),
-        icon: "dashboard",
-      };
-    }
+const NavbarBrand = ({ to, onClick }) => {
+  return (
+    <NavLink
+      to={to}
+      onClick={onClick}
+      className={[
+        "inline-flex min-w-0",
+        "shrink-0 items-center",
+        "gap-2.5",
+        "rounded-lg",
+        "focus-visible:outline-none",
+        "focus-visible:ring-2",
+        "focus-visible:ring-blue-500",
+        "focus-visible:ring-offset-2",
+      ].join(" ")}
+      aria-label="HireFlow home"
+    >
+      <span
+        className={[
+          "grid h-9 w-9",
+          "shrink-0 place-items-center",
+          "rounded-xl",
+          "bg-blue-600",
+          "text-base font-semibold",
+          "text-white",
+        ].join(" ")}
+      >
+        H
+      </span>
 
-    return {
-      label: "Register",
-      path: "/register",
-      icon: "user",
-    };
-  }
-
-  if (role === ROLES.CANDIDATE) {
-    return {
-      label: "Browse Jobs",
-      path: "/jobs",
-      icon: "search",
-    };
-  }
-
-  if (role === ROLES.OWNER) {
-    return {
-      label: "Add Recruiter",
-      path: "/company/recruiters",
-      icon: "plus",
-    };
-  }
-
-  if (role === ROLES.RECRUITER) {
-    return {
-      label: "Post Job",
-      path: "/company/jobs/new",
-      icon: "plus",
-    };
-  }
-
-  return null;
+      <span className="truncate text-lg font-semibold tracking-tight text-slate-950">
+        HireFlow
+      </span>
+    </NavLink>
+  );
 };
 
 const PublicNavbar = ({ variant = "public" }) => {
@@ -293,44 +207,69 @@ const PublicNavbar = ({ variant = "public" }) => {
 
   const { logoutUser } = useLogout();
 
+  const location = useLocation();
+
+  const menuButtonRef = useRef(null);
+
+  const closeButtonRef = useRef(null);
+
+  const drawerRef = useRef(null);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const isDashboardNavbar = variant === "dashboard";
 
   const dashboardPath = getDashboardPathForRole(user?.role);
 
+  const brandPath = isAuthenticated ? dashboardPath : "/";
+
   const navLinks = useMemo(() => {
-    if (variant === "dashboard") {
+    if (isDashboardNavbar) {
       return getDashboardNavLinksByRole(user?.role);
     }
 
-    return getPublicNavLinks(isAuthenticated, user?.role);
-  }, [variant, isAuthenticated, user?.role]);
+    return getPublicNavLinks({
+      isAuthenticated,
+      role: user?.role,
+    });
+  }, [isDashboardNavbar, isAuthenticated, user?.role]);
 
-  const mobilePrimaryAction = getMobilePrimaryAction(
-    variant,
-    user?.role,
-    isAuthenticated,
-  );
+  /*
+   * Company dashboards have more links,
+   * so they switch to drawer navigation
+   * below the xl breakpoint.
+   */
+  const desktopNavigationClassName = isDashboardNavbar
+    ? "hidden xl:flex"
+    : "hidden md:flex";
 
-  const getNavLinkClass = ({ isActive }) => {
-    return [
-      "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition",
-      isActive
-        ? "bg-blue-50 text-blue-700 ring-1 ring-blue-100"
-        : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
-    ].join(" ");
-  };
+  const desktopAccountClassName = isDashboardNavbar
+    ? "hidden xl:flex"
+    : "hidden md:flex";
 
-  const getMobileNavLinkClass = ({ isActive }) => {
-    return [
-      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
-      isActive
-        ? "bg-blue-50 text-blue-700"
-        : "text-slate-700 hover:bg-slate-100 hover:text-slate-950",
-    ].join(" ");
-  };
+  const mobileMenuClassName = isDashboardNavbar ? "xl:hidden" : "md:hidden";
 
-  const closeMobileMenu = () => {
+  const closeMobileMenu = (restoreFocus = true) => {
     setIsMobileMenuOpen(false);
+
+    if (restoreFocus) {
+      window.requestAnimationFrame(() => {
+        menuButtonRef.current?.focus();
+      });
+    }
+  };
+
+  const openMobileMenu = () => {
+    setIsMobileMenuOpen(true);
+  };
+
+  const handleMenuToggle = () => {
+    if (isMobileMenuOpen) {
+      closeMobileMenu();
+      return;
+    }
+
+    openMobileMenu();
   };
 
   const handleLogout = async () => {
@@ -339,184 +278,528 @@ const PublicNavbar = ({ variant = "public" }) => {
     await logoutUser();
   };
 
-  const mobileNavLinks = navLinks.filter((link) => {
-    if (!mobilePrimaryAction) {
-      return true;
+  /*
+   * Close the drawer after navigation.
+   * Do not restore focus because the page
+   * route itself has changed.
+   */
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  /*
+   * Lock page scrolling while the mobile
+   * navigation drawer is open.
+   */
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return undefined;
     }
 
-    return link.path !== mobilePrimaryAction.path;
-  });
+    const previousOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    const focusFrame = window.requestAnimationFrame(() => {
+      closeButtonRef.current?.focus();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobileMenuOpen]);
+
+  /*
+   * If the viewport becomes large enough
+   * for desktop navigation, close the
+   * mobile drawer automatically.
+   */
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(
+      isDashboardNavbar ? "(min-width: 1280px)" : "(min-width: 768px)",
+    );
+
+    const handleBreakpointChange = (event) => {
+      if (event.matches) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleBreakpointChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleBreakpointChange);
+    };
+  }, [isDashboardNavbar]);
+
+  const handleDrawerKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeMobileMenu();
+      return;
+    }
+
+    if (event.key !== "Tab" || !drawerRef.current) {
+      return;
+    }
+
+    const focusableElements = Array.from(
+      drawerRef.current.querySelectorAll(FOCUSABLE_SELECTOR),
+    ).filter(
+      (element) =>
+        !element.hasAttribute("disabled") &&
+        element.getAttribute("aria-hidden") !== "true",
+    );
+
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+      return;
+    }
+
+    if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  };
+
+  const getDesktopNavLinkClass = ({ isActive }) => {
+    return [
+      "inline-flex min-h-10",
+      "items-center gap-2",
+      "px-3 py-2",
+      "text-sm font-medium",
+
+      isActive
+        ? ["border-b", "text-blue-700"].join(" ")
+        : ["text-slate-600", "hover:text-blue-700"].join(" "),
+    ].join(" ");
+  };
+
+  const getMobileNavLinkClass = ({ isActive }) => {
+    return [
+      "flex min-h-11",
+      "items-center gap-3",
+      "px-3 py-2.5",
+      "text-sm font-medium",
+
+      isActive
+        ? ["border-b", "text-blue-700"].join(" ")
+        : ["text-slate-700", "hover:text-blue-700"].join(" "),
+    ].join(" ");
+  };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
-      <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <NavLink
-          to={isAuthenticated ? dashboardPath : "/"}
-          className="inline-flex shrink-0 items-center gap-3"
+    <>
+      <header
+        className={[
+          "sticky top-0 z-40",
+          "border-b",
+          "border-slate-200",
+          "bg-white/95",
+          "backdrop-blur",
+        ].join(" ")}
+      >
+        <a
+          href="#main-content"
+          className={[
+            "sr-only",
+            "focus:not-sr-only",
+            "focus:fixed",
+            "focus:left-4",
+            "focus:top-3",
+            "focus:z-70",
+            "focus:rounded-lg",
+            "focus:bg-slate-950",
+            "focus:px-3",
+            "focus:py-2",
+            "focus:text-sm",
+            "focus:font-medium",
+            "focus:text-white",
+          ].join(" ")}
         >
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-blue-600 text-lg font-black text-white shadow-sm shadow-blue-200">
-            H
-          </span>
+          Skip to main content
+        </a>
 
-          <span className="text-lg font-black tracking-tight text-slate-950">
-            HireFlow
-          </span>
-        </NavLink>
+        <div
+          className={[
+            "mx-auto flex h-16",
+            "w-full max-w-350",
+            "items-center",
+            "justify-between",
+            "gap-3 px-4",
+            "sm:px-6",
+            "lg:px-8",
+          ].join(" ")}
+        >
+          <NavbarBrand to={brandPath} />
 
-        <nav className="hidden items-center gap-1 md:flex">
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.path}
-              to={link.path}
-              end={link.end}
-              className={getNavLinkClass}
-            >
-              <Icon name={link.icon} />
-              {link.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-2">
-          {mobilePrimaryAction && (
-            <NavLink
-              to={mobilePrimaryAction.path}
-              onClick={closeMobileMenu}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700 md:hidden"
-            >
-              <Icon name={mobilePrimaryAction.icon} className="h-3.5 w-3.5" />
-              <span>{mobilePrimaryAction.label}</span>
-            </NavLink>
-          )}
-
-          {isAuthenticated && (
-            <div className="hidden items-center gap-3 py-1.5 pl-1.5 pr-3 lg:flex">
-              <ProfileAvatar user={user} size="xs" />
-
-              <div className="min-w-0">
-                <p className="max-w-35 truncate text-sm font-bold text-slate-900">
-                  {getDisplayName(user)}
-                </p>
-
-                <p className="text-xs text-slate-500">
-                  {getRoleDisplayName(user?.role)}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {isAuthenticated ? (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 hover:text-red-600 lg:inline-flex"
-            >
-              Logout
-            </button>
-          ) : (
-            <div className="hidden items-center gap-2 md:flex">
-              <NavLink
-                to="/login"
-                className="rounded-xl px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
-              >
-                Login
-              </NavLink>
-
-              <NavLink
-                to="/register"
-                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700"
-              >
-                Register
-              </NavLink>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen((currentValue) => !currentValue)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 md:hidden"
-            aria-label="Toggle navigation menu"
-            aria-expanded={isMobileMenuOpen}
-          >
-            <Icon name={isMobileMenuOpen ? "close" : "menu"} />
-          </button>
-        </div>
-
-        {isMobileMenuOpen && (
-          <div className="absolute right-4 top-[4.4rem] w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-200/70 md:hidden">
-            {isAuthenticated && (
-              <div className="mb-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3">
-                <ProfileAvatar user={user} size="sm" />
-
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-slate-950">
-                    {getDisplayName(user)}
-                  </p>
-
-                  <p className="text-xs text-slate-500">
-                    {getRoleDisplayName(user?.role)}
-                  </p>
-                </div>
-              </div>
+          <nav
+            aria-label="Primary navigation"
+            className={["items-center gap-1", desktopNavigationClassName].join(
+              " ",
             )}
+          >
+            {navLinks.map((link) => {
+              const LinkIcon = link.icon;
 
-            <nav className="grid gap-1">
-              {mobileNavLinks.map((link) => (
+              return (
                 <NavLink
                   key={link.path}
                   to={link.path}
                   end={link.end}
-                  onClick={closeMobileMenu}
-                  className={getMobileNavLinkClass}
+                  className={getDesktopNavLinkClass}
                 >
-                  <Icon name={link.icon} />
-                  {link.label}
+                  <LinkIcon className="h-4 w-4" aria-hidden="true" />
+
+                  <span>{link.label}</span>
                 </NavLink>
-              ))}
+              );
+            })}
+          </nav>
 
-              {!isAuthenticated && (
-                <>
-                  <div className="my-1 border-t border-slate-200" />
+          <div className="flex items-center gap-2">
+            {isAuthenticated ? (
+              <div
+                className={["items-center gap-2", desktopAccountClassName].join(
+                  " ",
+                )}
+              >
+                <div className="hidden min-w-0 items-center gap-2.5 lg:flex">
+                  <ProfileAvatar user={user} size="xs" />
 
+                  <div className="min-w-0">
+                    <p className="max-w-36 truncate text-sm font-medium text-slate-900">
+                      {getDisplayName(user)}
+                    </p>
+
+                    <p className="max-w-36 truncate text-xs leading-4 text-slate-500">
+                      {getRoleDisplayName(user?.role)}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  aria-label="Log out"
+                  className={[
+                    "inline-flex min-h-10",
+                    "items-center",
+                    "justify-center",
+                    "gap-2 rounded-lg",
+                    "border",
+                    "border-slate-200",
+                    "bg-white",
+                    "px-3 py-2",
+                    "text-sm font-medium",
+                    "text-slate-700",
+                    "transition-colors",
+
+                    "hover:bg-slate-50",
+                    "hover:text-red-600",
+
+                    "focus-visible:outline-none",
+                    "focus-visible:ring-2",
+                    "focus-visible:ring-blue-500",
+                    "focus-visible:ring-offset-2",
+                  ].join(" ")}
+                >
+                  <LogOut className="h-4 w-4" aria-hidden="true" />
+
+                  <span className="hidden lg:inline">Logout</span>
+                </button>
+              </div>
+            ) : (
+              <div
+                className={["items-center gap-2", desktopAccountClassName].join(
+                  " ",
+                )}
+              >
+                <NavLink
+                  to="/login"
+                  className={[
+                    "inline-flex min-h-10",
+                    "items-center",
+                    "justify-center",
+                    "rounded-lg px-3 py-2",
+                    "text-sm font-medium",
+                    "text-slate-700",
+                    "transition-colors",
+
+                    "hover:bg-slate-100",
+
+                    "focus-visible:outline-none",
+                    "focus-visible:ring-2",
+                    "focus-visible:ring-blue-500",
+                    "focus-visible:ring-offset-2",
+                  ].join(" ")}
+                >
+                  Login
+                </NavLink>
+
+                <NavLink
+                  to="/register"
+                  className={[
+                    "inline-flex min-h-10",
+                    "items-center",
+                    "justify-center",
+                    "rounded-lg",
+                    "bg-blue-600",
+                    "px-4 py-2",
+                    "text-sm font-medium",
+                    "text-white",
+                    "transition-colors",
+
+                    "hover:bg-blue-700",
+
+                    "focus-visible:outline-none",
+                    "focus-visible:ring-2",
+                    "focus-visible:ring-blue-500",
+                    "focus-visible:ring-offset-2",
+                  ].join(" ")}
+                >
+                  Register
+                </NavLink>
+              </div>
+            )}
+
+            <button
+              ref={menuButtonRef}
+              type="button"
+              onClick={handleMenuToggle}
+              aria-label={
+                isMobileMenuOpen
+                  ? "Close navigation menu"
+                  : "Open navigation menu"
+              }
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-navigation-drawer"
+              className={[
+                "grid h-11 w-11",
+                "shrink-0 place-items-center",
+                "rounded-xl",
+                "border",
+                "border-slate-200",
+                "bg-white",
+                "text-slate-700",
+                "transition-colors",
+
+                "hover:bg-slate-50",
+
+                "focus-visible:outline-none",
+                "focus-visible:ring-2",
+                "focus-visible:ring-blue-500",
+                "focus-visible:ring-offset-2",
+
+                mobileMenuClassName,
+              ].join(" ")}
+            >
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50">
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-slate-950/35 backdrop-blur-[1px]"
+            onClick={() => closeMobileMenu()}
+          />
+
+          <aside
+            ref={drawerRef}
+            id="mobile-navigation-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
+            onKeyDown={handleDrawerKeyDown}
+            style={{
+              paddingTop: "max(1rem, env(safe-area-inset-top))",
+
+              paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+            }}
+            className={[
+              "absolute inset-y-0",
+              "right-0 flex",
+              "w-[min(88vw,360px)]",
+              "min-w-0 flex-col",
+              "border-l",
+              "border-slate-200",
+              "bg-white",
+              "shadow-2xl",
+              "shadow-slate-950/15",
+            ].join(" ")}
+          >
+            <div className="flex items-center justify-between gap-3 px-4 pb-4">
+              <NavbarBrand
+                to={brandPath}
+                onClick={() => closeMobileMenu(false)}
+              />
+
+              <button
+                ref={closeButtonRef}
+                type="button"
+                onClick={() => closeMobileMenu()}
+                aria-label="Close navigation menu"
+                className={[
+                  "grid h-11 w-11",
+                  "shrink-0",
+                  "place-items-center",
+                  "rounded-xl",
+                  "border",
+                  "border-slate-200",
+                  "bg-white",
+                  "text-slate-700",
+                  "transition-colors",
+
+                  "hover:bg-slate-50",
+
+                  "focus-visible:outline-none",
+                  "focus-visible:ring-2",
+                  "focus-visible:ring-blue-500",
+                ].join(" ")}
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-4">
+              {isAuthenticated && (
+                <div className="mb-4 flex min-w-0 items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                  <ProfileAvatar user={user} size="sm" />
+
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-950">
+                      {getDisplayName(user)}
+                    </p>
+
+                    <p className="truncate text-xs leading-5 text-slate-500">
+                      {getRoleDisplayName(user?.role)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <nav aria-label="Mobile navigation" className="grid gap-1">
+                {navLinks.map((link) => {
+                  const LinkIcon = link.icon;
+
+                  return (
+                    <NavLink
+                      key={link.path}
+                      to={link.path}
+                      end={link.end}
+                      onClick={() => closeMobileMenu(false)}
+                      className={getMobileNavLinkClass}
+                    >
+                      <LinkIcon
+                        className="h-5 w-5 shrink-0"
+                        aria-hidden="true"
+                      />
+
+                      <span className="min-w-0 truncate">{link.label}</span>
+                    </NavLink>
+                  );
+                })}
+              </nav>
+
+              <div className="my-4 border-t border-slate-200" />
+
+              {isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className={[
+                    "flex min-h-11",
+                    "w-full items-center",
+                    "gap-3 rounded-xl",
+                    "px-3 py-2.5",
+                    "text-sm font-medium",
+                    "text-red-600",
+                    "transition-colors",
+
+                    "hover:bg-red-50",
+
+                    "focus-visible:outline-none",
+                    "focus-visible:ring-2",
+                    "focus-visible:ring-red-500",
+                  ].join(" ")}
+                >
+                  <LogOut className="h-5 w-5 shrink-0" aria-hidden="true" />
+                  Logout
+                </button>
+              ) : (
+                <div className="grid gap-2">
                   <NavLink
                     to="/login"
-                    onClick={closeMobileMenu}
-                    className={getMobileNavLinkClass}
+                    onClick={() => closeMobileMenu(false)}
+                    className={[
+                      "flex min-h-11",
+                      "items-center",
+                      "justify-center",
+                      "gap-2 rounded-xl",
+                      "border",
+                      "border-slate-200",
+                      "bg-white",
+                      "px-4 py-2.5",
+                      "text-sm font-medium",
+                      "text-slate-700",
+
+                      "hover:bg-slate-50",
+
+                      "focus-visible:outline-none",
+                      "focus-visible:ring-2",
+                      "focus-visible:ring-blue-500",
+                    ].join(" ")}
                   >
-                    <Icon name="user" />
+                    <LogIn className="h-4 w-4" aria-hidden="true" />
                     Login
                   </NavLink>
 
                   <NavLink
                     to="/register"
-                    onClick={closeMobileMenu}
-                    className="flex items-center gap-3 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
+                    onClick={() => closeMobileMenu(false)}
+                    className={[
+                      "flex min-h-11",
+                      "items-center",
+                      "justify-center",
+                      "gap-2 rounded-xl",
+                      "bg-blue-600",
+                      "px-4 py-2.5",
+                      "text-sm font-medium",
+                      "text-white",
+
+                      "hover:bg-blue-700",
+
+                      "focus-visible:outline-none",
+                      "focus-visible:ring-2",
+                      "focus-visible:ring-blue-500",
+                    ].join(" ")}
                   >
-                    <Icon name="user" />
-                    Register
+                    <UserPlus className="h-4 w-4" aria-hidden="true" />
+                    Create account
                   </NavLink>
-                </>
+                </div>
               )}
-
-              {isAuthenticated && (
-                <>
-                  <div className="my-1 border-t border-slate-200" />
-
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50"
-                  >
-                    <Icon name="logout" />
-                    Logout
-                  </button>
-                </>
-              )}
-            </nav>
-          </div>
-        )}
-      </div>
-    </header>
+            </div>
+          </aside>
+        </div>
+      )}
+    </>
   );
 };
 
