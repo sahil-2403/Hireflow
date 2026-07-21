@@ -4,6 +4,7 @@ import { ROLES } from "./features/auth/auth.constants";
 
 import PublicLayout from "./layouts/PublicLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
+import AuthLayout from "./layouts/AuthLayout";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RoleRoute from "./routes/RoleRoute";
@@ -48,10 +49,6 @@ const App = () => {
         <Route path="/jobs/:jobId" element={<JobDetailsPage />} />
 
         <Route element={<GuestRoute />}>
-          <Route path="/login" element={<LoginPage />} />
-
-          <Route path="/register" element={<RegisterPage />} />
-
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
           <Route
@@ -63,6 +60,14 @@ const App = () => {
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
         <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+      </Route>
+
+      <Route element={<AuthLayout />}>
+        <Route element={<GuestRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
       </Route>
 
       <Route element={<ProtectedRoute />}>
