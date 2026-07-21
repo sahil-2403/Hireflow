@@ -1,41 +1,50 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+
+import { LoaderCircle, LogIn } from "lucide-react";
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useForm } from "react-hook-form";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { login } from "../../api/auth.api";
 
-import { loginSchema } from "../../features/auth/auth.schemas";
+import PasswordField from "../../components/common/PasswordField";
+
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
+
+import { Card, CardBody } from "../../components/ui/Card";
+
+import TextInput from "../../components/ui/TextInput";
+
 import { ROLES } from "../../features/auth/auth.constants";
 
-import getApiError from "../../utils/getApiError";
+import { loginSchema } from "../../features/auth/auth.schemas";
 
 import useAuth from "../../hooks/useAuth";
 
-import PasswordField from "../../components/common/PasswordField";
-
-import Button from "../../components/ui/Button";
-import { Card, CardBody } from "../../components/ui/Card";
-import Alert from "../../components/ui/Alert";
-import TextInput from "../../components/ui/TextInput";
+import getApiError from "../../utils/getApiError";
+import notify from "../../utils/notify";
 
 const LoginPage = () => {
   const location = useLocation();
+
   const navigate = useNavigate();
+
+  const { signIn } = useAuth();
 
   const [apiError, setApiError] = useState("");
 
   const navigationMessage = location.state?.message || "";
 
-  const [successMessage, setSuccessMessage] = useState(navigationMessage);
-
-  const { signIn } = useAuth();
+  const hasShownNavigationMessageRef = useRef(false);
 
   const {
     register,
     handleSubmit,
+
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(loginSchema),
@@ -47,9 +56,13 @@ const LoginPage = () => {
   });
 
   useEffect(() => {
-    if (!navigationMessage) {
+    if (!navigationMessage || hasShownNavigationMessageRef.current) {
       return;
     }
+
+    hasShownNavigationMessageRef.current = true;
+
+    notify.success(navigationMessage);
 
     navigate(location.pathname, {
       replace: true,
@@ -59,7 +72,6 @@ const LoginPage = () => {
 
   const onSubmit = async (formData) => {
     setApiError("");
-    setSuccessMessage("");
 
     try {
       const result = await login(formData);
@@ -88,125 +100,156 @@ const LoginPage = () => {
     } catch (error) {
       const normalizedError = getApiError(error);
 
+      /*
+       * Invalid credentials and account
+       * verification problems remain inline
+       * because they directly affect this form.
+       */
       setApiError(normalizedError.message);
     }
   };
 
   return (
-    <main className="min-h-[calc(100vh-4rem)] rounded-2xl bg-linear-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
-      <section className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_460px] lg:items-center">
-        <div className="hidden lg:block opacity-80">
-          <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-            Welcome back
-          </p>
-
-          <h1 className="mt-3 max-w-2xl text-5xl font-black tracking-tight text-slate-950">
-            Continue your hiring or job search journey.
-          </h1>
-
-          <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
-            Access your candidate dashboard, manage applications, review jobs,
-            or continue hiring from your company workspace.
-          </p>
-        </div>
-
-        <Card className="w-full">
-          <CardBody className="p-6 sm:p-8">
-            <div className="mb-8">
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Login
-              </p>
-
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-                Login to HireFlow
-              </h1>
-
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Access your candidate, recruiter, or company dashboard.
-              </p>
+    <section className="mx-auto w-full max-w-md py-2 sm:py-6">
+      <Card>
+        <CardBody className="p-4 sm:p-6">
+          <header>
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-700">
+              <LogIn className="h-5 w-5" aria-hidden="true" />
             </div>
 
-            {apiError && (
-              <Alert variant="error" className="mb-6">
-                {apiError}
-              </Alert>
-            )}
+            <h1 className="mt-4 text-2xl font-semibold leading-8 tracking-tight text-slate-950">
+              Welcome back
+            </h1>
 
-            {successMessage && (
-              <Alert variant="success" className="mb-6">
-                {successMessage}
-              </Alert>
-            )}
+            <p className="mt-1.5 text-sm leading-6 text-slate-600">
+              Sign in to continue to your HireFlow workspace.
+            </p>
+          </header>
 
-            <form
-              className="space-y-5"
-              onSubmit={handleSubmit(onSubmit)}
-              noValidate
-            >
-              <TextInput
-                id="email"
-                type="email"
-                label="Email address"
-                autoComplete="email"
-                placeholder="you@example.com"
-                error={errors.email?.message}
-                {...register("email")}
-              />
+          {apiError && (
+            <Alert variant="error" className="mt-5">
+              {apiError}
+            </Alert>
+          )}
 
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-4">
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-bold text-slate-700"
-                  >
-                    Password
-                  </label>
+          <form
+            className="mt-6 grid gap-4"
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+          >
+            <TextInput
+              id="email"
+              type="email"
+              label="Email address"
+              autoComplete="email"
+              placeholder="you@example.com"
+              error={errors.email?.message}
+              {...register("email")}
+            />
 
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm font-bold text-blue-600 hover:text-blue-700"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-4">
+                <label
+                  htmlFor="password"
+                  className="text-sm font-medium leading-5 text-slate-700"
+                >
+                  Password
+                </label>
 
-                <PasswordField
-                  id="password"
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  registration={register("password")}
-                  error={errors.password?.message}
-                />
+                <Link
+                  to="/forgot-password"
+                  className={[
+                    "text-sm font-medium",
+                    "text-blue-600",
+                    "transition-colors",
+
+                    "hover:text-blue-700",
+                    "hover:underline",
+
+                    "focus-visible:outline-none",
+                    "focus-visible:ring-2",
+                    "focus-visible:ring-blue-500",
+                    "focus-visible:ring-offset-2",
+                  ].join(" ")}
+                >
+                  Forgot password?
+                </Link>
               </div>
 
-              <Button type="submit" disabled={isSubmitting} fullWidth size="lg">
-                {isSubmitting ? "Logging in..." : "Login"}
-              </Button>
-            </form>
+              <PasswordField
+                id="password"
+                placeholder="Enter your password"
+                autoComplete="current-password"
+                registration={register("password")}
+                error={errors.password?.message}
+              />
+            </div>
 
-            <p className="mt-6 text-center text-sm text-slate-600">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              fullWidth
+              size="lg"
+              className="mt-1"
+            >
+              {isSubmitting && (
+                <LoaderCircle
+                  className="h-4 w-4 animate-spin"
+                  aria-hidden="true"
+                />
+              )}
+
+              {isSubmitting ? "Signing in..." : "Sign in"}
+            </Button>
+          </form>
+
+          <div className="mt-6 border-t border-slate-100 pt-5 text-center">
+            <p className="text-sm leading-6 text-slate-600">
               Don&apos;t have an account?{" "}
               <Link
                 to="/register"
-                className="font-bold text-blue-600 hover:text-blue-700"
+                className={[
+                  "font-medium",
+                  "text-blue-600",
+
+                  "hover:text-blue-700",
+                  "hover:underline",
+
+                  "focus-visible:outline-none",
+                  "focus-visible:ring-2",
+                  "focus-visible:ring-blue-500",
+                  "focus-visible:ring-offset-2",
+                ].join(" ")}
               >
-                Register
+                Create account
               </Link>
             </p>
 
-            <p className="mt-3 text-center text-sm text-slate-600">
-              Didn&apos;t receive the verification email?{" "}
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Verification email missing?{" "}
               <Link
                 to="/resend-verification"
-                className="font-bold text-blue-600 hover:text-blue-700"
+                className={[
+                  "font-medium",
+                  "text-blue-600",
+
+                  "hover:text-blue-700",
+                  "hover:underline",
+
+                  "focus-visible:outline-none",
+                  "focus-visible:ring-2",
+                  "focus-visible:ring-blue-500",
+                  "focus-visible:ring-offset-2",
+                ].join(" ")}
               >
-                Resend it
+                Resend email
               </Link>
             </p>
-          </CardBody>
-        </Card>
-      </section>
-    </main>
+          </div>
+        </CardBody>
+      </Card>
+    </section>
   );
 };
 

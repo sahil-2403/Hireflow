@@ -51,18 +51,22 @@ const EmptyState = ({
       return iconValue;
     }
 
-    if (typeof iconValue === "function") {
-      const IconComponent = iconValue;
-
-      return <IconComponent className={sizeClasses.icon} aria-hidden="true" />;
+    /*
+     * Keep compatibility with legacy pages
+     * that still pass emoji or text icons.
+     */
+    if (typeof iconValue === "string" || typeof iconValue === "number") {
+      return iconValue;
     }
 
     /*
-     * Legacy pages may still pass an emoji
-     * string. These will be replaced page by
-     * page during the redesign.
+     * Lucide icons are React forwardRef
+     * components and can be represented as
+     * objects rather than normal functions.
      */
-    return iconValue;
+    const IconComponent = iconValue;
+
+    return <IconComponent className={sizeClasses.icon} aria-hidden="true" />;
   };
 
   return (
