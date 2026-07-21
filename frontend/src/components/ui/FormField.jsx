@@ -1,21 +1,53 @@
-const FormField = ({ label, htmlFor, hint, error, children }) => {
+import cn from "../../utils/cn";
+
+const FormField = ({
+  label,
+  htmlFor,
+  hint,
+  hintId,
+  error,
+  errorId,
+  required = false,
+  className = "",
+  children,
+}) => {
   return (
-    <div>
+    <div className={cn("min-w-0", className)}>
       {label && (
         <label
           htmlFor={htmlFor}
-          className="mb-2 block text-sm font-bold text-slate-700"
+          className={[
+            "mb-1.5 block",
+            "text-sm font-medium",
+            "leading-5 text-slate-700",
+          ].join(" ")}
         >
           {label}
+
+          {required && (
+            <span aria-hidden="true" className="ml-1 text-red-600">
+              *
+            </span>
+          )}
         </label>
       )}
 
       {children}
 
-      {hint && !error && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+      {hint && !error && (
+        <p id={hintId} className="mt-1.5 text-xs leading-[18px] text-slate-500">
+          {hint}
+        </p>
+      )}
 
       {error && (
-        <p className="mt-1 text-xs font-medium text-red-600">{error}</p>
+        <p
+          id={errorId}
+          role="alert"
+          className="mt-1.5 text-xs font-medium leading-[18px] text-red-600"
+        >
+          {error}
+        </p>
       )}
     </div>
   );

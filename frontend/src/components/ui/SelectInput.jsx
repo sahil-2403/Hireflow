@@ -3,29 +3,61 @@ import cn from "../../utils/cn";
 import FormField from "./FormField";
 
 const BASE_SELECT_CLASS_NAME = [
-  "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none transition",
-  "focus:border-blue-500 focus:ring-4 focus:ring-blue-50",
-  "disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500",
+  "block min-h-11 w-full",
+  "min-w-0 rounded-xl",
+  "border border-slate-200",
+  "bg-white px-3 py-2.5",
+
+  "text-base font-normal",
+  "leading-6 text-slate-800",
+  "sm:text-sm",
+
+  "outline-none transition",
+
+  "focus:border-blue-500",
+  "focus:ring-2",
+  "focus:ring-blue-100",
+
+  "disabled:cursor-not-allowed",
+  "disabled:bg-slate-50",
+  "disabled:text-slate-500",
 ].join(" ");
 
 const SelectInput = ({
   label,
   hint,
   error,
+  required = false,
   id,
   options = [],
   placeholder,
   className = "",
   selectClassName = "",
   children,
+  "aria-describedby": ariaDescribedBy,
   ...props
 }) => {
+  const hintId = hint && id ? `${id}-hint` : undefined;
+
+  const errorId = error && id ? `${id}-error` : undefined;
+
+  const describedBy = [ariaDescribedBy, error ? errorId : hintId]
+    .filter(Boolean)
+    .join(" ");
+
   const select = (
     <select
       id={id}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={describedBy || undefined}
       className={cn(
         BASE_SELECT_CLASS_NAME,
-        error && "border-red-300 focus:border-red-500 focus:ring-red-50",
+
+        error &&
+          ["border-red-300", "focus:border-red-500", "focus:ring-red-100"].join(
+            " ",
+          ),
+
         selectClassName,
       )}
       {...props}
@@ -50,8 +82,17 @@ const SelectInput = ({
   }
 
   return (
-    <FormField label={label} htmlFor={id} hint={hint} error={error}>
-      <div className={className}>{select}</div>
+    <FormField
+      label={label}
+      htmlFor={id}
+      hint={hint}
+      hintId={hintId}
+      error={error}
+      errorId={errorId}
+      required={required}
+      className={className}
+    >
+      {select}
     </FormField>
   );
 };
