@@ -1,72 +1,134 @@
 import { useEffect, useState } from "react";
 
+import {
+  BadgeCheck,
+  BriefcaseBusiness,
+  Building2,
+  Inbox,
+  Layers3,
+  LockKeyhole,
+  MapPin,
+  UserCheck,
+  Users,
+  UserX,
+} from "lucide-react";
+
 import { Link } from "react-router-dom";
 
 import {
   getCompanyHiringFunnel,
   getCompanyOverview,
-  getCompanyTopJobs,
   getCompanyTopApplicants,
+  getCompanyTopJobs,
 } from "../../api/analytics.api";
 
-import getApiError from "../../utils/getApiError";
-import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
-
-import Button from "../../components/ui/Button";
-import { Card, CardBody } from "../../components/ui/Card";
-import PageHero from "../../components/ui/PageHero";
-import Alert from "../../components/ui/Alert";
-
 import CompanyMetricCard from "../../components/company/CompanyMetricCard";
-import HiringFunnelCard from "../../components/company/HiringFunnelCard";
-import TopJobsCard from "../../components/company/TopJobsCard";
-import RecentApplicationsCard from "../../components/company/RecentApplicationsCard";
 import CompanySetupRequired from "../../components/company/CompanySetupRequired";
+import HiringFunnelCard from "../../components/company/HiringFunnelCard";
+import RecentApplicationsCard from "../../components/company/RecentApplicationsCard";
 import TopApplicantsByJobCard from "../../components/company/TopApplicantsByJobCard";
+import TopJobsCard from "../../components/company/TopJobsCard";
 
 import CompanyLogo from "../../components/common/CompanyLogo";
+
+import {
+  CompanyMetricsSkeleton,
+  CompanyWorkspaceSkeleton,
+  RecentApplicationsSkeleton,
+} from "../../components/loading/CompanyDashboardSkeletons";
+
+import Button from "../../components/ui/Button";
+
+import { Card, CardBody } from "../../components/ui/Card";
+
+import PageHero from "../../components/ui/PageHero";
+import SectionError from "../../components/ui/SectionError";
 
 import { ROLES } from "../../features/auth/auth.constants";
 
 import useAuth from "../../hooks/useAuth";
+
+import getApiError from "../../utils/getApiError";
+import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
+
+const createInitialState = (dataKey, initialData) => {
+  return {
+    status: "loading",
+    [dataKey]: initialData,
+    errorMessage: "",
+  };
+};
 
 const CompanyWorkspaceCard = ({ company, canManageCompany = false }) => {
   if (!company) {
     return null;
   }
 
+  const companyDetails = [company.industry, company.headquarters].filter(
+    Boolean,
+  );
+
   return (
     <Card>
-      <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <CompanyLogo
-            company={company}
-            size="xl"
-            fallbackClassName="bg-blue-600 text-white shadow-sm shadow-blue-200"
-          />
+      <CardBody>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <CompanyLogo
+              company={company}
+              size="lg"
+              fallbackClassName="bg-blue-600 font-semibold text-white"
+            />
 
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-blue-600">
-              Workspace
-            </p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <Building2
+                  className="h-4 w-4 shrink-0 text-blue-600"
+                  aria-hidden="true"
+                />
 
-            <h2 className="mt-1 text-2xl font-black text-slate-950">
-              {company.name}
-            </h2>
+                <p className="text-xs font-medium text-blue-600">
+                  Company workspace
+                </p>
+              </div>
 
-            <p className="mt-1 text-sm text-slate-600">
-              {company.industry || "Industry not added"}
-              {" · "}
-              {company.headquarters || "Headquarters not added"}
-            </p>
+              <h2 className="mt-1 wrap-break-word text-lg font-semibold leading-7 text-slate-950">
+                {company.name}
+              </h2>
+
+              {companyDetails.length > 0 && (
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-5 text-slate-500">
+                  {company.industry && <span>{company.industry}</span>}
+
+                  {company.industry && company.headquarters && (
+                    <span aria-hidden="true" className="text-slate-300">
+                      ·
+                    </span>
+                  )}
+
+                  {company.headquarters && (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+
+                      {company.headquarters}
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
 
-        {canManageCompany && (
-          <Button as={Link} to="/company/profile" variant="secondary">
-            Edit company
-          </Button>
-        )}
+          {canManageCompany && (
+            <Button
+              as={Link}
+              to="/company/profile"
+              variant="secondary"
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              Edit company
+            </Button>
+          )}
+        </div>
       </CardBody>
     </Card>
   );
@@ -75,34 +137,36 @@ const CompanyWorkspaceCard = ({ company, canManageCompany = false }) => {
 const CompanyDashboardPage = () => {
   const { user } = useAuth();
 
-  const [overviewState, setOverviewState] = useState({
-    status: "loading",
-    data: null,
-    errorMessage: "",
-  });
+  const [overviewState, setOverviewState] = useState(
+    createInitialState("data", null),
+  );
 
-  const [funnelState, setFunnelState] = useState({
-    status: "loading",
-    data: null,
-    errorMessage: "",
-  });
+  const [funnelState, setFunnelState] = useState(
+    createInitialState("data", null),
+  );
 
-  const [topJobsState, setTopJobsState] = useState({
-    status: "loading",
-    jobs: [],
-    errorMessage: "",
-  });
+  const [topJobsState, setTopJobsState] = useState(
+    createInitialState("jobs", []),
+  );
 
-  const [topApplicantsState, setTopApplicantsState] = useState({
-    status: "loading",
-    applicants: [],
-    errorMessage: "",
-  });
+  const [topApplicantsState, setTopApplicantsState] = useState(
+    createInitialState("applicants", []),
+  );
+
+  const [overviewAttempt, setOverviewAttempt] = useState(0);
+
+  const [funnelAttempt, setFunnelAttempt] = useState(0);
+
+  const [topJobsAttempt, setTopJobsAttempt] = useState(0);
+
+  const [topApplicantsAttempt, setTopApplicantsAttempt] = useState(0);
 
   useEffect(() => {
     let shouldIgnore = false;
 
     const fetchOverview = async () => {
+      setOverviewState(createInitialState("data", null));
+
       try {
         const result = await getCompanyOverview();
 
@@ -126,13 +190,27 @@ const CompanyDashboardPage = () => {
           status: isCompanyProfileMissingError(normalizedError)
             ? "company-missing"
             : "error",
+
           data: null,
+
           errorMessage: normalizedError.message,
         });
       }
     };
 
+    fetchOverview();
+
+    return () => {
+      shouldIgnore = true;
+    };
+  }, [overviewAttempt]);
+
+  useEffect(() => {
+    let shouldIgnore = false;
+
     const fetchFunnel = async () => {
+      setFunnelState(createInitialState("data", null));
+
       try {
         const result = await getCompanyHiringFunnel();
 
@@ -160,7 +238,19 @@ const CompanyDashboardPage = () => {
       }
     };
 
+    fetchFunnel();
+
+    return () => {
+      shouldIgnore = true;
+    };
+  }, [funnelAttempt]);
+
+  useEffect(() => {
+    let shouldIgnore = false;
+
     const fetchTopJobs = async () => {
+      setTopJobsState(createInitialState("jobs", []));
+
       try {
         const result = await getCompanyTopJobs({
           limit: 5,
@@ -190,7 +280,19 @@ const CompanyDashboardPage = () => {
       }
     };
 
+    fetchTopJobs();
+
+    return () => {
+      shouldIgnore = true;
+    };
+  }, [topJobsAttempt]);
+
+  useEffect(() => {
+    let shouldIgnore = false;
+
     const fetchTopApplicants = async () => {
+      setTopApplicantsState(createInitialState("applicants", []));
+
       try {
         const result = await getCompanyTopApplicants({
           limit: 5,
@@ -202,7 +304,9 @@ const CompanyDashboardPage = () => {
 
         setTopApplicantsState({
           status: "success",
+
           applicants: result.data ?? [],
+
           errorMessage: "",
         });
       } catch (error) {
@@ -220,15 +324,12 @@ const CompanyDashboardPage = () => {
       }
     };
 
-    fetchOverview();
-    fetchFunnel();
-    fetchTopJobs();
     fetchTopApplicants();
 
     return () => {
       shouldIgnore = true;
     };
-  }, []);
+  }, [topApplicantsAttempt]);
 
   const overview = overviewState.data;
 
@@ -253,73 +354,73 @@ const CompanyDashboardPage = () => {
 
   const recentApplications = overview?.recentApplications ?? [];
 
-  const metrics = [
-    {
-      label: "Total jobs",
-      value: jobs.totalJobs,
-      helperText: "All jobs created by your company",
-      icon: "💼",
-      tone: "blue",
-    },
+  const primaryMetrics = [
     {
       label: "Open jobs",
       value: jobs.openJobs,
       helperText: "Currently accepting applications",
-      icon: "🟢",
-      tone: "emerald",
+      icon: BriefcaseBusiness,
+      tone: "blue",
     },
     {
       label: "Total applications",
       value: applications.totalApplications,
       helperText: "Applications received",
-      icon: "📥",
+      icon: Inbox,
       tone: "violet",
     },
     {
       label: "Unique candidates",
       value: applications.uniqueCandidates,
       helperText: "Different candidates who applied",
-      icon: "👤",
+      icon: Users,
       tone: "blue",
-    },
-    {
-      label: "Closed jobs",
-      value: jobs.closedJobs,
-      helperText: "Jobs no longer open",
-      icon: "🔒",
-      tone: "slate",
     },
     {
       label: "Hired candidates",
       value: applications.hiredCandidates,
       helperText: "Applications marked as hired",
-      icon: "✅",
+      icon: UserCheck,
       tone: "emerald",
     },
+  ];
+
+  const secondaryMetrics = [
     {
-      label: "Rejected applications",
+      label: "Total jobs",
+      value: jobs.totalJobs,
+      icon: Layers3,
+      tone: "blue",
+    },
+    {
+      label: "Closed jobs",
+      value: jobs.closedJobs,
+      icon: LockKeyhole,
+      tone: "slate",
+    },
+    {
+      label: "Rejected",
       value: applications.rejectedApplications,
-      helperText: "Applications marked as rejected",
-      icon: "✕",
+      icon: UserX,
       tone: "red",
     },
     {
       label: "Active recruiters",
       value: activeRecruiters,
-      helperText: "Recruiters currently active",
-      icon: "🤝",
+      icon: BadgeCheck,
       tone: "amber",
     },
   ];
 
+  const isCompanyMissing = overviewState.status === "company-missing";
+
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <PageHero
-        eyebrow="Company dashboard"
-        title="Hiring workspace"
-        description="Track jobs, applications, candidates, recruiters, and hiring performance from one place."
+        title="Overview of your hiring activity"
+        description="Track jobs, applications, candidates, and hiring progress from one place."
         actions={
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <>
             <Button as={Link} to="/company/jobs" variant="secondary">
               Manage jobs
             </Button>
@@ -327,61 +428,72 @@ const CompanyDashboardPage = () => {
             <Button as={Link} to="/company/applications">
               View applications
             </Button>
-          </div>
+          </>
         }
       />
 
-      {overviewState.status === "loading" && (
-        <Card>
-          <CardBody>
-            <p className="text-sm text-slate-600">
-              Loading company dashboard...
-            </p>
-          </CardBody>
-        </Card>
-      )}
-
-      {overviewState.status === "company-missing" && (
-        <CompanySetupRequired description="Create your company profile before using the company dashboard, jobs, applications, and recruiter tools." />
-      )}
-
-      {overviewState.status === "error" && (
-        <Alert variant="error" title="Could not load company dashboard">
-          {overviewState.errorMessage}
-        </Alert>
-      )}
-
-      {overviewState.status === "success" && (
+      {isCompanyMissing ? (
+        <CompanySetupRequired description="Create your company profile before using dashboard, job, application, and recruiter tools." />
+      ) : (
         <>
-          <CompanyWorkspaceCard
-            company={company}
-            canManageCompany={canManageCompany}
-          />
+          {overviewState.status === "loading" && (
+            <>
+              <CompanyWorkspaceSkeleton />
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {metrics.map((metric) => (
-              <CompanyMetricCard
-                key={metric.label}
-                label={metric.label}
-                value={metric.value}
-                helperText={metric.helperText}
-                icon={metric.icon}
-                tone={metric.tone}
+              <CompanyMetricsSkeleton />
+            </>
+          )}
+
+          {overviewState.status === "error" && (
+            <SectionError
+              title="Could not load dashboard overview"
+              message={overviewState.errorMessage}
+              onRetry={() =>
+                setOverviewAttempt((currentAttempt) => currentAttempt + 1)
+              }
+            />
+          )}
+
+          {overviewState.status === "success" && (
+            <>
+              <CompanyWorkspaceCard
+                company={company}
+                canManageCompany={canManageCompany}
               />
-            ))}
-          </div>
 
-          <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+                  {primaryMetrics.map((metric) => (
+                    <CompanyMetricCard key={metric.label} {...metric} />
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+                  {secondaryMetrics.map((metric) => (
+                    <CompanyMetricCard key={metric.label} {...metric} compact />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="grid gap-5 xl:grid-cols-2">
             <HiringFunnelCard
               status={funnelState.status}
               funnelData={funnelState.data}
               errorMessage={funnelState.errorMessage}
+              onRetry={() =>
+                setFunnelAttempt((currentAttempt) => currentAttempt + 1)
+              }
             />
 
             <TopJobsCard
               status={topJobsState.status}
               jobs={topJobsState.jobs}
               errorMessage={topJobsState.errorMessage}
+              onRetry={() =>
+                setTopJobsAttempt((currentAttempt) => currentAttempt + 1)
+              }
             />
           </div>
 
@@ -389,9 +501,16 @@ const CompanyDashboardPage = () => {
             status={topApplicantsState.status}
             applicants={topApplicantsState.applicants}
             errorMessage={topApplicantsState.errorMessage}
+            onRetry={() =>
+              setTopApplicantsAttempt((currentAttempt) => currentAttempt + 1)
+            }
           />
 
-          <RecentApplicationsCard applications={recentApplications} />
+          {overviewState.status === "loading" && <RecentApplicationsSkeleton />}
+
+          {overviewState.status === "success" && (
+            <RecentApplicationsCard applications={recentApplications} />
+          )}
         </>
       )}
     </div>
