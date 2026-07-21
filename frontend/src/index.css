@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+/*
+ * HireFlow centered toast container
+ *
+ * Use the entire viewport width as the
+ * positioning area, while keeping each
+ * toast constrained and centered.
+ */
+[data-sonner-toaster][data-x-position="center"] {
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+  padding-inline: 1rem !important;
+}
+
+[data-sonner-toaster][data-x-position="center"]
+  [data-sonner-toast] {
+  max-width: 100% !important;
+  margin-inline: auto !important;
+}

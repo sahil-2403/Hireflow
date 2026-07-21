@@ -3,25 +3,68 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
+  AlertCircle,
+  CheckCircle2,
+  Eye,
+  FileText,
+  LoaderCircle,
+  MapPin,
+  Tags,
+  Upload,
+  UserRound,
+  UserRoundPlus,
+} from "lucide-react";
+
+import {
   getMyCandidateProfile,
   uploadCandidateResume,
   viewCandidateResume,
 } from "../../api/candidate.api";
 
 import getApiError from "../../utils/getApiError";
+import notify from "../../utils/notify";
 import openPdfBlob from "../../utils/openPdfBlob";
-
-import Button from "../../components/ui/Button";
-import { Card, CardBody, CardHeader } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import FormField from "../../components/ui/FormField";
-import PageHero from "../../components/ui/PageHero";
-import Alert from "../../components/ui/Alert";
-import Pill from "../../components/ui/Pill";
 
 import CandidateResumeInsightsCard from "../../components/ai/CandidateResumeInsightsCard";
 
+import CandidateResumePageSkeleton from "../../components/loading/CandidateResumePageSkeleton";
+
+import SectionError from "../../components/ui/SectionError";
+
 const MAX_RESUME_SIZE = 5 * 1024 * 1024;
+
+const PRIMARY_BUTTON_CLASS_NAME = [
+  "inline-flex min-h-10",
+  "items-center justify-center",
+  "gap-2 rounded-lg",
+  "bg-blue-600 px-4 py-2.5",
+  "text-sm font-medium text-white",
+  "transition",
+  "hover:bg-blue-700",
+  "focus-visible:outline-none",
+  "focus-visible:ring-2",
+  "focus-visible:ring-blue-500",
+  "focus-visible:ring-offset-2",
+  "disabled:cursor-not-allowed",
+  "disabled:opacity-60",
+].join(" ");
+
+const SECONDARY_BUTTON_CLASS_NAME = [
+  "inline-flex min-h-10",
+  "items-center justify-center",
+  "gap-2 rounded-lg",
+  "border border-slate-200",
+  "bg-white px-4 py-2.5",
+  "text-sm font-medium text-slate-700",
+  "transition",
+  "hover:bg-slate-50",
+  "focus-visible:outline-none",
+  "focus-visible:ring-2",
+  "focus-visible:ring-blue-500",
+  "focus-visible:ring-offset-2",
+  "disabled:cursor-not-allowed",
+  "disabled:opacity-60",
+].join(" ");
 
 const formatFileSize = (bytes) => {
   if (!bytes) {
@@ -42,268 +85,378 @@ const getReadinessItems = (profile, hasResume) => {
     {
       label: "Candidate profile",
       isComplete: Boolean(profile),
-      description: "Your profile is required before resume upload.",
+      description: "Create your candidate profile before managing a resume.",
+      icon: UserRound,
     },
     {
-      label: "Resume PDF",
+      label: "Resume uploaded",
       isComplete: hasResume,
-      description: "Upload a PDF resume to apply to jobs.",
+      description: "Upload a PDF resume before applying to jobs.",
+      icon: FileText,
     },
     {
       label: "Skills added",
       isComplete: Array.isArray(profile?.skills) && profile.skills.length > 0,
-      description: "Skills help recruiters understand your fit.",
+      description: "Add your main skills to improve job matching.",
+      icon: Tags,
     },
     {
       label: "Location added",
       isComplete: Boolean(profile?.location),
-      description: "Location helps match you with relevant jobs.",
+      description: "Add your location to improve relevant job suggestions.",
+      icon: MapPin,
     },
   ];
 };
 
-const getFileInputClassName = () => {
-  return [
-    "block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition",
-    "file:mr-4 file:rounded-xl file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-blue-700",
-    "hover:file:bg-blue-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50",
-  ].join(" ");
-};
-
-const ResumeStatusPanel = ({ hasResume, onViewResume, isOpeningResume }) => {
+const ResumeStatusCard = ({ hasResume, isOpeningResume, onViewResume }) => {
   return (
-    <div
-      className={[
-        "rounded-2xl border p-5",
-        hasResume
-          ? "border-emerald-200 bg-emerald-50/70"
-          : "border-amber-200 bg-amber-50/70",
-      ].join(" ")}
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex gap-4">
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
           <div
             className={[
-              "grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-2xl",
-              hasResume ? "bg-emerald-100" : "bg-amber-100",
+              "grid h-11 w-11",
+              "shrink-0 place-items-center",
+              "rounded-xl",
+
+              hasResume
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-amber-50 text-amber-700",
             ].join(" ")}
           >
-            📄
+            <FileText className="h-5 w-5" aria-hidden="true" />
           </div>
 
-          <div>
-            <Pill variant={hasResume ? "emerald" : "amber"}>
-              {hasResume ? "Uploaded" : "Not uploaded"}
-            </Pill>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold text-slate-950">
+                Resume status
+              </h2>
 
-            <h3 className="mt-3 text-lg font-black text-slate-950">
-              {hasResume
-                ? "Resume uploaded successfully"
-                : "No resume uploaded yet"}
-            </h3>
+              <span
+                className={[
+                  "inline-flex items-center",
+                  "gap-1.5 rounded-full",
+                  "px-2.5 py-1",
+                  "text-xs font-medium",
 
-            <p className="mt-2 text-sm leading-6 text-slate-600">
+                  hasResume
+                    ? [
+                        "bg-emerald-50",
+                        "text-emerald-700",
+                        "ring-1",
+                        "ring-emerald-100",
+                      ].join(" ")
+                    : [
+                        "bg-amber-50",
+                        "text-amber-700",
+                        "ring-1",
+                        "ring-amber-100",
+                      ].join(" "),
+                ].join(" ")}
+              >
+                {hasResume ? (
+                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                ) : (
+                  <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                )}
+
+                {hasResume ? "Uploaded" : "Not uploaded"}
+              </span>
+            </div>
+
+            <p className="mt-1 text-sm leading-6 text-slate-600">
               {hasResume
-                ? "Your resume is ready and can be used while applying to jobs."
-                : "Upload your resume before applying to jobs from your candidate account."}
+                ? "Your current PDF resume is ready for job applications."
+                : "Upload a PDF resume before submitting job applications."}
             </p>
           </div>
         </div>
 
         {hasResume && (
-          <Button
+          <button
             type="button"
-            variant="secondary"
+            className={[SECONDARY_BUTTON_CLASS_NAME, "w-full sm:w-auto"].join(
+              " ",
+            )}
             onClick={onViewResume}
             disabled={isOpeningResume}
           >
+            {isOpeningResume ? (
+              <LoaderCircle
+                className="h-4 w-4 animate-spin"
+                aria-hidden="true"
+              />
+            ) : (
+              <Eye className="h-4 w-4" aria-hidden="true" />
+            )}
+
             {isOpeningResume ? "Opening..." : "View resume"}
-          </Button>
+          </button>
         )}
       </div>
-    </div>
+    </section>
   );
 };
 
-const UploadResumeForm = ({
+const UploadResumeCard = ({
   hasResume,
   selectedFile,
+  fileError,
   fileInputRef,
+  isUploading,
   onFileChange,
   onSubmit,
-  isUploading,
 }) => {
+  const fieldDescriptionId = "resume-file-description";
+
+  const fieldErrorId = "resume-file-error";
+
   return (
-    <form onSubmit={onSubmit} className="rounded-2xl bg-slate-50 p-5">
-      <h3 className="text-lg font-black text-slate-950">
-        {hasResume ? "Replace resume" : "Upload resume"}
-      </h3>
+    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white">
+      <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
+        <h2 className="text-base font-semibold text-slate-950">
+          {hasResume ? "Replace resume" : "Upload resume"}
+        </h2>
 
-      <p className="mt-2 text-sm leading-6 text-slate-600">
-        Select a PDF file from your device. Your old resume will be replaced
-        after successful upload.
-      </p>
+        <p className="mt-1 text-sm leading-6 text-slate-600">
+          Choose a PDF up to 5 MB.
+          {hasResume
+            ? " Uploading a new file replaces the current resume."
+            : ""}
+        </p>
+      </div>
 
-      <div className="mt-5">
-        <FormField
-          label="Resume PDF"
-          htmlFor="resume"
-          hint="PDF only. Maximum size: 5 MB."
+      <form onSubmit={onSubmit} className="p-4 sm:p-5">
+        <label htmlFor="resume" className="text-sm font-medium text-slate-800">
+          Resume PDF
+        </label>
+
+        <input
+          ref={fileInputRef}
+          id="resume"
+          type="file"
+          accept=".pdf,application/pdf"
+          disabled={isUploading}
+          aria-invalid={Boolean(fileError)}
+          aria-describedby={[fieldDescriptionId, fileError ? fieldErrorId : ""]
+            .filter(Boolean)
+            .join(" ")}
+          onChange={onFileChange}
+          className="sr-only"
+        />
+
+        <div
+          className={[
+            "mt-2 flex min-w-0",
+            "flex-col gap-2",
+            "rounded-xl border",
+            "p-2.5",
+
+            "sm:flex-row",
+            "sm:items-center",
+
+            fileError
+              ? ["border-red-300", "bg-red-50/30"].join(" ")
+              : ["border-slate-200", "bg-white"].join(" "),
+          ].join(" ")}
         >
-          <input
-            ref={fileInputRef}
-            id="resume"
-            type="file"
-            accept="application/pdf"
-            onChange={onFileChange}
-            className={getFileInputClassName()}
-          />
-        </FormField>
-      </div>
+          <label
+            htmlFor="resume"
+            className={[
+              "inline-flex min-h-10",
+              "w-full shrink-0",
+              "cursor-pointer",
+              "items-center",
+              "justify-center",
+              "rounded-lg",
+              "bg-blue-50",
+              "px-3 py-2",
+              "text-sm font-medium",
+              "text-blue-700",
+              "transition",
 
-      {selectedFile && (
-        <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
-            Selected file
-          </p>
+              "hover:bg-blue-100",
 
-          <p className="mt-2 font-bold text-slate-950">{selectedFile.name}</p>
+              "focus-within:outline-none",
+              "focus-within:ring-2",
+              "focus-within:ring-blue-500",
 
-          <p className="mt-1 text-sm text-slate-600">
-            {formatFileSize(selectedFile.size)} · PDF
-          </p>
+              "sm:w-auto",
+
+              isUploading ? ["cursor-not-allowed", "opacity-60"].join(" ") : "",
+            ].join(" ")}
+          >
+            Choose file
+          </label>
+
+          <div className="min-w-0 flex-1 px-1 py-1">
+            <p
+              title={selectedFile?.name || undefined}
+              className={[
+                "truncate",
+                "text-sm",
+
+                selectedFile
+                  ? ["font-medium", "text-slate-900"].join(" ")
+                  : "text-slate-500",
+              ].join(" ")}
+            >
+              {selectedFile ? selectedFile.name : "No file selected"}
+            </p>
+
+            {selectedFile && (
+              <p className="mt-0.5 text-xs text-slate-500">
+                {formatFileSize(selectedFile.size)} · PDF
+              </p>
+            )}
+          </div>
         </div>
-      )}
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <Button as={Link} to="/candidate/dashboard" variant="secondary">
-          Back to dashboard
-        </Button>
+        <div className="mt-5 flex justify-end">
+          <button
+            type="submit"
+            disabled={isUploading || !selectedFile}
+            className={[PRIMARY_BUTTON_CLASS_NAME, "w-full sm:w-auto"].join(
+              " ",
+            )}
+          >
+            {isUploading ? (
+              <LoaderCircle
+                className="h-4 w-4 animate-spin"
+                aria-hidden="true"
+              />
+            ) : (
+              <Upload className="h-4 w-4" aria-hidden="true" />
+            )}
 
-        <Button type="submit" disabled={isUploading || !selectedFile}>
-          {isUploading
-            ? "Uploading..."
-            : hasResume
-              ? "Replace resume"
-              : "Upload resume"}
-        </Button>
-      </div>
-    </form>
+            {isUploading
+              ? "Uploading..."
+              : hasResume
+                ? "Replace resume"
+                : "Upload resume"}
+          </button>
+        </div>
+      </form>
+    </section>
   );
 };
 
 const ReadinessCard = ({ readinessItems, readinessPercentage }) => {
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-              Readiness
-            </p>
+    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-base font-semibold text-slate-950">
+            Application readiness
+          </h2>
 
-            <h2 className="mt-2 text-xl font-black text-slate-950">
-              Application readiness
-            </h2>
-          </div>
-
-          <div
-            className="grid h-20 w-20 place-items-center rounded-full text-sm font-black text-blue-700"
-            style={{
-              background: `conic-gradient(#2563eb ${
-                readinessPercentage * 3.6
-              }deg, #e2e8f0 0deg)`,
-            }}
-          >
-            <div className="grid h-14 w-14 place-items-center rounded-full bg-white">
-              {readinessPercentage}%
-            </div>
-          </div>
+          <p className="mt-1 text-sm text-slate-600">
+            Complete the remaining items to improve your candidate profile.
+          </p>
         </div>
-      </CardHeader>
 
-      <CardBody>
-        <div className="grid gap-3">
-          {readinessItems.map((item) => (
+        <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+          {readinessPercentage}%
+        </span>
+      </div>
+      <div
+        role="progressbar"
+        aria-label="Application readiness"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={readinessPercentage}
+        className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"
+      >
+        <div
+          className="h-full rounded-full bg-blue-600 transition-[width]"
+          style={{
+            width: `${readinessPercentage}%`,
+          }}
+        />
+      </div>
+      <div className="mt-5 divide-y divide-slate-100">
+        {readinessItems.map((item) => {
+          const ItemIcon = item.icon;
+
+          return (
             <div
               key={item.label}
-              className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+              className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
             >
-              <div className="flex items-start gap-3">
-                <span
-                  className={[
-                    "grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-black",
-                    item.isComplete
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-slate-200 text-slate-500",
-                  ].join(" ")}
-                >
-                  {item.isComplete ? "✓" : "!"}
-                </span>
+              <div
+                className={[
+                  "grid h-8 w-8",
+                  "shrink-0 place-items-center",
+                  "rounded-full",
 
-                <div>
-                  <p className="text-sm font-black text-slate-950">
+                  item.isComplete
+                    ? ["bg-emerald-50", "text-emerald-700"].join(" ")
+                    : ["bg-slate-100", "text-slate-500"].join(" "),
+                ].join(" ")}
+              >
+                {item.isComplete ? (
+                  <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <ItemIcon className="h-4 w-4" aria-hidden="true" />
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium text-slate-900">
                     {item.label}
                   </p>
 
+                  <span
+                    className={[
+                      "text-xs font-medium",
+
+                      item.isComplete ? "text-emerald-700" : "text-slate-500",
+                    ].join(" ")}
+                  >
+                    {item.isComplete ? "Complete" : "Incomplete"}
+                  </span>
+                </div>
+
+                {!item.isComplete && (
                   <p className="mt-1 text-xs leading-5 text-slate-600">
                     {item.description}
                   </p>
-                </div>
+                )}
               </div>
             </div>
-          ))}
-        </div>
-      </CardBody>
-    </Card>
+          );
+        })}
+      </div>
+    </section>
   );
 };
 
-const ResumeTipsCard = () => {
+const MissingProfileState = () => {
   return (
-    <Card>
-      <CardHeader>
-        <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
-          Resume tips
-        </p>
+    <section className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 text-center sm:p-8">
+      <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-blue-50 text-blue-700">
+        <UserRoundPlus className="h-6 w-6" aria-hidden="true" />
+      </div>
 
-        <h2 className="mt-2 text-xl font-black text-slate-950">
-          Keep it recruiter-friendly
-        </h2>
-      </CardHeader>
+      <h1 className="mt-4 text-xl font-semibold text-slate-950">
+        Create your candidate profile
+      </h1>
 
-      <CardBody>
-        <div className="grid gap-3">
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-bold text-slate-900">Use a clear file</p>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
+        Your candidate profile is required before you can upload and manage a
+        resume.
+      </p>
 
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              Upload a clean PDF resume with readable formatting.
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-bold text-slate-900">
-              Add project impact
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              Mention what you built, the stack used, and the result.
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-bold text-slate-900">
-              Match job keywords
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              Keep important skills visible and easy to scan.
-            </p>
-          </div>
-        </div>
-      </CardBody>
-    </Card>
+      <Link
+        to="/candidate/profile"
+        className={[PRIMARY_BUTTON_CLASS_NAME, "mt-5"].join(" ")}
+      >
+        Create profile
+      </Link>
+    </section>
   );
 };
 
@@ -314,21 +467,26 @@ const CandidateResumePage = () => {
 
   const [profile, setProfile] = useState(null);
 
+  const [pageErrorMessage, setPageErrorMessage] = useState("");
+
   const [selectedFile, setSelectedFile] = useState(null);
 
-  const [apiError, setApiError] = useState("");
-
-  const [successMessage, setSuccessMessage] = useState("");
+  const [fileError, setFileError] = useState("");
 
   const [isUploading, setIsUploading] = useState(false);
 
   const [isOpeningResume, setIsOpeningResume] = useState(false);
+
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     let shouldIgnore = false;
 
     const loadProfile = async () => {
       try {
+        setPageStatus("loading");
+        setPageErrorMessage("");
+
         const result = await getMyCandidateProfile();
 
         if (shouldIgnore) {
@@ -346,10 +504,12 @@ const CandidateResumePage = () => {
 
         if (normalizedError.statusCode === 404) {
           setPageStatus("missing-profile");
+
           return;
         }
 
-        setApiError(normalizedError.message);
+        setPageErrorMessage(normalizedError.message);
+
         setPageStatus("error");
       }
     };
@@ -359,13 +519,16 @@ const CandidateResumePage = () => {
     return () => {
       shouldIgnore = true;
     };
-  }, []);
+  }, [loadAttempt]);
+
+  const handleRetryLoad = () => {
+    setLoadAttempt((currentAttempt) => currentAttempt + 1);
+  };
 
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
 
-    setApiError("");
-    setSuccessMessage("");
+    setFileError("");
 
     if (!file) {
       setSelectedFile(null);
@@ -374,13 +537,21 @@ const CandidateResumePage = () => {
 
     if (file.type !== "application/pdf") {
       setSelectedFile(null);
-      setApiError("Only PDF resume files are allowed.");
+
+      setFileError("Only PDF resume files are allowed.");
+
+      event.target.value = "";
+
       return;
     }
 
     if (file.size > MAX_RESUME_SIZE) {
       setSelectedFile(null);
-      setApiError("Resume file must be 5 MB or smaller.");
+
+      setFileError("Resume file must be 5 MB or smaller.");
+
+      event.target.value = "";
+
       return;
     }
 
@@ -390,11 +561,11 @@ const CandidateResumePage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    setApiError("");
-    setSuccessMessage("");
+    setFileError("");
 
     if (!selectedFile) {
-      setApiError("Please select a PDF resume before uploading.");
+      setFileError("Select a PDF resume before uploading.");
+
       return;
     }
 
@@ -405,15 +576,18 @@ const CandidateResumePage = () => {
 
       setProfile(result.data);
       setSelectedFile(null);
-      setSuccessMessage(result.message);
 
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+
+      notify.success(result.message || "Resume uploaded successfully.");
     } catch (error) {
       const normalizedError = getApiError(error);
 
-      setApiError(normalizedError.message);
+      notify.error("Could not upload resume", {
+        description: normalizedError.message,
+      });
     } finally {
       setIsUploading(false);
     }
@@ -421,7 +595,6 @@ const CandidateResumePage = () => {
 
   const handleViewResume = async () => {
     try {
-      setApiError("");
       setIsOpeningResume(true);
 
       const resumeBlob = await viewCandidateResume();
@@ -430,49 +603,40 @@ const CandidateResumePage = () => {
     } catch (error) {
       const normalizedError = getApiError(error);
 
-      setApiError(normalizedError.message);
+      notify.error("Could not open resume", {
+        description: normalizedError.message,
+      });
     } finally {
       setIsOpeningResume(false);
     }
   };
 
   if (pageStatus === "loading") {
-    return (
-      <Card>
-        <CardBody>
-          <p className="text-sm text-slate-600">Loading resume details...</p>
-        </CardBody>
-      </Card>
-    );
+    return <CandidateResumePageSkeleton />;
   }
 
   if (pageStatus === "missing-profile") {
-    return (
-      <EmptyState
-        icon="👤"
-        title="Create your candidate profile first"
-        description="You need to create your candidate profile before uploading a resume."
-        action={
-          <Button as={Link} to="/candidate/profile">
-            Create profile
-          </Button>
-        }
-      />
-    );
+    return <MissingProfileState />;
   }
 
   if (pageStatus === "error") {
     return (
-      <EmptyState
-        icon="⚠️"
-        title="Could not load resume page"
-        description={apiError}
-        action={
-          <Button as={Link} to="/candidate/dashboard">
+      <div className="mx-auto max-w-2xl">
+        <SectionError
+          title="Could not load resume details"
+          message={pageErrorMessage}
+          onRetry={handleRetryLoad}
+        />
+
+        <div className="mt-4 flex justify-center">
+          <Link
+            to="/candidate/dashboard"
+            className={SECONDARY_BUTTON_CLASS_NAME}
+          >
             Back to dashboard
-          </Button>
-        }
-      />
+          </Link>
+        </div>
+      </div>
     );
   }
 
@@ -480,78 +644,64 @@ const CandidateResumePage = () => {
 
   const readinessItems = getReadinessItems(profile, hasResume);
 
-  const completedReadinessItems = readinessItems.filter(
+  const completedItems = readinessItems.filter(
     (item) => item.isComplete,
   ).length;
 
   const readinessPercentage = Math.round(
-    (completedReadinessItems / readinessItems.length) * 100,
+    (completedItems / readinessItems.length) * 100,
   );
 
   return (
-    <div className="grid gap-6">
-      <PageHero
-        eyebrow="Candidate resume"
-        title="Manage your resume"
-        description="Upload a PDF resume and keep it ready for job applications."
-        meta={
-          <Pill variant={hasResume ? "emerald" : "amber"}>
-            {hasResume ? "Uploaded" : "Not uploaded"}
-          </Pill>
-        }
+    <div className="grid gap-5">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+          Manage your resume
+        </h1>
+
+        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">
+          Keep your submitted PDF ready for job applications and resume
+          insights.
+        </p>
+      </header>
+
+      <ResumeStatusCard
+        hasResume={hasResume}
+        isOpeningResume={isOpeningResume}
+        onViewResume={handleViewResume}
       />
 
-      {apiError && <Alert variant="error">{apiError}</Alert>}
-
-      {successMessage && <Alert variant="success">{successMessage}</Alert>}
-
+      {/*
+       * The existing AI component remains
+       * unchanged in Batch 1. It will be
+       * redesigned in Pilot Batch 2.
+       */}
       <CandidateResumeInsightsCard
         hasResume={hasResume}
         resumeUrl={profile?.resumeUrl}
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
-          <CardHeader>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
-              Resume file
-            </p>
+      <div
+        className={[
+          "grid min-w-0 gap-5",
+          "lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]",
+          "lg:items-start",
+        ].join(" ")}
+      >
+        <UploadResumeCard
+          hasResume={hasResume}
+          selectedFile={selectedFile}
+          fileError={fileError}
+          fileInputRef={fileInputRef}
+          isUploading={isUploading}
+          onFileChange={handleFileChange}
+          onSubmit={handleSubmit}
+        />
 
-            <h2 className="mt-2 text-xl font-black text-slate-950">
-              Current resume status
-            </h2>
-
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              HireFlow currently accepts PDF resumes up to 5 MB.
-            </p>
-          </CardHeader>
-
-          <CardBody className="grid gap-5">
-            <ResumeStatusPanel
-              hasResume={hasResume}
-              onViewResume={handleViewResume}
-              isOpeningResume={isOpeningResume}
-            />
-
-            <UploadResumeForm
-              hasResume={hasResume}
-              selectedFile={selectedFile}
-              fileInputRef={fileInputRef}
-              onFileChange={handleFileChange}
-              onSubmit={handleSubmit}
-              isUploading={isUploading}
-            />
-          </CardBody>
-        </Card>
-
-        <aside className="grid gap-6">
-          <ReadinessCard
-            readinessItems={readinessItems}
-            readinessPercentage={readinessPercentage}
-          />
-
-          <ResumeTipsCard />
-        </aside>
+        <ReadinessCard
+          readinessItems={readinessItems}
+          readinessPercentage={readinessPercentage}
+        />
       </div>
     </div>
   );
