@@ -1,58 +1,49 @@
+import cn from "../../utils/cn";
+
 import { Card } from "../ui/Card";
 
-const AiCard = ({ as = "section", className = "", children }) => {
+const AiCard = ({
+  as: Component = "section",
+  className = "",
+  children,
+  ...props
+}) => {
   return (
     <Card
-      as={as}
-      className={[
-        "relative overflow-hidden",
-        "border-violet-300",
-        "shadow-lg shadow-violet-200/50",
-        "ring-1 ring-violet-100",
+      as={Component}
+      className={cn(
+        ["relative", "overflow-hidden", "border-violet-200", "bg-white"].join(
+          " ",
+        ),
         className,
-      ].join(" ")}
+      )}
+      {...props}
     >
-      {/* Full-card AI gradient */}
       <div
         aria-hidden="true"
         className={[
-          "pointer-events-none absolute inset-0",
-          "bg-linear-to-br",
-          "from-violet-200 via-indigo-100 to-blue-200",
+          "pointer-events-none",
+          "absolute inset-x-0 top-0",
+          "bg-linear-to-r",
+          "from-violet-500",
+          "via-indigo-500",
+          "to-blue-500",
         ].join(" ")}
       />
 
-      {/* Violet decorative glow */}
       <div
         aria-hidden="true"
         className={[
-          "pointer-events-none absolute -left-24 -top-23",
-          "h-72 w-72 rounded-full",
-          "bg-violet-400/25 blur-3xl",
+          "pointer-events-none",
+          "absolute right-0 top-0",
+          "h-32 w-32",
+          "rounded-full",
+          "bg-violet-100/60",
+          "blur-3xl",
         ].join(" ")}
       />
 
-      {/* Blue decorative glow */}
-      <div
-        aria-hidden="true"
-        className={[
-          "pointer-events-none absolute -right-24 -bottom-24",
-          "h-72 w-72 rounded-full",
-          "bg-blue-400/25 blur-3xl",
-        ].join(" ")}
-      />
-
-      {/* Soft center highlight */}
-      <div
-        aria-hidden="true"
-        className={[
-          "pointer-events-none absolute left-1/3 top-1/3",
-          "h-64 w-64 rounded-full",
-          "bg-white/30 blur-3xl",
-        ].join(" ")}
-      />
-
-      <div className="relative z-10">{children}</div>
+      <div className="relative z-10 min-w-0">{children}</div>
     </Card>
   );
 };

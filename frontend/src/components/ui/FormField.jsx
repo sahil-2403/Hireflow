@@ -35,7 +35,7 @@ const FormField = ({
       {children}
 
       {hint && !error && (
-        <p id={hintId} className="mt-1.5 text-xs leading-[18px] text-slate-500">
+        <p id={hintId} className="mt-1.5 text-xs leading-4.5 text-slate-500">
           {hint}
         </p>
       )}
@@ -44,7 +44,7 @@ const FormField = ({
         <p
           id={errorId}
           role="alert"
-          className="mt-1.5 text-xs font-medium leading-[18px] text-red-600"
+          className="mt-1.5 text-xs font-medium leading-4.5 text-red-600"
         >
           {error}
         </p>

@@ -15,7 +15,7 @@ const formatResetTime = (value) => {
   });
 };
 
-const AiUsageStatus = ({ usage }) => {
+const AiUsageStatus = ({ usage, className = "" }) => {
   if (!usage) {
     return null;
   }
@@ -23,12 +23,28 @@ const AiUsageStatus = ({ usage }) => {
   const resetTime = formatResetTime(usage.resetAt);
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-      <span className="font-bold text-violet-700">
+    <div
+      className={[
+        "flex min-w-0",
+        "flex-wrap items-center",
+        "gap-x-2 gap-y-1",
+        "text-xs leading-5",
+        className,
+      ].join(" ")}
+    >
+      <span className="font-medium text-violet-700">
         {usage.remaining} of {usage.limit} AI uses remaining today
       </span>
 
-      {resetTime && <span className="text-slate-500">Resets {resetTime}</span>}
+      {resetTime && (
+        <>
+          <span aria-hidden="true" className="text-slate-300">
+            ·
+          </span>
+
+          <span className="text-slate-500">Resets {resetTime}</span>
+        </>
+      )}
     </div>
   );
 };

@@ -343,50 +343,12 @@ const CandidateJobResumeFitCard = ({
     !blockReason &&
     !isGenerating;
 
-  const statusLabel = (() => {
-    if (isChecking) {
-      return "Checking";
-    }
-
-    if (fit) {
-      return "Ready";
-    }
-
-    if (missingProfile) {
-      return "Profile required";
-    }
-
-    if (missingResume || missingResumeInsights) {
-      return "Insights required";
-    }
-
-    if (dailyLimitReached) {
-      return "Limit reached";
-    }
-
-    if (hasGenericAvailabilityError) {
-      return "Unavailable";
-    }
-
-    return "On demand";
-  })();
-
   return (
     <AiCard>
       <div className="border-b border-violet-200/80 bg-white/10 p-5">
         <div className="grid gap-3">
           <div className="flex items-start justify-between gap-3">
             <AiBadge>AI Resume Fit</AiBadge>
-
-            <div className="rounded-xl border border-white/80 bg-white/70 px-3 py-2 text-right shadow-sm">
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-500">
-                Status
-              </p>
-
-              <p className="mt-1 text-xs font-black text-violet-700">
-                {statusLabel}
-              </p>
-            </div>
           </div>
 
           <div>
