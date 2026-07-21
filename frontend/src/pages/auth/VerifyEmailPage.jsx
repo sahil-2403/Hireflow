@@ -1,26 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { Link2Off, LoaderCircle } from "lucide-react";
 
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { verifyEmail } from "../../api/auth.api";
 
-import getApiError from "../../utils/getApiError";
+import AuthPageShell from "../../components/auth/AuthPageShell";
+import AuthResultState from "../../components/auth/AuthResultState";
+import AuthSupportVisualPanel from "../../components/auth/AuthSupportVisualPanel";
 
 import Button from "../../components/ui/Button";
-import { Card, CardBody } from "../../components/ui/Card";
-import Alert from "../../components/ui/Alert";
 
-const getAlertVariant = (status) => {
-  if (status === "success") {
-    return "success";
-  }
-
-  if (status === "error") {
-    return "error";
-  }
-
-  return "warning";
-};
+import getApiError from "../../utils/getApiError";
 
 const VerifyEmailPage = () => {
   const { token } = useParams();
@@ -29,82 +21,111 @@ const VerifyEmailPage = () => {
 
   const [status, setStatus] = useState("verifying");
 
-  const [message, setMessage] = useState("Verifying your email address...");
+  const [message, setMessage] = useState(
+    "Please wait while we verify your email address.",
+  );
+
+  /*
+   * Reuse the same verification request in
+   * React StrictMode so the token is not
+   * submitted to the API twice.
+   */
+  const requestStateRef = useRef({
+    token: null,
+    promise: null,
+    handled: false,
+  });
 
   useEffect(() => {
-    const verifyUserEmail = async () => {
-      if (!token) {
-        setStatus("error");
-        setMessage("Verification token is missing.");
-        return;
-      }
+    if (!token) {
+      setStatus("error");
 
-      try {
-        const result = await verifyEmail(token);
+      setMessage(
+        "The verification token is missing. Request a new verification email to continue.",
+      );
+
+      return;
+    }
+
+    if (requestStateRef.current.token !== token) {
+      requestStateRef.current = {
+        token,
+
+        promise: verifyEmail(token),
+
+        handled: false,
+      };
+    }
+
+    const request = requestStateRef.current.promise;
+
+    request
+      .then((result) => {
+        if (requestStateRef.current.handled) {
+          return;
+        }
+
+        requestStateRef.current.handled = true;
 
         navigate("/login", {
           replace: true,
+
           state: {
             message:
               result.message ||
-              "Email verified successfully. You can now log in.",
+              "Email verified successfully. You can now sign in.",
           },
         });
-      } catch (error) {
+      })
+      .catch((error) => {
+        if (requestStateRef.current.handled) {
+          return;
+        }
+
+        requestStateRef.current.handled = true;
+
         const normalizedError = getApiError(error);
 
         setStatus("error");
-        setMessage(normalizedError.message);
-      }
-    };
 
-    verifyUserEmail();
+        setMessage(normalizedError.message);
+      });
   }, [token, navigate]);
 
   return (
-    <main className="min-h-[calc(100vh-4rem)] bg-linear-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
-      <section className="mx-auto flex max-w-6xl items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardBody className="p-6 text-center sm:p-8">
-            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-blue-50 text-3xl">
-              {status === "error" ? "⚠️" : "✉️"}
-            </div>
+    <AuthPageShell
+      variant="verification"
+      scene={<AuthSupportVisualPanel variant="verification" />}
+      formClassName="max-w-md"
+    >
+      {status === "verifying" ? (
+        <AuthResultState
+          icon={LoaderCircle}
+          tone="info"
+          isLoading
+          title="Verifying your email"
+          description={message}
+        />
+      ) : (
+        <AuthResultState
+          icon={Link2Off}
+          tone="error"
+          title="Could not verify email"
+          description={message}
+          actions={
+            <>
+              <Button as={Link} to="/resend-verification" fullWidth>
+                Request a new link
+              </Button>
 
-            <p className="mt-6 text-sm font-semibold uppercase tracking-wider text-blue-600">
-              Email verification
-            </p>
-
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-              Verifying your email
-            </h1>
-
-            <Alert variant={getAlertVariant(status)} className="mt-6">
-              {message}
-            </Alert>
-
-            <div className="mt-6 grid gap-3">
-              {status === "success" && (
-                <Button as={Link} to="/login" fullWidth>
-                  Continue to login
-                </Button>
-              )}
-
-              {status === "error" && (
-                <>
-                  <Button as={Link} to="/resend-verification" fullWidth>
-                    Request a new verification link
-                  </Button>
-
-                  <Button as={Link} to="/login" variant="secondary" fullWidth>
-                    Return to login
-                  </Button>
-                </>
-              )}
-            </div>
-          </CardBody>
-        </Card>
-      </section>
-    </main>
+              <Button as={Link} to="/login" variant="secondary" fullWidth>
+                Return to sign in
+              </Button>
+            </>
+          }
+        />
+      )}
+    </AuthPageShell>
   );
 };
 

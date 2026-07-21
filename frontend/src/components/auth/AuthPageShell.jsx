@@ -39,6 +39,32 @@ const THEME_CLASS_NAMES = {
 
     glowTwo: "bg-blue-200/35",
   },
+
+  recovery: {
+    background: [
+      "bg-linear-to-br",
+      "from-slate-50",
+      "via-blue-50/85",
+      "to-amber-50/70",
+    ].join(" "),
+
+    glowOne: "bg-blue-300/30",
+
+    glowTwo: "bg-amber-200/30",
+  },
+
+  verification: {
+    background: [
+      "bg-linear-to-br",
+      "from-emerald-50/80",
+      "via-white",
+      "to-blue-50/90",
+    ].join(" "),
+
+    glowOne: "bg-emerald-200/35",
+
+    glowTwo: "bg-blue-200/35",
+  },
 };
 
 const AuthPageShell = ({

@@ -47,8 +47,14 @@ const App = () => {
         <Route path="/jobs" element={<JobsPage />} />
 
         <Route path="/jobs/:jobId" element={<JobDetailsPage />} />
+      </Route>
 
+      <Route element={<AuthLayout />}>
         <Route element={<GuestRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+
+          <Route path="/register" element={<RegisterPage />} />
+
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
           <Route
@@ -60,14 +66,6 @@ const App = () => {
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
         <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
-      </Route>
-
-      <Route element={<AuthLayout />}>
-        <Route element={<GuestRoute />}>
-          <Route path="/login" element={<LoginPage />} />
-
-          <Route path="/register" element={<RegisterPage />} />
-        </Route>
       </Route>
 
       <Route element={<ProtectedRoute />}>

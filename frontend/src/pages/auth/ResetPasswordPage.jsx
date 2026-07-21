@@ -1,24 +1,31 @@
 import { useState } from "react";
 
+import { KeyRound, Link2Off, LoaderCircle } from "lucide-react";
+
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useForm } from "react-hook-form";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { resetPassword } from "../../api/auth.api";
+
+import AuthPageShell from "../../components/auth/AuthPageShell";
+import AuthResultState from "../../components/auth/AuthResultState";
+import AuthSupportVisualPanel from "../../components/auth/AuthSupportVisualPanel";
+
+import PasswordField from "../../components/common/PasswordField";
+
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
 
 import { resetPasswordSchema } from "../../features/auth/auth.schemas";
 
 import getApiError from "../../utils/getApiError";
 
-import PasswordField from "../../components/common/PasswordField";
-
-import Button from "../../components/ui/Button";
-import { Card, CardBody } from "../../components/ui/Card";
-import Alert from "../../components/ui/Alert";
-
 const ResetPasswordPage = () => {
   const { token } = useParams();
+
   const navigate = useNavigate();
 
   const [apiError, setApiError] = useState("");
@@ -26,6 +33,7 @@ const ResetPasswordPage = () => {
   const {
     register,
     handleSubmit,
+
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(resetPasswordSchema),
@@ -41,6 +49,7 @@ const ResetPasswordPage = () => {
 
     const passwordData = {
       password: formData.password,
+
       confirmPassword: formData.confirmPassword,
     };
 
@@ -49,6 +58,7 @@ const ResetPasswordPage = () => {
 
       navigate("/login", {
         replace: true,
+
         state: {
           message: result.message,
         },
@@ -61,115 +71,98 @@ const ResetPasswordPage = () => {
   };
 
   return (
-    <main className="min-h-[calc(100vh-4rem)] bg-linear-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
-      <section className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_460px] lg:items-center">
-        <div className="hidden lg:block">
-          <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-            Password recovery
-          </p>
-
-          <h1 className="mt-3 max-w-2xl text-5xl font-black tracking-tight text-slate-950">
-            Create a new secure password.
-          </h1>
-
-          <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
-            Choose a strong password so your HireFlow account remains protected.
-          </p>
-
-          <div className="mt-8 grid max-w-xl gap-4">
-            <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
-              <p className="text-sm font-bold text-slate-950">
-                Use at least 8 characters
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
-              <p className="text-sm font-bold text-slate-950">
-                Add uppercase, lowercase, and number
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
-              <p className="text-sm font-bold text-slate-950">
-                Avoid using old passwords
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <Card className="w-full">
-          <CardBody className="p-6 sm:p-8">
-            <div className="mb-8">
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Password recovery
-              </p>
-
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-                Create a new password
-              </h1>
-
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Choose a strong password for your account.
-              </p>
-            </div>
-
-            {apiError && (
-              <Alert variant="error" className="mb-6">
-                {apiError}
-              </Alert>
-            )}
-
-            {!token && (
-              <Alert variant="error" className="mb-6">
-                Password reset token is missing.
-              </Alert>
-            )}
-
-            <form
-              className="space-y-5"
-              onSubmit={handleSubmit(onSubmit)}
-              noValidate
-            >
-              <PasswordField
-                id="password"
-                label="New password"
-                placeholder="Enter a new password"
-                autoComplete="new-password"
-                registration={register("password")}
-                error={errors.password?.message}
-              />
-
-              <PasswordField
-                id="confirmPassword"
-                label="Confirm new password"
-                placeholder="Enter the password again"
-                autoComplete="new-password"
-                registration={register("confirmPassword")}
-                error={errors.confirmPassword?.message}
-              />
-
-              <Button
-                type="submit"
-                disabled={isSubmitting || !token}
-                fullWidth
-                size="lg"
-              >
-                {isSubmitting ? "Resetting password..." : "Reset password"}
+    <AuthPageShell
+      variant="recovery"
+      scene={<AuthSupportVisualPanel variant="recovery" />}
+      formClassName="max-w-md"
+    >
+      {!token ? (
+        <AuthResultState
+          icon={Link2Off}
+          tone="error"
+          title="Reset link is invalid"
+          description="The password-reset token is missing. Request a new reset link to continue."
+          actions={
+            <>
+              <Button as={Link} to="/forgot-password" fullWidth>
+                Request a new link
               </Button>
-            </form>
 
-            <p className="mt-6 text-center text-sm text-slate-600">
-              <Link
-                to="/login"
-                className="font-bold text-blue-600 hover:text-blue-700"
-              >
-                Return to login
-              </Link>
+              <Button as={Link} to="/login" variant="secondary" fullWidth>
+                Return to sign in
+              </Button>
+            </>
+          }
+        />
+      ) : (
+        <>
+          <header>
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-700">
+              <KeyRound className="h-5 w-5" aria-hidden="true" />
+            </div>
+
+            <h2 className="mt-4 text-2xl font-semibold leading-8 tracking-tight text-slate-950">
+              Create a new password
+            </h2>
+
+            <p className="mt-1.5 text-sm leading-6 text-slate-600">
+              Choose a strong new password for your HireFlow account.
             </p>
-          </CardBody>
-        </Card>
-      </section>
-    </main>
+          </header>
+
+          {apiError && (
+            <Alert variant="error" className="mt-5">
+              {apiError}
+            </Alert>
+          )}
+
+          <form
+            className="mt-6 grid gap-4"
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+          >
+            <PasswordField
+              id="password"
+              label="New password"
+              hint="At least 8 characters with uppercase, lowercase, and a number."
+              placeholder="Enter a new password"
+              autoComplete="new-password"
+              registration={register("password")}
+              error={errors.password?.message}
+            />
+
+            <PasswordField
+              id="confirmPassword"
+              label="Confirm new password"
+              placeholder="Repeat the new password"
+              autoComplete="new-password"
+              registration={register("confirmPassword")}
+              error={errors.confirmPassword?.message}
+            />
+
+            <Button type="submit" disabled={isSubmitting} fullWidth size="lg">
+              {isSubmitting && (
+                <LoaderCircle
+                  className="h-4 w-4 animate-spin"
+                  aria-hidden="true"
+                />
+              )}
+
+              {isSubmitting ? "Resetting password..." : "Reset password"}
+            </Button>
+          </form>
+
+          <p className="mt-6 border-t border-slate-100 pt-5 text-center text-sm leading-6 text-slate-600">
+            <Link
+              to="/login"
+              className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+            >
+              Return to sign in
+            </Link>
+          </p>
+        </>
+      )}
+    </AuthPageShell>
   );
 };
 
