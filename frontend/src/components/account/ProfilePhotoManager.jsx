@@ -1,5 +1,7 @@
 import { useId, useRef, useState } from "react";
 
+import { Camera, LoaderCircle, Trash2, Upload } from "lucide-react";
+
 import { deleteProfilePhoto, uploadProfilePhoto } from "../../api/auth.api";
 
 import getApiError from "../../utils/getApiError";
@@ -37,6 +39,8 @@ const ProfilePhotoManager = ({
   eyebrow = "Profile photo",
   title = "Your photo",
   description = "Upload a clear photo so people can recognize your profile.",
+  compact = false,
+  embedded = false,
 }) => {
   const inputId = useId();
 
@@ -134,6 +138,183 @@ const ProfilePhotoManager = ({
       setIsDeletingPhoto(false);
     }
   };
+
+  if (compact) {
+    const compactContent = (
+      <>
+        {embedded ? (
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
+              <Camera className="h-4 w-4" aria-hidden="true" />
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-xs font-medium leading-5 text-blue-600">
+                {eyebrow}
+              </p>
+
+              <h2 className="text-base font-semibold leading-6 text-slate-950">
+                {title}
+              </h2>
+
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                {description}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex min-w-0 items-start gap-3">
+            <ProfileAvatar user={user} name={name} size="lg" />
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <Camera
+                  className="h-4 w-4 shrink-0 text-blue-600"
+                  aria-hidden="true"
+                />
+
+                <p className="text-xs font-medium leading-5 text-blue-600">
+                  {eyebrow}
+                </p>
+              </div>
+
+              <h2 className="mt-0.5 text-base font-semibold leading-6 text-slate-950">
+                {title}
+              </h2>
+
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                {description}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4">
+          <label
+            htmlFor={inputId}
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Choose photo
+          </label>
+
+          <input
+            id={inputId}
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handlePhotoChange}
+            className={[
+              "block w-full",
+              "rounded-xl border",
+              "border-slate-200",
+              "bg-white px-3 py-2",
+              "text-sm text-slate-700",
+
+              "file:mr-3",
+              "file:rounded-lg",
+              "file:border-0",
+              "file:bg-blue-50",
+              "file:px-3 file:py-2",
+              "file:text-sm",
+              "file:font-medium",
+              "file:text-blue-700",
+
+              "hover:file:bg-blue-100",
+            ].join(" ")}
+          />
+
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            JPG, PNG or WebP. Maximum 2 MB.
+          </p>
+
+          {selectedPhoto && (
+            <p className="mt-2 wrap-break-word text-xs leading-5 text-slate-600">
+              Selected:{" "}
+              <span className="font-medium text-slate-900">
+                {selectedPhoto.name}
+              </span>
+            </p>
+          )}
+        </div>
+
+        {photoError && (
+          <Alert variant="error" className="mt-4">
+            {photoError}
+          </Alert>
+        )}
+
+        {photoSuccess && (
+          <Alert variant="success" className="mt-4">
+            {photoSuccess}
+          </Alert>
+        )}
+
+        <div className="mt-4 grid gap-2 min-[420px]:grid-cols-2 xl:grid-cols-1">
+          <Button
+            type="button"
+            size="sm"
+            disabled={isUploadingPhoto || !selectedPhoto}
+            onClick={handleUploadPhoto}
+            fullWidth
+          >
+            {isUploadingPhoto ? (
+              <>
+                <LoaderCircle
+                  className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" aria-hidden="true" />
+
+                {user?.profilePhotoUrl ? "Change photo" : "Upload photo"}
+              </>
+            )}
+          </Button>
+
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            disabled={isDeletingPhoto || !user?.profilePhotoUrl}
+            onClick={handleDeletePhoto}
+            fullWidth
+          >
+            {isDeletingPhoto ? (
+              <>
+                <LoaderCircle
+                  className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+                Removing...
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                Remove photo
+              </>
+            )}
+          </Button>
+        </div>
+      </>
+    );
+
+    if (embedded) {
+      return (
+        <section className="mt-5 border-t border-slate-100 pt-5">
+          {compactContent}
+        </section>
+      );
+    }
+
+    return (
+      <Card>
+        <CardBody className="p-4">{compactContent}</CardBody>
+      </Card>
+    );
+  }
 
   return (
     <Card>

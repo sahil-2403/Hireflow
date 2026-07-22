@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { ArrowLeft, LoaderCircle, Save } from "lucide-react";
+
 import { Link, useNavigate } from "react-router-dom";
 
 import { useForm, useWatch } from "react-hook-form";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
@@ -11,37 +14,24 @@ import {
   updateCandidateProfile,
 } from "../../api/candidate.api";
 
+import CandidateProfileForm from "../../components/candidate/CandidateProfileForm";
+import CandidateProfileSidebar from "../../components/candidate/CandidateProfileSidebar";
+
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
+
+import { Card, CardBody } from "../../components/ui/Card";
+
+import PageHero from "../../components/ui/PageHero";
+import SectionError from "../../components/ui/SectionError";
+import Skeleton from "../../components/ui/Skeleton";
+
 import { candidateProfileSchema } from "../../features/candidates/candidate.schemas";
-
-import {
-  EMPLOYMENT_TYPES,
-  EXPERIENCE_LEVELS,
-  WORKPLACE_TYPES,
-} from "../../features/candidates/candidate.constants";
-
-import getApiError from "../../utils/getApiError";
 
 import useAuth from "../../hooks/useAuth";
 
-import Button from "../../components/ui/Button";
-import {
-  Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
-} from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import FormField from "../../components/ui/FormField";
-import PageHero from "../../components/ui/PageHero";
-import Alert from "../../components/ui/Alert";
-import Pill from "../../components/ui/Pill";
-import SelectInput from "../../components/ui/SelectInput";
-import TextInput from "../../components/ui/TextInput";
-import TextareaInput from "../../components/ui/TextareaInput";
-
-import ProfileAvatar from "../../components/common/ProfileAvatar";
-
-import ProfilePhotoManager from "../../components/account/ProfilePhotoManager";
+import getApiError from "../../utils/getApiError";
+import notify from "../../utils/notify";
 
 const convertCommaSeparatedTextToArray = (value) => {
   if (!value) {
@@ -57,55 +47,79 @@ const convertCommaSeparatedTextToArray = (value) => {
 const getDefaultValues = (profile = null) => {
   return {
     firstName: profile?.firstName ?? "",
+
     lastName: profile?.lastName ?? "",
+
     phone: profile?.phone ?? "",
+
     headline: profile?.headline ?? "",
+
     summary: profile?.summary ?? "",
+
     skillsText: Array.isArray(profile?.skills) ? profile.skills.join(", ") : "",
+
     experienceLevel: profile?.experienceLevel ?? "",
+
     location: profile?.location ?? "",
+
     targetJobTitlesText: Array.isArray(profile?.targetJobTitles)
       ? profile.targetJobTitles.join(", ")
       : "",
+
     preferredLocationsText: Array.isArray(profile?.preferredLocations)
       ? profile.preferredLocations.join(", ")
       : "",
+
     preferredWorkplaceTypes: Array.isArray(profile?.preferredWorkplaceTypes)
       ? profile.preferredWorkplaceTypes
       : [],
+
     preferredEmploymentTypes: Array.isArray(profile?.preferredEmploymentTypes)
       ? profile.preferredEmploymentTypes
       : [],
+
     linkedinUrl: profile?.linkedinUrl ?? "",
+
     githubUrl: profile?.githubUrl ?? "",
+
     portfolioUrl: profile?.portfolioUrl ?? "",
   };
 };
 
 const convertFormDataToPayload = (formData) => {
-  const skills = convertCommaSeparatedTextToArray(formData.skillsText);
-  const targetJobTitles = convertCommaSeparatedTextToArray(
-    formData.targetJobTitlesText,
-  );
-  const preferredLocations = convertCommaSeparatedTextToArray(
-    formData.preferredLocationsText,
-  );
-
   return {
     firstName: formData.firstName,
+
     lastName: formData.lastName,
+
     phone: formData.phone || null,
+
     headline: formData.headline || null,
+
     summary: formData.summary || null,
-    skills,
+
+    skills: convertCommaSeparatedTextToArray(formData.skillsText),
+
     experienceLevel: formData.experienceLevel,
+
     location: formData.location,
-    targetJobTitles,
-    preferredLocations,
+
+    targetJobTitles: convertCommaSeparatedTextToArray(
+      formData.targetJobTitlesText,
+    ),
+
+    preferredLocations: convertCommaSeparatedTextToArray(
+      formData.preferredLocationsText,
+    ),
+
     preferredWorkplaceTypes: formData.preferredWorkplaceTypes ?? [],
+
     preferredEmploymentTypes: formData.preferredEmploymentTypes ?? [],
+
     linkedinUrl: formData.linkedinUrl || null,
+
     githubUrl: formData.githubUrl || null,
+
     portfolioUrl: formData.portfolioUrl || null,
   };
 };
@@ -113,275 +127,122 @@ const convertFormDataToPayload = (formData) => {
 const getRecommendationAccuracy = (values) => {
   const completedPreferences = [
     Boolean(values.targetJobTitlesText?.trim()),
+
     Boolean(values.preferredLocationsText?.trim()),
+
     values.preferredWorkplaceTypes?.length > 0,
+
     values.preferredEmploymentTypes?.length > 0,
   ].filter(Boolean).length;
 
   if (completedPreferences >= 3) {
     return {
       label: "Strong",
-      description:
-        "Your preferences are detailed enough for more accurate job matches.",
+
+      description: "Your preferences provide detailed inputs for job matching.",
     };
   }
 
   if (completedPreferences >= 1) {
     return {
       label: "Good",
-      description:
-        "Add more preferences to improve your future job recommendations.",
+
+      description: "Add more preferences to strengthen future recommendations.",
     };
   }
 
   return {
     label: "Basic",
-    description:
-      "Add job preferences to help HireFlow recommend better matching jobs.",
+
+    description: "Add target roles and preferences to improve job matching.",
   };
 };
 
 const getProfileCompletion = (values) => {
   const checks = [
     Boolean(values.firstName?.trim()),
+
     Boolean(values.lastName?.trim()),
+
     Boolean(values.experienceLevel),
+
     Boolean(values.location?.trim()),
+
     Boolean(values.headline?.trim()),
+
     Boolean(values.skillsText?.trim()),
   ];
 
   const completed = checks.filter(Boolean).length;
+
   const total = checks.length;
 
   return {
     completed,
     total,
+
     percentage: Math.round((completed / total) * 100),
   };
 };
 
-const getSkillTags = (skillsText) => {
-  if (!skillsText) {
-    return [];
-  }
-
-  return skillsText
-    .split(",")
-    .map((skill) => skill.trim())
-    .filter(Boolean)
-    .slice(0, 10);
-};
-
-const CheckboxGroup = ({ options, register, name }) => {
+const CandidateProfilePageSkeleton = () => {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {options.map((option) => (
-        <label
-          key={option.value}
-          className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
-        >
-          <input
-            type="checkbox"
-            value={option.value}
-            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-            {...register(name)}
-          />
+    <div aria-busy="true" aria-live="polite" className="grid gap-6">
+      <span className="sr-only">Loading candidate profile</span>
 
-          <span>{option.label}</span>
-        </label>
-      ))}
-    </div>
-  );
-};
+      <Skeleton className="h-32 w-full rounded-3xl" />
 
-const ProfilePreviewCard = ({
-  values,
-  completion,
-  recommendationAccuracy,
-  user,
-  updateUser,
-}) => {
-  const fullName =
-    [values.firstName, values.lastName].filter(Boolean).join(" ") ||
-    "Your name";
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <Card>
+          <CardBody className="p-5 sm:p-6">
+            <Skeleton className="h-6 w-44" />
 
-  const skills = getSkillTags(values.skillsText);
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <Skeleton className="h-16 w-full rounded-xl" />
+              <Skeleton className="h-16 w-full rounded-xl" />
+              <Skeleton className="h-16 w-full rounded-xl" />
+              <Skeleton className="h-16 w-full rounded-xl" />
+            </div>
 
-  return (
-    <aside className="grid gap-6">
-      <Card>
-        <CardBody>
-          <div className="flex items-start justify-between gap-4">
-            <ProfileAvatar user={user} name={fullName} size="lg" />
+            <div className="mt-8 border-t border-slate-100 pt-6">
+              <Skeleton className="h-6 w-48" />
 
-            <div
-              className="grid h-20 w-20 place-items-center rounded-full text-sm font-black text-blue-700"
-              style={{
-                background: `conic-gradient(#2563eb ${
-                  completion.percentage * 3.6
-                }deg, #e2e8f0 0deg)`,
-              }}
-            >
-              <div className="grid h-14 w-14 place-items-center rounded-full bg-white">
-                {completion.percentage}%
+              <div className="mt-5 grid gap-4">
+                <Skeleton className="h-16 w-full rounded-xl" />
+                <Skeleton className="h-16 w-full rounded-xl" />
+                <Skeleton className="h-28 w-full rounded-xl" />
               </div>
             </div>
-          </div>
+          </CardBody>
+        </Card>
 
-          <p className="mt-5 text-sm font-semibold uppercase tracking-wider text-blue-600">
-            Profile preview
-          </p>
+        <div className="grid gap-5">
+          <Card>
+            <CardBody className="p-5">
+              <div className="flex gap-3">
+                <Skeleton className="h-14 w-14 rounded-full" />
 
-          <h2 className="mt-2 text-2xl font-black text-slate-950">
-            {fullName}
-          </h2>
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="mt-2 h-3 w-44 max-w-full" />
+                </div>
 
-          <p className="mt-1 text-sm font-medium text-slate-600">
-            {values.headline || "Add your professional headline"}
-          </p>
+                <Skeleton className="h-16 w-16 rounded-full" />
+              </div>
 
-          <p className="mt-3 text-sm text-slate-500">
-            {values.location || "Add your location"}
-          </p>
+              <Skeleton className="mt-6 h-2 w-full rounded-full" />
+            </CardBody>
+          </Card>
 
-          <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-blue-600"
-              style={{
-                width: `${completion.percentage}%`,
-              }}
-            />
-          </div>
-
-          <p className="mt-2 text-xs font-medium text-slate-500">
-            {completion.completed} of {completion.total} key sections completed
-          </p>
-        </CardBody>
-
-        <CardFooter>
-          <Button
-            as={Link}
-            to="/candidate/dashboard"
-            variant="secondary"
-            fullWidth
-          >
-            Back to dashboard
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <ProfilePhotoManager
-        user={user}
-        updateUser={updateUser}
-        name={fullName}
-        description="Upload a clear photo so recruiters can recognize your profile."
-      />
-
-      <Card>
-        <CardHeader>
-          <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
-            Matching
-          </p>
-
-          <h2 className="mt-2 text-xl font-black text-slate-950">
-            Recommendation accuracy
-          </h2>
-        </CardHeader>
-
-        <CardBody>
-          <div className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-100">
-            <p className="text-sm font-black text-emerald-700">
-              {recommendationAccuracy.label} accuracy
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-emerald-800">
-              {recommendationAccuracy.description}
-            </p>
-          </div>
-
-          <p className="mt-4 text-xs leading-5 text-slate-500">
-            Job preferences are optional, but completing them will help future
-            match scores and recommendations become more accurate.
-          </p>
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-            Skills
-          </p>
-
-          <h2 className="mt-2 text-xl font-black text-slate-950">
-            Recruiter keywords
-          </h2>
-        </CardHeader>
-
-        <CardBody>
-          {skills.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {skills.map((skill) => (
-                <Pill key={skill} variant="blue">
-                  {skill}
-                </Pill>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm leading-6 text-slate-600">
-              Add comma-separated skills like React, Node.js, MongoDB.
-            </p>
-          )}
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
-            Profile tips
-          </p>
-
-          <h2 className="mt-2 text-xl font-black text-slate-950">
-            Improve visibility
-          </h2>
-        </CardHeader>
-
-        <CardBody>
-          <div className="grid gap-3">
-            <div className="rounded-xl bg-slate-50 p-3">
-              <p className="text-sm font-bold text-slate-900">
-                Add a clear headline
-              </p>
-
-              <p className="mt-1 text-xs leading-5 text-slate-600">
-                Example: MERN Stack Developer with React and Node.js experience.
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-slate-50 p-3">
-              <p className="text-sm font-bold text-slate-900">
-                Keep skills searchable
-              </p>
-
-              <p className="mt-1 text-xs leading-5 text-slate-600">
-                Use simple keywords recruiters can filter by.
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-slate-50 p-3">
-              <p className="text-sm font-bold text-slate-900">
-                Add portfolio links
-              </p>
-
-              <p className="mt-1 text-xs leading-5 text-slate-600">
-                GitHub, LinkedIn, and portfolio links make your profile
-                stronger.
-              </p>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
-    </aside>
+          <Card>
+            <CardBody>
+              <Skeleton className="h-16 w-full rounded-xl" />
+              <Skeleton className="mt-4 h-10 w-full rounded-xl" />
+            </CardBody>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -396,31 +257,43 @@ const CandidateProfilePage = () => {
 
   const [apiError, setApiError] = useState("");
 
+  const [loadAttempt, setLoadAttempt] = useState(0);
+
   const {
     register,
     handleSubmit,
     reset,
     control,
+
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(candidateProfileSchema),
+
     defaultValues: getDefaultValues(),
   });
 
-  const watchedValues = useWatch({ control }) ?? getDefaultValues();
+  const watchedValues =
+    useWatch({
+      control,
+    }) || getDefaultValues();
 
-  const completion = useMemo(() => {
-    return getProfileCompletion(watchedValues);
-  }, [watchedValues]);
+  const completion = useMemo(
+    () => getProfileCompletion(watchedValues),
+    [watchedValues],
+  );
 
-  const recommendationAccuracy = useMemo(() => {
-    return getRecommendationAccuracy(watchedValues);
-  }, [watchedValues]);
+  const recommendationAccuracy = useMemo(
+    () => getRecommendationAccuracy(watchedValues),
+    [watchedValues],
+  );
 
   useEffect(() => {
     let shouldIgnore = false;
 
     const loadProfile = async () => {
+      setPageStatus("loading");
+      setApiError("");
+
       try {
         const result = await getMyCandidateProfile();
 
@@ -429,7 +302,9 @@ const CandidateProfilePage = () => {
         }
 
         setMode("edit");
+
         reset(getDefaultValues(result.data));
+
         setPageStatus("ready");
       } catch (error) {
         if (shouldIgnore) {
@@ -440,12 +315,16 @@ const CandidateProfilePage = () => {
 
         if (normalizedError.statusCode === 404) {
           setMode("create");
+
           reset(getDefaultValues());
+
           setPageStatus("ready");
+
           return;
         }
 
         setApiError(normalizedError.message);
+
         setPageStatus("error");
       }
     };
@@ -455,7 +334,7 @@ const CandidateProfilePage = () => {
     return () => {
       shouldIgnore = true;
     };
-  }, [reset]);
+  }, [reset, loadAttempt]);
 
   const onSubmit = async (formData) => {
     setApiError("");
@@ -469,7 +348,15 @@ const CandidateProfilePage = () => {
           : await createCandidateProfile(payload);
 
       setMode("edit");
+
       reset(getDefaultValues(result.data));
+
+      notify.success(
+        result.message ||
+          (mode === "edit"
+            ? "Candidate profile updated successfully."
+            : "Candidate profile created successfully."),
+      );
 
       navigate("/candidate/dashboard", {
         replace: true,
@@ -482,27 +369,28 @@ const CandidateProfilePage = () => {
   };
 
   if (pageStatus === "loading") {
-    return (
-      <Card>
-        <CardBody>
-          <p className="text-sm text-slate-600">Loading candidate profile...</p>
-        </CardBody>
-      </Card>
-    );
+    return <CandidateProfilePageSkeleton />;
   }
 
   if (pageStatus === "error") {
     return (
-      <EmptyState
-        icon="⚠️"
-        title="Could not load profile"
-        description={apiError}
-        action={
-          <Button as={Link} to="/candidate/dashboard">
-            Back to dashboard
-          </Button>
-        }
-      />
+      <div className="grid gap-5">
+        <Button
+          as={Link}
+          to="/candidate/dashboard"
+          variant="ghost"
+          className="w-fit"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to dashboard
+        </Button>
+
+        <SectionError
+          title="Could not load profile"
+          message={apiError}
+          onRetry={() => setLoadAttempt((currentAttempt) => currentAttempt + 1)}
+        />
+      </div>
     );
   }
 
@@ -511,285 +399,63 @@ const CandidateProfilePage = () => {
       <PageHero
         eyebrow="Candidate profile"
         title={mode === "edit" ? "Edit your profile" : "Create your profile"}
-        description="Complete your profile so recruiters can understand your skills, experience, location, and links."
+        description="Keep your personal information, professional experience, job preferences, and portfolio links current."
       />
 
-      <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
-        <ProfilePreviewCard
-          values={watchedValues}
-          completion={completion}
-          recommendationAccuracy={recommendationAccuracy}
-          user={user}
-          updateUser={updateUser}
-        />
+      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6" noValidate>
+        {apiError && <Alert variant="error">{apiError}</Alert>}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
-          {apiError && <Alert variant="error">{apiError}</Alert>}
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+          <CandidateProfileForm register={register} errors={errors} />
 
-          <Card>
-            <CardHeader>
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Basic information
-              </p>
+          <CandidateProfileSidebar
+            values={watchedValues}
+            completion={completion}
+            recommendationAccuracy={recommendationAccuracy}
+            user={user}
+            updateUser={updateUser}
+          />
+        </div>
 
-              <h2 className="mt-1 text-xl font-black text-slate-950">
-                Personal details
-              </h2>
+        <Card className="sticky bottom-3 z-20 border-slate-200 bg-white/90 shadow-lg shadow-slate-200/50 backdrop-blur">
+          <CardBody className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+            <p className="text-sm leading-6 text-slate-600">
+              {mode === "edit"
+                ? "Save your changes before leaving this page."
+                : "Create your profile to start applying and receiving job matches."}
+            </p>
 
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                These details help companies identify and contact you.
-              </p>
-            </CardHeader>
+            <div className="grid gap-2 min-[420px]:grid-cols-2 sm:flex">
+              <Button
+                as={Link}
+                to="/candidate/dashboard"
+                variant="secondary"
+                size="lg"
+              >
+                Cancel
+              </Button>
 
-            <CardBody>
-              <div className="grid gap-5 sm:grid-cols-2">
-                <TextInput
-                  id="firstName"
-                  type="text"
-                  label="First name"
-                  error={errors.firstName?.message}
-                  {...register("firstName")}
-                />
+              <Button type="submit" size="lg" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <LoaderCircle
+                      className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" aria-hidden="true" />
 
-                <TextInput
-                  id="lastName"
-                  type="text"
-                  label="Last name"
-                  error={errors.lastName?.message}
-                  {...register("lastName")}
-                />
-
-                <TextInput
-                  id="phone"
-                  type="text"
-                  label="Phone"
-                  placeholder="+91 98765 43210"
-                  hint="Optional. Example: +91 98765 43210"
-                  error={errors.phone?.message}
-                  {...register("phone")}
-                />
-
-                <TextInput
-                  id="location"
-                  type="text"
-                  label="Location"
-                  placeholder="Example: Pune, India"
-                  hint="Example: Pune, India"
-                  error={errors.location?.message}
-                  {...register("location")}
-                />
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Professional profile
-              </p>
-
-              <h2 className="mt-1 text-xl font-black text-slate-950">
-                Skills and experience
-              </h2>
-
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                This section is used to understand your job fit.
-              </p>
-            </CardHeader>
-
-            <CardBody>
-              <div className="grid gap-5">
-                <TextInput
-                  id="headline"
-                  type="text"
-                  label="Headline"
-                  placeholder="Example: MERN Stack Developer"
-                  hint="Example: MERN Stack Developer"
-                  error={errors.headline?.message}
-                  {...register("headline")}
-                />
-
-                <SelectInput
-                  id="experienceLevel"
-                  label="Experience level"
-                  placeholder="Select experience level"
-                  options={EXPERIENCE_LEVELS}
-                  error={errors.experienceLevel?.message}
-                  {...register("experienceLevel")}
-                />
-
-                <TextInput
-                  id="skillsText"
-                  type="text"
-                  label="Skills"
-                  placeholder="React, Node.js, MongoDB"
-                  hint="Separate skills with commas. Example: React, Node.js, MongoDB"
-                  error={errors.skillsText?.message}
-                  {...register("skillsText")}
-                />
-
-                <TextareaInput
-                  id="summary"
-                  label="Summary"
-                  rows={5}
-                  placeholder="Write a short summary about your background, skills, projects, and career goals."
-                  hint="Optional. Keep it short, practical, and recruiter-friendly."
-                  error={errors.summary?.message}
-                  {...register("summary")}
-                />
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Job preferences
-              </p>
-
-              <h2 className="mt-1 text-xl font-black text-slate-950">
-                Roles you are looking for
-              </h2>
-
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                These optional details will help HireFlow recommend better jobs
-                and calculate more accurate match scores.
-              </p>
-            </CardHeader>
-
-            <CardBody>
-              <div className="grid gap-5">
-                <TextInput
-                  id="targetJobTitlesText"
-                  type="text"
-                  label="Target job titles"
-                  placeholder="Frontend Developer, MERN Stack Developer, React Developer"
-                  hint="Optional. Separate titles with commas."
-                  error={errors.targetJobTitlesText?.message}
-                  {...register("targetJobTitlesText")}
-                />
-
-                <TextInput
-                  id="preferredLocationsText"
-                  type="text"
-                  label="Preferred locations"
-                  placeholder="Pune, Mumbai, Remote"
-                  hint="Optional. Add cities or Remote, separated by commas."
-                  error={errors.preferredLocationsText?.message}
-                  {...register("preferredLocationsText")}
-                />
-
-                <FormField
-                  label="Preferred workplace types"
-                  htmlFor="preferredWorkplaceTypes"
-                  error={errors.preferredWorkplaceTypes?.message}
-                  hint="Optional. Choose all that apply."
-                >
-                  <CheckboxGroup
-                    options={WORKPLACE_TYPES}
-                    register={register}
-                    name="preferredWorkplaceTypes"
-                  />
-                </FormField>
-
-                <FormField
-                  label="Preferred employment types"
-                  htmlFor="preferredEmploymentTypes"
-                  error={errors.preferredEmploymentTypes?.message}
-                  hint="Optional. Choose all that apply."
-                >
-                  <CheckboxGroup
-                    options={EMPLOYMENT_TYPES}
-                    register={register}
-                    name="preferredEmploymentTypes"
-                  />
-                </FormField>
-
-                <Alert variant="warning">
-                  Complete your job preferences to get more accurate future job
-                  recommendations and match scores.
-                </Alert>
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Social links
-              </p>
-
-              <h2 className="mt-1 text-xl font-black text-slate-950">
-                Portfolio and profiles
-              </h2>
-
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                Add links that help recruiters verify your work.
-              </p>
-            </CardHeader>
-
-            <CardBody>
-              <div className="grid gap-5 sm:grid-cols-2">
-                <TextInput
-                  id="linkedinUrl"
-                  type="url"
-                  label="LinkedIn URL"
-                  placeholder="https://linkedin.com/in/username"
-                  hint="Optional. Example: https://linkedin.com/in/username"
-                  error={errors.linkedinUrl?.message}
-                  {...register("linkedinUrl")}
-                />
-
-                <TextInput
-                  id="githubUrl"
-                  type="url"
-                  label="GitHub URL"
-                  placeholder="https://github.com/username"
-                  hint="Optional. Example: https://github.com/username"
-                  error={errors.githubUrl?.message}
-                  {...register("githubUrl")}
-                />
-
-                <div className="sm:col-span-2">
-                  <TextInput
-                    id="portfolioUrl"
-                    type="url"
-                    label="Portfolio URL"
-                    placeholder="https://yourportfolio.com"
-                    hint="Optional. Example: https://yourportfolio.com"
-                    error={errors.portfolioUrl?.message}
-                    {...register("portfolioUrl")}
-                  />
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card className="sticky bottom-2 z-20 bg-gray-200! backdrop-blur">
-            <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-slate-600">
-                {mode === "edit"
-                  ? "Save changes to update your candidate profile."
-                  : "Create your profile to start applying to jobs."}
-              </p>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button as={Link} to="/candidate/dashboard" variant="secondary">
-                  Cancel
-                </Button>
-
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting
-                    ? "Saving..."
-                    : mode === "edit"
-                      ? "Save profile"
-                      : "Create profile"}
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
-        </form>
-      </div>
+                    {mode === "edit" ? "Save profile" : "Create profile"}
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+      </form>
     </div>
   );
 };
