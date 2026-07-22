@@ -1,40 +1,45 @@
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  BriefcaseBusiness,
+  LoaderCircle,
+  LogIn,
+  Search,
+  Sparkles,
+} from "lucide-react";
+
 import { Link, useSearchParams } from "react-router-dom";
 
 import { listPublicJobs } from "../../api/job.api";
+
 import { listRecommendedJobs } from "../../api/recommendation.api";
 
+import JobsSearchPanel from "../../components/jobs/JobsSearchPanel";
+import PublicJobCard from "../../components/jobs/PublicJobCard";
+import SuggestedJobsEnhancementCard from "../../components/jobs/SuggestedJobsEnhancementCard";
+
+import PublicJobsListSkeleton from "../../components/loading/PublicJobsListSkeleton";
+
+import Button from "../../components/ui/Button";
+
+import { Card, CardBody } from "../../components/ui/Card";
+
+import EmptyState from "../../components/ui/EmptyState";
+import PageHero from "../../components/ui/PageHero";
+import SectionError from "../../components/ui/SectionError";
+
+import { ROLES } from "../../features/auth/auth.constants";
+
+import useAuth from "../../hooks/useAuth";
+
 import getApiError from "../../utils/getApiError";
-import formatSalary from "../../utils/formatSalary";
-import { formatRelativePostedDate } from "../../utils/formatDate";
+
 import {
   createSortValue,
   getOptionLabel,
   getSortOptionByFields,
   getValidOptionValue,
 } from "../../utils/options";
-
-import Button from "../../components/ui/Button";
-import { Card, CardBody, CardHeader } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import PageHero from "../../components/ui/PageHero";
-import FilterChips from "../../components/ui/FilterChips";
-import Pill from "../../components/ui/Pill";
-import SelectInput from "../../components/ui/SelectInput";
-import TextInput from "../../components/ui/TextInput";
-import Alert from "../../components/ui/Alert";
-
-import CompanyLogo from "../../components/common/CompanyLogo";
-
-import MatchScoreBadge from "../../components/application/MatchScoreBadge";
-
-import AiBadge from "../../components/ai/AiBadge";
-import AiCard from "../../components/ai/AiCard";
-
-import { ROLES } from "../../features/auth/auth.constants";
-
-import useAuth from "../../hooks/useAuth";
 
 const EMPLOYMENT_TYPES = [
   {
@@ -172,29 +177,37 @@ const getSortOptionValue = (filters) => {
 
 const getFiltersFromSearchParams = (searchParams) => {
   const sortBy = searchParams.get("sortBy") || DEFAULT_FILTERS.sortBy;
+
   const order = searchParams.get("order") || DEFAULT_FILTERS.order;
 
-  const isValidSort = SORT_OPTIONS.some((option) => {
-    return option.sortBy === sortBy && option.order === order;
-  });
+  const isValidSort = SORT_OPTIONS.some(
+    (option) => option.sortBy === sortBy && option.order === order,
+  );
 
   return {
     search: searchParams.get("search") || "",
+
     location: searchParams.get("location") || "",
+
     employmentType: getValidOptionValue(
       EMPLOYMENT_TYPES,
       searchParams.get("employmentType") || "",
     ),
+
     workplaceType: getValidOptionValue(
       WORKPLACE_TYPES,
       searchParams.get("workplaceType") || "",
     ),
+
     experienceLevel: getValidOptionValue(
       EXPERIENCE_LEVELS,
       searchParams.get("experienceLevel") || "",
     ),
+
     sortBy: isValidSort ? sortBy : DEFAULT_FILTERS.sortBy,
+
     order: isValidSort ? order : DEFAULT_FILTERS.order,
+
     recommended: searchParams.get("recommended") === "true",
   };
 };
@@ -243,10 +256,6 @@ const createSearchParamsFromFilters = (filters, page = 1) => {
   return params;
 };
 
-const getJobId = (job) => {
-  return job._id || job.id;
-};
-
 const getSortLabel = (filters) => {
   return (
     getSortOptionByFields(SORT_OPTIONS, filters.sortBy, filters.order)?.label ||
@@ -281,6 +290,7 @@ const getActiveFilterChips = (filters) => {
   if (filters.employmentType) {
     chips.push({
       key: "employmentType",
+
       label: getOptionLabel(EMPLOYMENT_TYPES, filters.employmentType),
     });
   }
@@ -288,6 +298,7 @@ const getActiveFilterChips = (filters) => {
   if (filters.workplaceType) {
     chips.push({
       key: "workplaceType",
+
       label: getOptionLabel(WORKPLACE_TYPES, filters.workplaceType),
     });
   }
@@ -295,6 +306,7 @@ const getActiveFilterChips = (filters) => {
   if (filters.experienceLevel) {
     chips.push({
       key: "experienceLevel",
+
       label: getOptionLabel(EXPERIENCE_LEVELS, filters.experienceLevel),
     });
   }
@@ -309,482 +321,84 @@ const getActiveFilterChips = (filters) => {
   return chips;
 };
 
-const JobCard = ({ job, showMatch = false }) => {
-  const jobId = getJobId(job);
-
-  const isAiEnhanced =
-    showMatch && job.match?.matchBasis === "profile_and_resume";
-
-  const resumeBoost = Number(job.match?.resumeBoost) || 0;
-
-  const resumeEvidence = Array.isArray(job.match?.resumeEvidence)
-    ? job.match.resumeEvidence
-    : [];
-
+const RecommendationAccessNotice = ({
+  isAuthenticated,
+  onBrowsePublicJobs,
+}) => {
   return (
-    <Card
-      as="article"
-      className="p-0 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
-    >
-      <CardBody>
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex gap-4">
-            <CompanyLogo
-              company={job.companyId}
-              name={job.companyId?.name || job.title}
-              size="lg"
-            />
-
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-black text-slate-950">
-                  {job.title}
-                </h2>
-
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100">
-                  Open
-                </span>
-
-                {showMatch && job.match && (
-                  <MatchScoreBadge match={job.match} size="sm" />
-                )}
-
-                {isAiEnhanced && (
-                  <AiBadge className="text-[10px]">AI-enhanced</AiBadge>
-                )}
-              </div>
-
-              <p className="mt-1 text-sm font-bold text-slate-700">
-                {job.companyId?.name || "Company unavailable"}
-              </p>
-
-              <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                <Pill variant="slate" className="ring-0">
-                  📍 {job.location || "Location unavailable"}
-                </Pill>
-                <Pill variant="slate" className="ring-0">
-                  💼 {job.employmentType || "Employment unavailable"}
-                </Pill>
-                <Pill variant="slate" className="ring-0">
-                  🏢 {job.workplaceType || "Workplace unavailable"}
-                </Pill>
-                <Pill variant="slate" className="ring-0">
-                  ⭐ {job.experienceLevel || "Level unavailable"}
-                </Pill>
-              </div>
-
-              <p className="mt-4 text-sm font-black text-slate-900">
-                {formatSalary(job)}
-              </p>
-
-              {job.skills?.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {job.skills.slice(0, 6).map((skill) => (
-                    <Pill key={skill} variant="blue">
-                      {skill}
-                    </Pill>
-                  ))}
-
-                  {job.skills.length > 6 && (
-                    <Pill>+{job.skills.length - 6}</Pill>
-                  )}
-                </div>
-              )}
-
-              {showMatch && job.match?.matchedSkills?.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Matched skills
-                  </p>
-
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {job.match.matchedSkills.slice(0, 4).map((skill) => (
-                      <Pill key={skill} variant="green">
-                        {skill}
-                      </Pill>
-                    ))}
-
-                    {job.match.matchedSkills.length > 4 && (
-                      <Pill>+{job.match.matchedSkills.length - 4}</Pill>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {isAiEnhanced && (
-                <div className="mt-4 rounded-2xl border border-violet-200/80 bg-linear-to-r from-violet-50 to-blue-50 p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs font-black uppercase tracking-wider text-violet-700">
-                      Resume Insights applied
-                    </p>
-
-                    {resumeBoost > 0 && (
-                      <Pill variant="violet">
-                        +{resumeBoost} match{" "}
-                        {resumeBoost === 1 ? "point" : "points"}
-                      </Pill>
-                    )}
-                  </div>
-
-                  <p className="mt-2 text-xs leading-5 text-slate-700">
-                    {resumeEvidence[0] ||
-                      "Stored resume skills and target roles were considered when calculating this match."}
-                  </p>
-
-                  {resumeEvidence.length > 1 && (
-                    <p className="mt-1 text-[11px] font-semibold text-violet-600">
-                      +{resumeEvidence.length - 1} more resume-based{" "}
-                      {resumeEvidence.length - 1 === 1 ? "signal" : "signals"}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+    <Card variant="subtle">
+      <CardBody className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-700">
+            <Sparkles className="h-5 w-5" aria-hidden="true" />
           </div>
 
-          <div className="flex shrink-0 flex-col gap-3 lg:items-end">
-            <p className="text-xs font-semibold text-slate-500">
-              {formatRelativePostedDate(job.createdAt)}
-            </p>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold leading-5 text-slate-950">
+              Suggested Jobs are available to candidate accounts
+            </h2>
 
-            <Button as={Link} to={`/jobs/${jobId}`}>
-              View details
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              {isAuthenticated
+                ? "Your current account can still browse every public job normally."
+                : "Sign in as a candidate to see profile-based suggestions, or continue browsing public jobs."}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col gap-2 min-[420px]:flex-row">
+          {!isAuthenticated && (
+            <Button as={Link} to="/login">
+              <LogIn className="h-4 w-4" aria-hidden="true" />
+              Sign in
             </Button>
-          </div>
-        </div>
-      </CardBody>
-    </Card>
-  );
-};
-
-const CandidateChecklistCard = () => {
-  return (
-    <Card>
-      <CardHeader>
-        <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
-          Candidate checklist
-        </p>
-
-        <h2 className="mt-2 text-xl font-black text-slate-950">
-          Before applying
-        </h2>
-      </CardHeader>
-
-      <CardBody>
-        <div className="grid gap-3 text-sm">
-          <Link
-            to="/candidate/profile"
-            className="rounded-xl border border-slate-100 bg-slate-50 p-3 font-bold text-slate-800 transition hover:bg-blue-50 hover:text-blue-700"
-          >
-            Complete profile →
-          </Link>
-
-          <Link
-            to="/candidate/resume"
-            className="rounded-xl border border-slate-100 bg-slate-50 p-3 font-bold text-slate-800 transition hover:bg-blue-50 hover:text-blue-700"
-          >
-            Upload resume →
-          </Link>
-
-          <Link
-            to="/candidate/applications"
-            className="rounded-xl border border-slate-100 bg-slate-50 p-3 font-bold text-slate-800 transition hover:bg-blue-50 hover:text-blue-700"
-          >
-            Track applications →
-          </Link>
-        </div>
-      </CardBody>
-    </Card>
-  );
-};
-
-const SearchTipsCard = () => {
-  return (
-    <Card>
-      <CardHeader>
-        <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-          Search tips
-        </p>
-
-        <h2 className="mt-2 text-xl font-black text-slate-950">
-          Find better matches
-        </h2>
-      </CardHeader>
-
-      <CardBody>
-        <div className="grid gap-3">
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-bold text-slate-900">
-              Start with role + location
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              Example: React Developer in Pune or Remote.
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-bold text-slate-900">
-              Use filters after search
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              First search broadly, then filter by workplace or experience.
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-bold text-slate-900">
-              Check salary sort
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              Use salary sorting when companies have made salary visible.
-            </p>
-          </div>
-        </div>
-      </CardBody>
-    </Card>
-  );
-};
-
-const SuggestedJobsEnhancementCard = ({ enhancement }) => {
-  const isEnabled = enhancement?.enabled === true;
-
-  return (
-    <AiCard>
-      <div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
-        <div>
-          <AiBadge>AI-enhanced Suggested Jobs</AiBadge>
-
-          <h2 className="mt-3 text-xl font-black text-slate-950">
-            {isEnabled
-              ? "Your Resume Insights are improving these suggestions"
-              : "Make your suggested jobs more personalized"}
-          </h2>
-
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
-            {isEnabled
-              ? "HireFlow combines your candidate profile with stored AI Resume Insights, then uses the deterministic match engine to rank relevant jobs."
-              : "Your suggestions currently use candidate profile data only. Generate AI Resume Insights to include resume skills, technologies, projects, and target roles."}
-          </p>
-
-          {isEnabled && (
-            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-              Browsing these suggestions does not create another AI request or
-              consume additional daily usage.
-            </p>
           )}
-        </div>
-
-        <div className="flex flex-col gap-3 md:min-w-55">
-          <div className="rounded-xl border border-white/80 bg-white/70 px-4 py-3 text-center shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-              Suggestion mode
-            </p>
-
-            <p className="mt-1 text-sm font-black text-violet-700">
-              {isEnabled ? "Profile + Resume Insights" : "Profile only"}
-            </p>
-          </div>
 
           <Button
-            as={Link}
-            to="/candidate/resume"
-            variant={isEnabled ? "secondary" : "ai"}
-            fullWidth
+            type="button"
+            variant="secondary"
+            onClick={onBrowsePublicJobs}
           >
-            {isEnabled
-              ? "Review AI Resume Insights"
-              : "Generate AI Resume Insights"}
+            Browse public jobs
           </Button>
         </div>
-      </div>
-    </AiCard>
+      </CardBody>
+    </Card>
   );
 };
 
-const JobsSearchControls = ({
-  filters,
-  sortOptions,
-  activeAdvancedFilterCount,
-  activeFilterChips,
-  onApplyFilters,
-  onClearFilters,
-  onRemoveFilter,
-}) => {
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-
-  const [searchInput, setSearchInput] = useState(filters.search);
-
-  const [locationInput, setLocationInput] = useState(filters.location);
-
-  const [draftFilters, setDraftFilters] = useState({
-    employmentType: filters.employmentType,
-    workplaceType: filters.workplaceType,
-    experienceLevel: filters.experienceLevel,
-    sortBy: filters.sortBy,
-    order: filters.order,
-  });
-
-  const handleDraftFilterChange = (event) => {
-    const { name, value } = event.target;
-
-    if (name === "sort") {
-      const selectedSort =
-        SORT_OPTIONS.find((option) => option.value === value) ||
-        SORT_OPTIONS[0];
-
-      setDraftFilters((currentFilters) => ({
-        ...currentFilters,
-        sortBy: selectedSort.sortBy,
-        order: selectedSort.order,
-      }));
-
-      return;
-    }
-
-    setDraftFilters((currentFilters) => ({
-      ...currentFilters,
-      [name]: value,
-    }));
-  };
-
-  const applySearchAndFilters = () => {
-    onApplyFilters({
-      search: searchInput.trim(),
-      location: locationInput.trim(),
-      employmentType: draftFilters.employmentType,
-      workplaceType: draftFilters.workplaceType,
-      experienceLevel: draftFilters.experienceLevel,
-      sortBy: draftFilters.sortBy,
-      order: draftFilters.order,
-    });
-  };
-
-  const handleSearchSubmit = (event) => {
-    event.preventDefault();
-
-    applySearchAndFilters();
-  };
-
-  const handleApplyAdvancedFilters = () => {
-    applySearchAndFilters();
-    setIsFiltersOpen(false);
-  };
-
-  const handleClearFilters = () => {
-    onClearFilters();
-    setIsFiltersOpen(false);
-  };
+const JobsPagination = ({ pagination, page, onPageChange }) => {
+  if (!pagination) {
+    return null;
+  }
 
   return (
-    <Card>
-      <CardBody>
-        <form onSubmit={handleSearchSubmit}>
-          <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr_auto_auto] lg:items-end">
-            <TextInput
-              id="search"
-              type="search"
-              label="What job are you looking for?"
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Frontend Developer, React, Node.js"
-            />
+    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm leading-6 text-slate-600">
+        Page {pagination.page} of {pagination.totalPages || 1} ·{" "}
+        {pagination.total} jobs
+      </p>
 
-            <TextInput
-              id="location"
-              type="search"
-              label="Location"
-              value={locationInput}
-              onChange={(event) => setLocationInput(event.target.value)}
-              placeholder="Pune, Mumbai, Remote"
-            />
+      <div className="grid grid-cols-2 gap-3 sm:flex">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={!pagination.hasPreviousPage}
+          onClick={() => onPageChange(Math.max(page - 1, 1))}
+        >
+          Previous
+        </Button>
 
-            <Button type="submit" size="lg">
-              Search
-            </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              onClick={() => setIsFiltersOpen((currentValue) => !currentValue)}
-            >
-              Filters
-              {activeAdvancedFilterCount > 0 && (
-                <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
-                  {activeAdvancedFilterCount}
-                </span>
-              )}
-            </Button>
-          </div>
-        </form>
-
-        {isFiltersOpen && (
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <SelectInput
-                id="employmentType"
-                label="Employment"
-                name="employmentType"
-                value={draftFilters.employmentType}
-                onChange={handleDraftFilterChange}
-                options={EMPLOYMENT_TYPES}
-              />
-
-              <SelectInput
-                id="workplaceType"
-                label="Workplace"
-                name="workplaceType"
-                value={draftFilters.workplaceType}
-                onChange={handleDraftFilterChange}
-                options={WORKPLACE_TYPES}
-              />
-
-              <SelectInput
-                id="experienceLevel"
-                label="Experience"
-                name="experienceLevel"
-                value={draftFilters.experienceLevel}
-                onChange={handleDraftFilterChange}
-                options={EXPERIENCE_LEVELS}
-              />
-
-              <SelectInput
-                id="sort"
-                label="Sort"
-                name="sort"
-                value={getSortOptionValue(draftFilters)}
-                onChange={handleDraftFilterChange}
-                options={sortOptions}
-              />
-            </div>
-
-            <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleClearFilters}
-              >
-                Clear all
-              </Button>
-
-              <Button type="button" onClick={handleApplyAdvancedFilters}>
-                Apply filters
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <FilterChips
-          chips={activeFilterChips}
-          onRemove={onRemoveFilter}
-          onClear={handleClearFilters}
-          className="mt-5"
-        />
-      </CardBody>
-    </Card>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={!pagination.hasNextPage}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
   );
 };
 
@@ -795,13 +409,15 @@ const JobsPage = () => {
 
   const searchParamsString = searchParams.toString();
 
-  const filters = useMemo(() => {
-    return getFiltersFromSearchParams(new URLSearchParams(searchParamsString));
-  }, [searchParamsString]);
+  const filters = useMemo(
+    () => getFiltersFromSearchParams(new URLSearchParams(searchParamsString)),
+    [searchParamsString],
+  );
 
-  const page = useMemo(() => {
-    return getPageFromSearchParams(new URLSearchParams(searchParamsString));
-  }, [searchParamsString]);
+  const page = useMemo(
+    () => getPageFromSearchParams(new URLSearchParams(searchParamsString)),
+    [searchParamsString],
+  );
 
   const canUseRecommendations =
     isAuthenticated && user?.role === ROLES.CANDIDATE;
@@ -817,6 +433,8 @@ const JobsPage = () => {
   const [jobsData, setJobsData] = useState(null);
 
   const [errorMessage, setErrorMessage] = useState("");
+
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     let shouldIgnore = false;
@@ -834,7 +452,12 @@ const JobsPage = () => {
         };
 
         Object.entries(filters).forEach(([key, value]) => {
-          if (!value || key === "sortBy" || key === "order") {
+          if (
+            !value ||
+            key === "sortBy" ||
+            key === "order" ||
+            key === "recommended"
+          ) {
             return;
           }
 
@@ -850,6 +473,7 @@ const JobsPage = () => {
         }
 
         setJobsData(result.data);
+
         setStatus("success");
       } catch (error) {
         if (shouldIgnore) {
@@ -859,7 +483,11 @@ const JobsPage = () => {
         const normalizedError = getApiError(error);
 
         setErrorMessage(normalizedError.message);
-        setJobsData(null);
+
+        /*
+         * Preserve already-visible jobs
+         * when a filter refresh fails.
+         */
         setStatus("error");
       }
     };
@@ -869,7 +497,7 @@ const JobsPage = () => {
     return () => {
       shouldIgnore = true;
     };
-  }, [filters, page, isRecommendedMode]);
+  }, [filters, page, isRecommendedMode, loadAttempt]);
 
   const updateUrlFilters = (nextFilters, nextPage = 1) => {
     setSearchParams(createSearchParamsFromFilters(nextFilters, nextPage));
@@ -890,8 +518,9 @@ const JobsPage = () => {
     if (filterKey === "sort") {
       updateUrlFilters({
         ...filters,
-        sortBy: DEFAULT_FILTERS.sortBy,
-        order: DEFAULT_FILTERS.order,
+        sortBy: isRecommendedMode ? "matchScore" : DEFAULT_FILTERS.sortBy,
+
+        order: "desc",
       });
 
       return;
@@ -914,6 +543,18 @@ const JobsPage = () => {
     });
   };
 
+  const handleModeChange = (shouldUseRecommendations) => {
+    updateUrlFilters({
+      ...filters,
+
+      recommended: shouldUseRecommendations,
+
+      sortBy: shouldUseRecommendations ? "matchScore" : DEFAULT_FILTERS.sortBy,
+
+      order: "desc",
+    });
+  };
+
   const handlePageChange = (nextPage) => {
     updateUrlFilters(filters, nextPage);
   };
@@ -922,155 +563,198 @@ const JobsPage = () => {
 
   const pagination = jobsData?.pagination;
 
-  const activeFilterChips = useMemo(() => {
-    return getActiveFilterChips(filters);
-  }, [filters]);
+  const hasLoadedData = jobsData !== null;
+
+  const isInitialLoading = status === "loading" && !hasLoadedData;
+
+  const isUpdating = status === "loading" && hasLoadedData;
+
+  const activeFilterChips = useMemo(
+    () => getActiveFilterChips(filters),
+    [filters],
+  );
 
   const activeAdvancedFilterCount = [
     filters.employmentType,
     filters.workplaceType,
     filters.experienceLevel,
+
     filters.sortBy !== "createdAt" || filters.order !== "desc" ? "sort" : "",
   ].filter(Boolean).length;
+
+  const totalJobs = pagination?.total ?? jobs.length;
 
   return (
     <div className="mx-auto grid max-w-375 gap-6">
       <PageHero
         eyebrow={isRecommendedMode ? "Suggested jobs" : "Public jobs"}
         title={
-          isRecommendedMode ? "Jobs matched to your profile" : "Browse jobs"
+          isRecommendedMode
+            ? "Jobs matched to your profile"
+            : "Browse open jobs"
         }
         description={
           isRecommendedMode
             ? jobsData?.aiEnhancement?.enabled
-              ? "Open roles ranked using your profile and stored AI Resume Insights."
-              : "Open roles ranked using your skills, target roles, and job preferences."
-            : "Search your preferred job by role, location, or skill."
+              ? "Open roles ranked using your candidate profile and stored AI Resume Insights."
+              : "Open roles ranked using your skills, target roles, experience, and job preferences."
+            : "Search open roles by job title, skill, location, workplace type, or experience level."
         }
       />
 
       {filters.recommended && !canUseRecommendations && (
-        <Card>
-          <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-bold text-slate-950">
-                Login as a candidate to see suggested jobs.
-              </p>
-
-              <p className="mt-1 text-sm text-slate-600">
-                Guests and company users can still browse public jobs normally.
-              </p>
-            </div>
-
-            <Button as={Link} to="/login">
-              Login
-            </Button>
-          </CardBody>
-        </Card>
+        <RecommendationAccessNotice
+          isAuthenticated={isAuthenticated}
+          onBrowsePublicJobs={() => handleRemoveFilter("recommended")}
+        />
       )}
 
-      {isRecommendedMode && status === "success" && (
-        <SuggestedJobsEnhancementCard enhancement={jobsData?.aiEnhancement} />
-      )}
-
-      <JobsSearchControls
+      <JobsSearchPanel
         key={searchParamsString}
         filters={filters}
         sortOptions={sortOptions}
+        employmentTypes={EMPLOYMENT_TYPES}
+        workplaceTypes={WORKPLACE_TYPES}
+        experienceLevels={EXPERIENCE_LEVELS}
         activeAdvancedFilterCount={activeAdvancedFilterCount}
         activeFilterChips={activeFilterChips}
+        canUseRecommendations={canUseRecommendations}
+        isRecommendedMode={isRecommendedMode}
+        getSortValue={getSortOptionValue}
         onApplyFilters={handleApplyFilters}
         onClearFilters={handleClearFilters}
         onRemoveFilter={handleRemoveFilter}
+        onModeChange={handleModeChange}
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Job results
-              </p>
+      {isRecommendedMode && jobsData && (
+        <SuggestedJobsEnhancementCard enhancement={jobsData.aiEnhancement} />
+      )}
 
-              <h2 className="mt-1 text-2xl font-black text-slate-950">
-                {pagination?.total ?? jobs.length} matching job
-                {(pagination?.total ?? jobs.length) === 1 ? "" : "s"}
-              </h2>
-            </div>
+      <section
+        aria-labelledby="jobs-results-heading"
+        aria-busy={isUpdating}
+        className="grid gap-4"
+      >
+        <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-medium leading-5 text-blue-600">
+              Job results
+            </p>
+
+            <h2
+              id="jobs-results-heading"
+              className="mt-0.5 text-2xl font-semibold leading-8 tracking-tight text-slate-950"
+            >
+              {hasLoadedData
+                ? `${totalJobs} matching ${totalJobs === 1 ? "job" : "jobs"}`
+                : "Matching jobs"}
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {isUpdating && (
+              <p
+                role="status"
+                className="inline-flex items-center gap-2 text-sm leading-6 text-slate-500"
+              >
+                <LoaderCircle
+                  className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+                Updating results
+              </p>
+            )}
 
             {pagination && (
-              <p className="text-sm font-semibold text-slate-500">
+              <p className="text-sm leading-6 text-slate-500">
                 Page {pagination.page} of {pagination.totalPages || 1}
               </p>
             )}
           </div>
+        </header>
 
-          {status === "error" && <Alert variant="error">{errorMessage}</Alert>}
+        {isInitialLoading && <PublicJobsListSkeleton />}
 
-          {status === "success" && jobs.length === 0 && (
-            <EmptyState
-              icon="🔎"
-              title="No jobs found"
-              description="Try changing your search, location, or filters."
-              action={
-                <Button type="button" onClick={handleClearFilters}>
-                  Clear filters
-                </Button>
-              }
+        {status === "error" && (
+          <SectionError
+            compact={hasLoadedData}
+            title="Could not update jobs"
+            message={errorMessage}
+            onRetry={() =>
+              setLoadAttempt((currentAttempt) => currentAttempt + 1)
+            }
+          />
+        )}
+
+        {hasLoadedData && jobs.length === 0 && !isInitialLoading && (
+          <EmptyState
+            icon={Search}
+            title="No jobs found"
+            description="Try changing your keyword, location, or advanced filters."
+            action={
+              <Button type="button" onClick={handleClearFilters}>
+                Clear filters
+              </Button>
+            }
+          />
+        )}
+
+        {hasLoadedData && jobs.length > 0 && (
+          <>
+            <div
+              className={["grid gap-4", isUpdating ? "opacity-70" : ""].join(
+                " ",
+              )}
+            >
+              {jobs.map((job) => (
+                <PublicJobCard
+                  key={job._id || job.id}
+                  job={job}
+                  showMatch={isRecommendedMode}
+                />
+              ))}
+            </div>
+
+            <JobsPagination
+              pagination={pagination}
+              page={page}
+              onPageChange={handlePageChange}
             />
-          )}
+          </>
+        )}
+      </section>
 
-          {status === "success" && jobs.length > 0 && (
-            <>
-              <div className="grid gap-4">
-                {jobs.map((job) => (
-                  <JobCard
-                    key={getJobId(job)}
-                    job={job}
-                    showMatch={isRecommendedMode}
-                  />
-                ))}
+      {!isAuthenticated && (
+        <Card variant="subtle">
+          <CardBody className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
+                <BriefcaseBusiness className="h-5 w-5" aria-hidden="true" />
               </div>
 
-              {pagination && (
-                <Card>
-                  <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm text-slate-600">
-                      Page {pagination.page} of {pagination.totalPages || 1} ·{" "}
-                      {pagination.total} jobs
-                    </p>
+              <div>
+                <h2 className="text-sm font-semibold leading-5 text-slate-950">
+                  Want personalised job suggestions?
+                </h2>
 
-                    <div className="flex gap-3">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        disabled={!pagination.hasPreviousPage}
-                        onClick={() => handlePageChange(Math.max(page - 1, 1))}
-                      >
-                        Previous
-                      </Button>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Create a candidate account, complete your profile, and
+                  optionally generate AI Resume Insights.
+                </p>
+              </div>
+            </div>
 
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        disabled={!pagination.hasNextPage}
-                        onClick={() => handlePageChange(page + 1)}
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  </CardBody>
-                </Card>
-              )}
-            </>
-          )}
-        </section>
-
-        <aside className="grid gap-6 self-start">
-          <CandidateChecklistCard />
-          <SearchTipsCard />
-        </aside>
-      </div>
+            <Button
+              as={Link}
+              to="/register"
+              className="w-full shrink-0 sm:w-auto"
+            >
+              Create candidate account
+            </Button>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 };
