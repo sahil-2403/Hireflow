@@ -33,6 +33,14 @@ import Skeleton from "../../components/ui/Skeleton";
 
 import { BASE_INPUT_CLASS_NAME } from "../../components/ui/TextInput";
 
+import HomeAiFeaturesSection, {
+  AiTrustStrip,
+  CandidateAiJourneySection,
+  CompanyAiWorkflowSection,
+  HeroAiFloatingPreview,
+  HomeHeroAiDiscoveryPreview,
+} from "../../components/public/HomeAiFeaturesSection";
+
 import getApiError from "../../utils/getApiError";
 
 import { formatRelativePostedDate } from "../../utils/formatDate";
@@ -288,19 +296,7 @@ const HeroPreview = () => {
         </div>
       </div>
 
-      <div className="absolute bottom-10 right-0 w-44 rotate-3 rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-lg shadow-violet-100/60">
-        <div className="flex items-center gap-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-violet-100 text-violet-700">
-            <Sparkles className="h-4 w-4" />
-          </div>
-
-          <div>
-            <div className="h-2.5 w-20 rounded-full bg-slate-700" />
-
-            <div className="mt-2 h-2 w-24 rounded-full bg-slate-200" />
-          </div>
-        </div>
-      </div>
+      <HeroAiFloatingPreview />
     </div>
   );
 };
@@ -666,39 +662,15 @@ const HomePage = () => {
   };
 
   return (
-    <div className="grid gap-14 pb-5 sm:gap-16">
+    <div className="grid pb-5 gap-10 sm:gap-25">
       <section
-        className={[
-          "relative isolate",
-          "overflow-hidden",
-          "rounded-3xl",
-          "border",
-          "border-slate-200",
-          "bg-linear-to-br",
-          "from-white",
-          "via-blue-50/70",
-          "to-violet-50/70",
-          "p-5",
-
-          "sm:p-8",
-          "lg:p-10",
-        ].join(" ")}
+        className={["relative isolate", "overflow-hidden", "px-5"].join(" ")}
       >
-        <div
-          aria-hidden="true"
-          className="absolute -left-28 -top-28 h-80 w-80 rounded-full bg-blue-200/35 blur-3xl"
-        />
-
-        <div
-          aria-hidden="true"
-          className="absolute -bottom-32 right-0 h-96 w-96 rounded-full bg-violet-200/30 blur-3xl"
-        />
-
-        <div className="relative grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.95fr)] lg:items-center">
+        <div className="relative grid min-w-0 gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.7fr)] lg:items-start">
           <div className="min-w-0">
             <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-blue-100 bg-white/75 px-2.5 py-1 text-xs font-medium text-blue-700 backdrop-blur">
               <Sparkles className="h-3 w-3" aria-hidden="true" />
-              Jobs and hiring, simplified
+              Jobs, hiring, and focused AI assistance
             </span>
 
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-[1.15] tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">
@@ -706,8 +678,9 @@ const HomePage = () => {
             </h1>
 
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base sm:leading-7">
-              Search jobs, manage applications, review candidates, and keep
-              hiring work organised in one focused platform.
+              Search jobs, manage applications, review candidates, and use
+              focused AI tools for resume insights, job matching, and hiring
+              support.
             </p>
 
             <form
@@ -823,8 +796,12 @@ const HomePage = () => {
             </div>
           </div>
 
-          <HeroPreview />
+          <div>
+            <HeroPreview />
+            
+          </div>
         </div>
+        <HomeHeroAiDiscoveryPreview />
       </section>
 
       <section>
@@ -863,7 +840,15 @@ const HomePage = () => {
         </div>
       </section>
 
+      <CandidateAiJourneySection />
+
+      <HomeAiFeaturesSection />
+
+      <CompanyAiWorkflowSection />
+
       <LatestJobsSection />
+
+      <AiTrustStrip />
 
       <section
         className={[
