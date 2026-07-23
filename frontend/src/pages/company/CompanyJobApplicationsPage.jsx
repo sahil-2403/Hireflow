@@ -783,7 +783,7 @@ const CompanyJobApplicationsPage = () => {
               </div>
             ) : (
               <>
-                <div className="hidden border-b border-slate-100 bg-slate-50/60 px-5 py-2.5 text-[11px] font-medium uppercase tracking-wide text-slate-500 xl:grid xl:grid-cols-[88px_minmax(240px,1.2fr)_minmax(230px,0.8fr)_110px_120px_auto] xl:gap-4">
+                <div className="hidden border-b items-start border-slate-100 bg-slate-50/60 px-5 py-2.5 text-[11px] font-medium uppercase tracking-wide text-slate-500 xl:grid xl:grid-cols-[0.4fr_1.4fr_1fr_0.4fr_1fr_auto] xl:gap-4">
                   <span>Compare</span>
 
                   <span>Candidate</span>
