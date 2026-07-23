@@ -1,27 +1,39 @@
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  BriefcaseBusiness,
+  LoaderCircle,
+  RotateCcw,
+  Search,
+  UsersRound,
+  X,
+} from "lucide-react";
+
 import { Link } from "react-router-dom";
 
 import { listManagedApplicationJobs } from "../../api/application.api";
 
-import getApiError from "../../utils/getApiError";
-import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
-import { formatDate } from "../../utils/formatDate";
-import { getOptionLabel, getSortOptionByValue } from "../../utils/options";
+import CompanyApplicationJobRow from "../../components/company/CompanyApplicationJobRow";
 
-import MatchScoreBadge from "../../components/application/MatchScoreBadge";
-import JobStatusBadge from "../../components/company/JobStatusBadge";
 import CompanySetupRequired from "../../components/company/CompanySetupRequired";
 
+import CompanyApplicationJobsSkeleton from "../../components/loading/CompanyApplicationJobsSkeleton";
+
 import Button from "../../components/ui/Button";
+
 import { Card, CardBody } from "../../components/ui/Card";
+
 import EmptyState from "../../components/ui/EmptyState";
 import PageHero from "../../components/ui/PageHero";
-import Alert from "../../components/ui/Alert";
-import FilterChips from "../../components/ui/FilterChips";
-import Pill from "../../components/ui/Pill";
+import SectionError from "../../components/ui/SectionError";
 import SelectInput from "../../components/ui/SelectInput";
 import TextInput from "../../components/ui/TextInput";
+
+import getApiError from "../../utils/getApiError";
+
+import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
+
+import { getSortOptionByValue } from "../../utils/options";
 
 const JOB_STATUS_OPTIONS = [
   {
@@ -41,41 +53,66 @@ const JOB_STATUS_OPTIONS = [
 const SORT_OPTIONS = [
   {
     label: "Recent application activity",
+
     value: "lastApplicationAt:desc",
+
     sortBy: "lastApplicationAt",
+
     order: "desc",
   },
   {
     label: "Latest jobs",
+
     value: "createdAt:desc",
+
     sortBy: "createdAt",
     order: "desc",
   },
   {
     label: "Oldest jobs",
+
     value: "createdAt:asc",
+
     sortBy: "createdAt",
     order: "asc",
   },
   {
     label: "Applications high to low",
+
     value: "applicationCount:desc",
+
     sortBy: "applicationCount",
+
     order: "desc",
   },
   {
     label: "Applications low to high",
+
     value: "applicationCount:asc",
+
     sortBy: "applicationCount",
+
     order: "asc",
   },
   {
     label: "Job title A-Z",
+
     value: "title:asc",
+
     sortBy: "title",
     order: "asc",
   },
 ];
+
+const getStatusLabel = (value) => {
+  return (
+    JOB_STATUS_OPTIONS.find((option) => option.value === value)?.label || value
+  );
+};
+
+const getSortLabel = (value) => {
+  return getSortOptionByValue(SORT_OPTIONS, value, SORT_OPTIONS[0]).label;
+};
 
 const getActiveFilterChips = ({ search, selectedStatus, sortValue }) => {
   const chips = [];
@@ -90,31 +127,125 @@ const getActiveFilterChips = ({ search, selectedStatus, sortValue }) => {
   if (selectedStatus) {
     chips.push({
       key: "status",
-      label: getOptionLabel(JOB_STATUS_OPTIONS, selectedStatus, selectedStatus),
+
+      label: getStatusLabel(selectedStatus),
     });
   }
 
   if (sortValue !== SORT_OPTIONS[0].value) {
     chips.push({
       key: "sort",
-      label: `Sort: ${
-        getSortOptionByValue(SORT_OPTIONS, sortValue, SORT_OPTIONS[0]).label
-      }`,
+
+      label: `Sort: ${getSortLabel(sortValue)}`,
     });
   }
 
   return chips;
 };
 
-const JobMetric = ({ label, value }) => {
+const ActiveApplicationFilters = ({ chips, onRemove, onClear }) => {
+  if (!chips.length) {
+    return null;
+  }
+
   return (
-    <div className="rounded-2xl bg-slate-50 p-4">
-      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-        {label}
+    <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+      <span className="mr-1 text-xs font-medium leading-5 text-slate-500">
+        Active filters:
+      </span>
+
+      {chips.map((chip) => (
+        <button
+          key={chip.key}
+          type="button"
+          onClick={() => onRemove(chip.key)}
+          className={[
+            "inline-flex min-h-9",
+            "max-w-full items-center",
+            "gap-1.5 rounded-full",
+            "border border-blue-100",
+            "bg-blue-50",
+            "px-3 py-1.5",
+            "text-xs font-medium",
+            "text-blue-700",
+            "transition-colors",
+
+            "hover:bg-blue-100",
+
+            "focus-visible:outline-none",
+            "focus-visible:ring-2",
+            "focus-visible:ring-blue-500",
+          ].join(" ")}
+        >
+          <span className="min-w-0 wrap-break-word">{chip.label}</span>
+
+          <X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        </button>
+      ))}
+
+      <button
+        type="button"
+        onClick={onClear}
+        className={[
+          "inline-flex min-h-9",
+          "items-center gap-1.5",
+          "rounded-full",
+          "px-3 py-1.5",
+          "text-xs font-medium",
+          "text-slate-600",
+          "transition-colors",
+
+          "hover:bg-slate-100",
+          "hover:text-slate-900",
+
+          "focus-visible:outline-none",
+          "focus-visible:ring-2",
+          "focus-visible:ring-blue-500",
+        ].join(" ")}
+      >
+        <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+        Clear all
+      </button>
+    </div>
+  );
+};
+
+const ApplicationGroupsPagination = ({
+  pagination,
+  onPreviousPage,
+  onNextPage,
+}) => {
+  if (!pagination) {
+    return null;
+  }
+
+  return (
+    <footer className="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <p className="text-sm leading-6 text-slate-600">
+        Page {pagination.page} of {pagination.totalPages || 1} ·{" "}
+        {pagination.total} jobs
       </p>
 
-      <p className="mt-2  font-medium text-slate-950">{value}</p>
-    </div>
+      <div className="grid grid-cols-2 gap-2 sm:flex">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={!pagination.hasPreviousPage}
+          onClick={onPreviousPage}
+        >
+          Previous
+        </Button>
+
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={!pagination.hasNextPage}
+          onClick={onNextPage}
+        >
+          Next
+        </Button>
+      </div>
+    </footer>
   );
 };
 
@@ -135,12 +266,15 @@ const CompanyApplicationsPage = () => {
 
   const [page, setPage] = useState(1);
 
+  const [loadAttempt, setLoadAttempt] = useState(0);
+
   useEffect(() => {
     let shouldIgnore = false;
 
     const fetchApplicationJobs = async () => {
       try {
         setRequestStatus("loading");
+
         setErrorMessage("");
 
         const sortOption = getSortOptionByValue(
@@ -152,7 +286,9 @@ const CompanyApplicationsPage = () => {
         const params = {
           page,
           limit: 10,
+
           sortBy: sortOption.sortBy,
+
           order: sortOption.order,
         };
 
@@ -171,6 +307,7 @@ const CompanyApplicationsPage = () => {
         }
 
         setJobsData(result.data);
+
         setRequestStatus("success");
       } catch (error) {
         if (shouldIgnore) {
@@ -181,12 +318,21 @@ const CompanyApplicationsPage = () => {
 
         setErrorMessage(normalizedError.message);
 
-        setJobsData(null);
-        setRequestStatus(
-          isCompanyProfileMissingError(normalizedError)
-            ? "company-missing"
-            : "error",
-        );
+        if (isCompanyProfileMissingError(normalizedError)) {
+          setJobsData(null);
+
+          setRequestStatus("company-missing");
+
+          return;
+        }
+
+        /*
+         * Preserve existing groups
+         * when a search, filter,
+         * sort or pagination refresh
+         * fails.
+         */
+        setRequestStatus("error");
       }
     };
 
@@ -195,28 +341,33 @@ const CompanyApplicationsPage = () => {
     return () => {
       shouldIgnore = true;
     };
-  }, [page, selectedStatus, sortValue, search]);
+  }, [page, selectedStatus, sortValue, search, loadAttempt]);
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
 
     setSearch(searchInput.trim());
+
     setPage(1);
   };
 
   const handleStatusChange = (event) => {
     setSelectedStatus(event.target.value);
+
     setPage(1);
   };
 
   const handleSortChange = (event) => {
     setSortValue(event.target.value);
+
     setPage(1);
   };
 
   const handleClearFilters = () => {
     setSelectedStatus("");
+
     setSortValue(SORT_OPTIONS[0].value);
+
     setSearchInput("");
     setSearch("");
     setPage(1);
@@ -227,234 +378,228 @@ const CompanyApplicationsPage = () => {
       setSearchInput("");
       setSearch("");
       setPage(1);
+
       return;
     }
 
     if (filterKey === "status") {
       setSelectedStatus("");
       setPage(1);
+
       return;
     }
 
     if (filterKey === "sort") {
       setSortValue(SORT_OPTIONS[0].value);
+
       setPage(1);
     }
   };
 
   const jobs = jobsData?.jobs ?? [];
 
-  const pagination = jobsData?.pagination;
+  const pagination = jobsData?.pagination ?? null;
 
-  const activeFilterChips = useMemo(() => {
-    return getActiveFilterChips({
-      search,
-      selectedStatus,
-      sortValue,
-    });
-  }, [search, selectedStatus, sortValue]);
+  const hasLoadedData = jobsData !== null;
+
+  const isInitialLoading = requestStatus === "loading" && !hasLoadedData;
+
+  const isUpdating = requestStatus === "loading" && hasLoadedData;
+
+  const currentTotal = pagination?.total ?? jobs.length;
+
+  const activeFilterChips = useMemo(
+    () =>
+      getActiveFilterChips({
+        search,
+        selectedStatus,
+        sortValue,
+      }),
+    [search, selectedStatus, sortValue],
+  );
 
   return (
     <div className="grid gap-6">
       <PageHero
         eyebrow="Company applications"
         title="Applications by job"
-        description="Review application activity grouped by job, then open a focused applicant list for each role."
+        description="Review applicant activity grouped by job, compare match information, and open the focused hiring pipeline for each role."
+        actions={
+          <Button as={Link} to="/company/jobs" variant="secondary">
+            <BriefcaseBusiness className="h-4 w-4" aria-hidden="true" />
+            Manage jobs
+          </Button>
+        }
       />
 
-      {requestStatus !== "company-missing" && (
-        <Card>
-          <CardBody>
-            <form
-              onSubmit={handleSearchSubmit}
-              className="grid gap-4 lg:grid-cols-[1.3fr_220px_260px_auto]"
-            >
-              <TextInput
-                id="search"
-                type="search"
-                label="Search jobs"
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Search jobs by title, location, or skill"
-              />
-
-              <SelectInput
-                id="status"
-                label="Status"
-                value={selectedStatus}
-                onChange={handleStatusChange}
-                options={JOB_STATUS_OPTIONS}
-              />
-
-              <SelectInput
-                id="sort"
-                label="Sort"
-                value={sortValue}
-                onChange={handleSortChange}
-                options={SORT_OPTIONS}
-              />
-
-              <div className="flex items-end gap-3">
-                <Button type="submit">Search</Button>
-
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleClearFilters}
-                >
-                  Clear
-                </Button>
-              </div>
-            </form>
-
-            <FilterChips
-              chips={activeFilterChips}
-              onRemove={handleRemoveFilter}
-              onClear={handleClearFilters}
-              className="mt-5"
-            />
-          </CardBody>
-        </Card>
-      )}
-
-      {requestStatus === "loading" && (
-        <Card>
-          <CardBody>
-            <p className="text-sm text-slate-600">
-              Loading application groups...
-            </p>
-          </CardBody>
-        </Card>
-      )}
-
-      {requestStatus === "company-missing" && (
+      {requestStatus === "company-missing" ? (
         <CompanySetupRequired description="Create your company profile before reviewing applications." />
-      )}
-
-      {requestStatus === "error" && (
-        <Alert variant="error" title="Could not load application groups">
-          {errorMessage}
-        </Alert>
-      )}
-
-      {requestStatus === "success" && jobs.length === 0 && (
-        <EmptyState
-          icon="📥"
-          title="No application groups found"
-          description="Try changing your filters or wait for candidates to apply."
-          action={
-            activeFilterChips.length > 0 ? (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleClearFilters}
+      ) : (
+        <>
+          <Card>
+            <CardBody className="p-4 sm:p-5">
+              <form
+                onSubmit={handleSearchSubmit}
+                className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_200px_250px_auto] lg:items-end"
               >
-                Clear filters
-              </Button>
-            ) : null
-          }
-        />
-      )}
+                <TextInput
+                  id="application-jobs-search"
+                  type="search"
+                  label="Search jobs"
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  placeholder="Search by title, location, or skill"
+                />
 
-      {requestStatus === "success" && jobs.length > 0 && (
-        <section className="grid gap-4">
-          {jobs.map((job) => (
-            <Card key={job._id}>
-              <CardBody className="p-5 sm:p-6">
-                <div className="grid gap-5 lg:grid-cols-[1fr_1fr_auto] lg:items-center">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h2 className="text-xl font-black text-slate-950">
-                        {job.title}
-                      </h2>
+                <SelectInput
+                  id="application-jobs-status"
+                  label="Job status"
+                  value={selectedStatus}
+                  onChange={handleStatusChange}
+                  options={JOB_STATUS_OPTIONS}
+                />
 
-                      <JobStatusBadge status={job.status} />
-                    </div>
+                <SelectInput
+                  id="application-jobs-sort"
+                  label="Sort"
+                  value={sortValue}
+                  onChange={handleSortChange}
+                  options={SORT_OPTIONS}
+                />
 
-                    <p className="mt-2 text-sm font-semibold text-slate-600">
-                      {job.location || "Location unavailable"}
-                    </p>
+                <div className="grid grid-cols-2 gap-2 lg:flex">
+                  <Button type="submit" className="w-full lg:w-auto">
+                    <Search className="h-4 w-4" aria-hidden="true" />
+                    Search
+                  </Button>
 
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold capitalize text-slate-600">
-                      <Pill variant="slate" className="ring-0">
-                        {job.employmentType || "Employment unavailable"}
-                      </Pill>
-
-                      <Pill variant="slate" className="ring-0">
-                        {job.workplaceType || "Workplace unavailable"}
-                      </Pill>
-
-                      <Pill variant="slate" className="ring-0">
-                        {job.experienceLevel || "Level unavailable"}
-                      </Pill>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 justify-evenly">
-                    <JobMetric
-                      label="Applications"
-                      value={job.applicationCount || 0}
-                    />
-
-                    <JobMetric
-                      label="Last applied"
-                      value={formatDate(job.lastApplicationAt)}
-                    />
-
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Best match
-                      </p>
-
-                      <MatchScoreBadge match={job.bestMatch} size="sm" />
-                    </div>
-                  </div>
-
-                  <div className="flex lg:justify-end">
-                    <Button
-                      as={Link}
-                      to={`/company/applications/${job._id}`}
-                      variant="secondary"
-                    >
-                      View applications
-                    </Button>
-                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full lg:w-auto"
+                    onClick={handleClearFilters}
+                  >
+                    Clear
+                  </Button>
                 </div>
-              </CardBody>
-            </Card>
-          ))}
-        </section>
-      )}
+              </form>
 
-      {requestStatus === "success" && pagination && (
-        <Card>
-          <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-600">
-              Page {pagination.page} of {pagination.totalPages || 1} ·{" "}
-              {pagination.total} jobs
-            </p>
+              <ActiveApplicationFilters
+                chips={activeFilterChips}
+                onRemove={handleRemoveFilter}
+                onClear={handleClearFilters}
+              />
+            </CardBody>
+          </Card>
 
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={!pagination.hasPreviousPage}
-                onClick={() => setPage((currentPage) => currentPage - 1)}
-              >
-                Previous
-              </Button>
+          <Card>
+            <CardBody className="p-0">
+              <header className="flex flex-col gap-3 border-b border-slate-100 p-2 sm:flex-row sm:items-end sm:justify-between sm:p-2">
+                <div>
+                  <h2 className="text-xl font-semibold leading-7 text-slate-950">
+                    {hasLoadedData
+                      ? `${currentTotal} ${currentTotal === 1 ? "job" : "jobs"}`
+                      : "Application groups"}
+                  </h2>
 
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={!pagination.hasNextPage}
-                onClick={() => setPage((currentPage) => currentPage + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          </CardBody>
-        </Card>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    {selectedStatus
+                      ? `Showing ${getStatusLabel(
+                          selectedStatus,
+                        ).toLowerCase()}.`
+                      : "Showing open and closed job pipelines."}
+                  </p>
+                </div>
+
+                {isUpdating && (
+                  <p
+                    role="status"
+                    className="inline-flex items-center gap-2 text-sm leading-6 text-slate-500"
+                  >
+                    <LoaderCircle
+                      className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                    Updating groups
+                  </p>
+                )}
+              </header>
+
+              {isInitialLoading && <CompanyApplicationJobsSkeleton />}
+
+              {requestStatus === "error" && (
+                <div className="border-b border-slate-100 p-4 sm:p-5">
+                  <SectionError
+                    compact={hasLoadedData}
+                    title="Could not load application groups"
+                    message={errorMessage}
+                    onRetry={() =>
+                      setLoadAttempt((currentAttempt) => currentAttempt + 1)
+                    }
+                  />
+                </div>
+              )}
+
+              {hasLoadedData && jobs.length === 0 && !isInitialLoading && (
+                <div className="p-5">
+                  <EmptyState
+                    size="compact"
+                    icon={UsersRound}
+                    title="No application groups found"
+                    description={
+                      activeFilterChips.length > 0
+                        ? "No jobs match the current search, status, or sort filters."
+                        : "Application activity will appear here after candidates apply to a company job."
+                    }
+                    action={
+                      activeFilterChips.length > 0 ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={handleClearFilters}
+                        >
+                          Clear filters
+                        </Button>
+                      ) : (
+                        <Button as={Link} to="/company/jobs">
+                          Manage jobs
+                        </Button>
+                      )
+                    }
+                  />
+                </div>
+              )}
+
+              {hasLoadedData && jobs.length > 0 && (
+                <>
+                  <div
+                    className={[
+                      "divide-y divide-slate-100",
+                      "transition-opacity",
+
+                      isUpdating ? "opacity-60" : "",
+                    ].join(" ")}
+                  >
+                    {jobs.map((job) => (
+                      <CompanyApplicationJobRow
+                        key={job._id || job.id}
+                        job={job}
+                      />
+                    ))}
+                  </div>
+
+                  <ApplicationGroupsPagination
+                    pagination={pagination}
+                    onPreviousPage={() =>
+                      setPage((currentPage) => Math.max(currentPage - 1, 1))
+                    }
+                    onNextPage={() => setPage((currentPage) => currentPage + 1)}
+                  />
+                </>
+              )}
+            </CardBody>
+          </Card>
+        </>
       )}
     </div>
   );
