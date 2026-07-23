@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 
+import { ArrowLeft, LoaderCircle, Save } from "lucide-react";
+
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useForm } from "react-hook-form";
+
 import { zodResolver } from "@hookform/resolvers/zod";
+
+import { getMyCompany } from "../../api/company.api";
 
 import {
   createManagedJob,
@@ -11,31 +16,28 @@ import {
   updateManagedJob,
 } from "../../api/job.api";
 
-import { getMyCompany } from "../../api/company.api";
+import CompanyJobPostAssistantCard from "../../components/ai/CompanyJobPostAssistantCard";
+
+import CompanyJobFormFields from "../../components/company/CompanyJobFormFields";
+import CompanySetupRequired from "../../components/company/CompanySetupRequired";
+
+import CompanyJobFormPageSkeleton from "../../components/loading/CompanyJobFormPageSkeleton";
+
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
+
+import { Card, CardBody } from "../../components/ui/Card";
+
+import PageHero from "../../components/ui/PageHero";
+import SectionError from "../../components/ui/SectionError";
 
 import { createJobSchema } from "../../features/jobs/job.schemas";
 
-import {
-  EMPLOYMENT_TYPES,
-  EXPERIENCE_LEVELS,
-  WORKPLACE_TYPES,
-} from "../../features/jobs/job.constants";
-
 import getApiError from "../../utils/getApiError";
+
 import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
 
-import Button from "../../components/ui/Button";
-import { Card, CardBody, CardHeader } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Alert from "../../components/ui/Alert";
-import TextInput from "../../components/ui/TextInput";
-import TextareaInput from "../../components/ui/TextareaInput";
-import SelectInput from "../../components/ui/SelectInput";
-import PageHero from "../../components/ui/PageHero";
-
-import CompanySetupRequired from "../../components/company/CompanySetupRequired";
-
-import CompanyJobPostAssistantCard from "../../components/ai/CompanyJobPostAssistantCard";
+import notify from "../../utils/notify";
 
 const defaultValues = {
   title: "",
@@ -82,6 +84,7 @@ const getDefaultValuesFromJob = (job) => {
 
   return {
     title: job.title ?? "",
+
     description: job.description ?? "",
 
     responsibilitiesText: Array.isArray(job.responsibilities)
@@ -95,9 +98,13 @@ const getDefaultValuesFromJob = (job) => {
     skillsText: Array.isArray(job.skills) ? job.skills.join(", ") : "",
 
     location: job.location ?? "",
+
     employmentType: job.employmentType ?? "",
+
     workplaceType: job.workplaceType ?? "",
+
     experienceLevel: job.experienceLevel ?? "",
+
     salaryMin:
       job.salaryMin === null || job.salaryMin === undefined
         ? ""
@@ -107,7 +114,9 @@ const getDefaultValuesFromJob = (job) => {
       job.salaryMax === null || job.salaryMax === undefined
         ? ""
         : String(job.salaryMax),
+
     salaryCurrency: job.salaryCurrency ?? "INR",
+
     isSalaryVisible: Boolean(job.isSalaryVisible),
   };
 };
@@ -115,6 +124,7 @@ const getDefaultValuesFromJob = (job) => {
 const convertFormDataToPayload = (formData) => {
   return {
     title: formData.title,
+
     description: formData.description,
 
     responsibilities: splitLines(formData.responsibilitiesText),
@@ -124,33 +134,21 @@ const convertFormDataToPayload = (formData) => {
     skills: splitCommaList(formData.skillsText),
 
     location: formData.location,
+
     employmentType: formData.employmentType,
+
     workplaceType: formData.workplaceType,
+
     experienceLevel: formData.experienceLevel,
 
     salaryMin: formData.salaryMin,
+
     salaryMax: formData.salaryMax,
+
     salaryCurrency: formData.salaryCurrency,
+
     isSalaryVisible: formData.isSalaryVisible,
   };
-};
-
-const FormSectionTitle = ({ eyebrow, title, description }) => {
-  return (
-    <CardHeader>
-      {eyebrow && (
-        <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-          {eyebrow}
-        </p>
-      )}
-
-      <h2 className="mt-1 text-xl font-black text-slate-950">{title}</h2>
-
-      {description && (
-        <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
-      )}
-    </CardHeader>
-  );
 };
 
 const CompanyJobFormPage = () => {
@@ -168,6 +166,8 @@ const CompanyJobFormPage = () => {
 
   const [isCompanyMissing, setIsCompanyMissing] = useState(false);
 
+  const [loadAttempt, setLoadAttempt] = useState(0);
+
   const {
     register,
     handleSubmit,
@@ -175,9 +175,11 @@ const CompanyJobFormPage = () => {
     control,
     getValues,
     setValue,
+
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(createJobSchema),
+
     defaultValues,
   });
 
@@ -187,14 +189,11 @@ const CompanyJobFormPage = () => {
     const loadPage = async () => {
       try {
         setPageStatus("loading");
+
         setApiError("");
+
         setIsCompanyMissing(false);
 
-        /*
-         * The existing company GET supplies
-         * both company-profile eligibility
-         * and AI usage.
-         */
         const [companyResult, jobResult] = await Promise.all([
           getMyCompany(),
 
@@ -211,6 +210,8 @@ const CompanyJobFormPage = () => {
 
         if (isEditMode) {
           reset(getDefaultValuesFromJob(jobResult.data));
+        } else {
+          reset(defaultValues);
         }
 
         setPageStatus("ready");
@@ -242,20 +243,26 @@ const CompanyJobFormPage = () => {
     return () => {
       shouldIgnore = true;
     };
-  }, [isEditMode, jobId, reset]);
+  }, [isEditMode, jobId, reset, loadAttempt]);
 
   const onSubmit = async (formData) => {
     setApiError("");
+
     setIsCompanyMissing(false);
 
     const payload = convertFormDataToPayload(formData);
 
     try {
-      if (isEditMode) {
-        await updateManagedJob(jobId, payload);
-      } else {
-        await createManagedJob(payload);
-      }
+      const result = isEditMode
+        ? await updateManagedJob(jobId, payload)
+        : await createManagedJob(payload);
+
+      notify.success(
+        result.message ||
+          (isEditMode
+            ? "Job updated successfully."
+            : "Job created successfully."),
+      );
 
       navigate("/company/jobs", {
         replace: true,
@@ -272,27 +279,25 @@ const CompanyJobFormPage = () => {
   };
 
   if (pageStatus === "loading") {
-    return (
-      <Card>
-        <CardBody>
-          <p className="text-sm text-slate-600">Loading job details...</p>
-        </CardBody>
-      </Card>
-    );
+    return <CompanyJobFormPageSkeleton />;
   }
 
   if (pageStatus === "error") {
     return (
-      <EmptyState
-        icon="⚠️"
-        title="Could not load job"
-        description={apiError}
-        action={
-          <Button as={Link} to="/company/jobs">
-            Back to jobs
-          </Button>
-        }
-      />
+      <div className="grid gap-5">
+        <Button as={Link} to="/company/jobs" variant="ghost" className="w-fit">
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to jobs
+        </Button>
+
+        <SectionError
+          title={
+            isEditMode ? "Could not load job" : "Could not prepare job form"
+          }
+          message={apiError}
+          onRetry={() => setLoadAttempt((currentAttempt) => currentAttempt + 1)}
+        />
+      </div>
     );
   }
 
@@ -303,237 +308,89 @@ const CompanyJobFormPage = () => {
         title={isEditMode ? "Edit job" : "Create job"}
         description={
           isEditMode
-            ? "Update this job posting and keep the public listing accurate for candidates."
-            : "Create a new job posting for candidates to discover and apply."
+            ? "Update the listing while keeping its responsibilities, requirements, compensation, and public information accurate."
+            : "Create a structured job post that candidates can discover, understand, and apply to."
         }
         actions={
           <Button as={Link} to="/company/jobs" variant="secondary">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Back to jobs
           </Button>
         }
       />
 
-      {isCompanyMissing && (
-        <CompanySetupRequired description="Create your company profile before posting a job." />
+      {isCompanyMissing ? (
+        <CompanySetupRequired description="Create your company profile before posting or editing a job." />
+      ) : (
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="grid gap-6"
+          noValidate
+        >
+          {apiError && <Alert variant="error">{apiError}</Alert>}
+
+          <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
+            <CompanyJobFormFields register={register} errors={errors} />
+
+            <aside className="min-w-0">
+              <CompanyJobPostAssistantCard
+                control={control}
+                getValues={getValues}
+                setValue={setValue}
+                availability={aiJobPostAvailability}
+              />
+            </aside>
+          </div>
+
+          <Card className="sticky bottom-3 z-20 border-slate-200 bg-white/90 shadow-lg shadow-slate-200/50 backdrop-blur">
+            <CardBody className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+              <div>
+                <p className="text-sm font-semibold leading-5 text-slate-900">
+                  {isEditMode
+                    ? "Ready to update this job?"
+                    : "Ready to publish this job?"}
+                </p>
+
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  {isEditMode
+                    ? "Saved changes will update the public job listing."
+                    : "The listing will become available to candidates after creation."}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 sm:flex">
+                <Button
+                  as={Link}
+                  to="/company/jobs"
+                  variant="secondary"
+                  size="lg"
+                >
+                  Cancel
+                </Button>
+
+                <Button type="submit" size="lg" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <LoaderCircle
+                        className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                        aria-hidden="true"
+                      />
+
+                      {isEditMode ? "Updating..." : "Creating..."}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" aria-hidden="true" />
+
+                      {isEditMode ? "Update job" : "Create job"}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardBody>
+          </Card>
+        </form>
       )}
-
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="grid gap-6"
-        hidden={isCompanyMissing}
-      >
-        {apiError && <Alert variant="error">{apiError}</Alert>}
-
-        <CompanyJobPostAssistantCard
-          control={control}
-          getValues={getValues}
-          setValue={setValue}
-          availability={aiJobPostAvailability}
-        />
-
-        <Card>
-          <FormSectionTitle
-            eyebrow="Basics"
-            title="Job details"
-            description="Add the core information candidates will see first."
-          />
-
-          <CardBody className="grid gap-5">
-            <TextInput
-              id="title"
-              type="text"
-              label="Job title"
-              placeholder="Example: MERN Stack Developer"
-              error={errors.title?.message}
-              {...register("title")}
-            />
-
-            <TextareaInput
-              id="description"
-              label="Job description"
-              rows={7}
-              placeholder="Describe the role, team, work, and expectations."
-              hint="Describe the role, team, work, expectations, and why the candidate should apply."
-              error={errors.description?.message}
-              {...register("description")}
-            />
-
-            <div className="grid gap-5 lg:grid-cols-3">
-              <SelectInput
-                id="employmentType"
-                label="Employment type"
-                placeholder="Select employment type"
-                options={EMPLOYMENT_TYPES}
-                error={errors.employmentType?.message}
-                {...register("employmentType")}
-              />
-
-              <SelectInput
-                id="workplaceType"
-                label="Workplace type"
-                placeholder="Select workplace type"
-                options={WORKPLACE_TYPES}
-                error={errors.workplaceType?.message}
-                {...register("workplaceType")}
-              />
-
-              <SelectInput
-                id="experienceLevel"
-                label="Experience level"
-                placeholder="Select experience level"
-                options={EXPERIENCE_LEVELS}
-                error={errors.experienceLevel?.message}
-                {...register("experienceLevel")}
-              />
-            </div>
-
-            <TextInput
-              id="location"
-              type="text"
-              label="Location"
-              placeholder="Example: Pune, India"
-              hint="Examples: Pune, India · Remote · Mumbai, India"
-              error={errors.location?.message}
-              {...register("location")}
-            />
-
-            <TextInput
-              id="skillsText"
-              type="text"
-              label="Skills"
-              placeholder="React, Node.js, MongoDB"
-              hint="Separate skills with commas. Example: React, Node.js, MongoDB"
-              error={errors.skillsText?.message}
-              {...register("skillsText")}
-            />
-          </CardBody>
-        </Card>
-
-        <Card>
-          <FormSectionTitle
-            eyebrow="Role content"
-            title="Responsibilities and requirements"
-            description="Use one line for each point so the public job page can show clean bullet lists."
-          />
-
-          <CardBody>
-            <div className="grid gap-5 lg:grid-cols-2">
-              <TextareaInput
-                id="responsibilitiesText"
-                label="Responsibilities"
-                rows={7}
-                placeholder={`Build frontend features\nIntegrate backend APIs\nWrite clean reusable code`}
-                hint="Write one responsibility per line."
-                error={errors.responsibilitiesText?.message}
-                {...register("responsibilitiesText")}
-              />
-
-              <TextareaInput
-                id="requirementsText"
-                label="Requirements"
-                rows={7}
-                placeholder={`Good JavaScript knowledge\nReact project experience\nBasic REST API understanding`}
-                hint="Write one requirement per line."
-                error={errors.requirementsText?.message}
-                {...register("requirementsText")}
-              />
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <FormSectionTitle
-            eyebrow="Compensation"
-            title="Salary information"
-            description="Salary is optional, but visible salaries usually improve candidate trust."
-          />
-
-          <CardBody className="grid gap-5">
-            <div className="grid gap-5 lg:grid-cols-[1fr_1fr_160px]">
-              <TextInput
-                id="salaryMin"
-                type="number"
-                label="Minimum salary"
-                min="0"
-                placeholder="300000"
-                error={errors.salaryMin?.message}
-                {...register("salaryMin")}
-              />
-
-              <TextInput
-                id="salaryMax"
-                type="number"
-                label="Maximum salary"
-                min="0"
-                placeholder="700000"
-                error={errors.salaryMax?.message}
-                {...register("salaryMax")}
-              />
-
-              <TextInput
-                id="salaryCurrency"
-                type="text"
-                label="Currency"
-                maxLength={3}
-                error={errors.salaryCurrency?.message}
-                inputClassName="uppercase"
-                {...register("salaryCurrency")}
-              />
-            </div>
-
-            <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-              <input
-                type="checkbox"
-                className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                {...register("isSalaryVisible")}
-              />
-
-              <span>
-                <span className="block text-sm font-bold text-slate-800">
-                  Show salary on public job page
-                </span>
-
-                <span className="mt-1 block text-sm leading-6 text-slate-500">
-                  Turn this off if the company does not want to disclose salary
-                  publicly.
-                </span>
-              </span>
-            </label>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-bold text-slate-900">
-                {isEditMode ? "Ready to update this job?" : "Ready to publish?"}
-              </p>
-
-              <p className="mt-1 text-sm text-slate-500">
-                {isEditMode
-                  ? "Your changes will update the job posting."
-                  : "Candidates will be able to discover this job once created."}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button as={Link} to="/company/jobs" variant="secondary">
-                Cancel
-              </Button>
-
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting
-                  ? isEditMode
-                    ? "Updating..."
-                    : "Creating..."
-                  : isEditMode
-                    ? "Update job"
-                    : "Create job"}
-              </Button>
-            </div>
-          </CardBody>
-        </Card>
-      </form>
     </div>
   );
 };
