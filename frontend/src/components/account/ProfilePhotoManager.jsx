@@ -6,11 +6,11 @@ import { deleteProfilePhoto, uploadProfilePhoto } from "../../api/auth.api";
 
 import getApiError from "../../utils/getApiError";
 
+import ProfileAvatar from "../common/ProfileAvatar";
+
+import Alert from "../ui/Alert";
 import Button from "../ui/Button";
 import { Card, CardBody, CardHeader } from "../ui/Card";
-import Alert from "../ui/Alert";
-
-import ProfileAvatar from "../common/ProfileAvatar";
 
 const PROFILE_PHOTO_MAX_SIZE = 2 * 1024 * 1024;
 
@@ -41,9 +41,10 @@ const ProfilePhotoManager = ({
   description = "Upload a clear photo so people can recognize your profile.",
   compact = false,
   embedded = false,
+  compactActionsHorizontal = false,
+  showCompactHeader = true,
 }) => {
   const inputId = useId();
-
   const fileInputRef = useRef(null);
 
   const [selectedPhoto, setSelectedPhoto] = useState(null);
@@ -61,10 +62,10 @@ const ProfilePhotoManager = ({
   };
 
   const handlePhotoChange = (event) => {
-    const file = event.target.files?.[0] || null;
+    const file = event.target.files?.[0] ?? null;
 
-    setPhotoSuccess("");
     setPhotoError("");
+    setPhotoSuccess("");
 
     if (!file) {
       clearSelectedPhoto();
@@ -98,7 +99,6 @@ const ProfilePhotoManager = ({
       const result = await uploadProfilePhoto(selectedPhoto);
 
       updateUser(result.data.user);
-
       clearSelectedPhoto();
       setPhotoSuccess(result.message);
     } catch (error) {
@@ -127,7 +127,6 @@ const ProfilePhotoManager = ({
       const result = await deleteProfilePhoto();
 
       updateUser(result.data.user);
-
       clearSelectedPhoto();
       setPhotoSuccess(result.message);
     } catch (error) {
@@ -139,168 +138,163 @@ const ProfilePhotoManager = ({
     }
   };
 
-  if (compact) {
-    const compactContent = (
-      <>
-        {embedded ? (
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
-              <Camera className="h-4 w-4" aria-hidden="true" />
-            </div>
+  const compactActionsClassName = [
+    "mt-4 grid gap-2",
+    "min-[420px]:grid-cols-2",
+    compactActionsHorizontal ? "" : "xl:grid-cols-1",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-            <div className="min-w-0">
-              <p className="text-xs font-medium leading-5 text-blue-600">
-                {eyebrow}
-              </p>
+  const compactHeader = embedded ? (
+    <div className="flex min-w-0 items-start gap-3">
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
+        <Camera className="h-4 w-4" aria-hidden="true" />
+      </div>
 
-              <h2 className="text-base font-semibold leading-6 text-slate-950">
-                {title}
-              </h2>
+      <div className="min-w-0">
+        <p className="text-xs font-medium leading-5 text-blue-600">{eyebrow}</p>
 
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                {description}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex min-w-0 items-start gap-3">
-            <ProfileAvatar user={user} name={name} size="lg" />
+        <h2 className="text-base font-semibold leading-6 text-slate-950">
+          {title}
+        </h2>
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <Camera
-                  className="h-4 w-4 shrink-0 text-blue-600"
-                  aria-hidden="true"
-                />
+        <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
+      </div>
+    </div>
+  ) : (
+    <div className="flex min-w-0 items-start gap-3">
+      <ProfileAvatar user={user} name={name} size="lg" />
 
-                <p className="text-xs font-medium leading-5 text-blue-600">
-                  {eyebrow}
-                </p>
-              </div>
-
-              <h2 className="mt-0.5 text-base font-semibold leading-6 text-slate-950">
-                {title}
-              </h2>
-
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                {description}
-              </p>
-            </div>
-          </div>
-        )}
-
-        <div className="mt-4">
-          <label
-            htmlFor={inputId}
-            className="mb-2 block text-sm font-medium text-slate-700"
-          >
-            Choose photo
-          </label>
-
-          <input
-            id={inputId}
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handlePhotoChange}
-            className={[
-              "block w-full",
-              "rounded-xl border",
-              "border-slate-200",
-              "bg-white px-3 py-2",
-              "text-sm text-slate-700",
-
-              "file:mr-3",
-              "file:rounded-lg",
-              "file:border-0",
-              "file:bg-blue-50",
-              "file:px-3 file:py-2",
-              "file:text-sm",
-              "file:font-medium",
-              "file:text-blue-700",
-
-              "hover:file:bg-blue-100",
-            ].join(" ")}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <Camera
+            className="h-4 w-4 shrink-0 text-blue-600"
+            aria-hidden="true"
           />
 
-          <p className="mt-2 text-xs leading-5 text-slate-500">
-            JPG, PNG or WebP. Maximum 2 MB.
+          <p className="text-xs font-medium leading-5 text-blue-600">
+            {eyebrow}
           </p>
+        </div>
 
-          {selectedPhoto && (
-            <p className="mt-2 wrap-break-word text-xs leading-5 text-slate-600">
-              Selected:{" "}
-              <span className="font-medium text-slate-900">
-                {selectedPhoto.name}
-              </span>
-            </p>
+        <h2 className="mt-0.5 text-base font-semibold leading-6 text-slate-950">
+          {title}
+        </h2>
+
+        <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
+      </div>
+    </div>
+  );
+
+  const compactContent = (
+    <>
+      {showCompactHeader && compactHeader}
+
+      <div className={showCompactHeader ? "mt-4" : ""}>
+        <label
+          htmlFor={inputId}
+          className="mb-2 block text-sm font-medium text-slate-700"
+        >
+          Choose photo
+        </label>
+
+        <input
+          id={inputId}
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handlePhotoChange}
+          className={[
+            "block w-full",
+            "rounded-xl border border-slate-200",
+            "bg-white px-3 py-2",
+            "text-sm text-slate-700",
+            "file:mr-3 file:rounded-lg file:border-0",
+            "file:bg-blue-50 file:px-3 file:py-2",
+            "file:text-sm file:font-medium file:text-blue-700",
+            "hover:file:bg-blue-100",
+          ].join(" ")}
+        />
+
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          JPG, PNG or WebP. Maximum 2 MB.
+        </p>
+
+        {selectedPhoto && (
+          <p className="mt-2 wrap-break-word text-xs leading-5 text-slate-600">
+            Selected:{" "}
+            <span className="font-medium text-slate-900">
+              {selectedPhoto.name}
+            </span>
+          </p>
+        )}
+      </div>
+
+      {photoError && (
+        <Alert variant="error" className="mt-4">
+          {photoError}
+        </Alert>
+      )}
+
+      {photoSuccess && (
+        <Alert variant="success" className="mt-4">
+          {photoSuccess}
+        </Alert>
+      )}
+
+      <div className={compactActionsClassName}>
+        <Button
+          type="button"
+          size="sm"
+          disabled={isUploadingPhoto || !selectedPhoto}
+          onClick={handleUploadPhoto}
+          fullWidth
+        >
+          {isUploadingPhoto ? (
+            <>
+              <LoaderCircle
+                className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4" aria-hidden="true" />
+              {user?.profilePhotoUrl ? "Change photo" : "Upload photo"}
+            </>
           )}
-        </div>
+        </Button>
 
-        {photoError && (
-          <Alert variant="error" className="mt-4">
-            {photoError}
-          </Alert>
-        )}
+        <Button
+          type="button"
+          variant="danger"
+          size="sm"
+          disabled={isDeletingPhoto || !user?.profilePhotoUrl}
+          onClick={handleDeletePhoto}
+          fullWidth
+        >
+          {isDeletingPhoto ? (
+            <>
+              <LoaderCircle
+                className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
+              Removing...
+            </>
+          ) : (
+            <>
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              Remove photo
+            </>
+          )}
+        </Button>
+      </div>
+    </>
+  );
 
-        {photoSuccess && (
-          <Alert variant="success" className="mt-4">
-            {photoSuccess}
-          </Alert>
-        )}
-
-        <div className="mt-4 grid gap-2 min-[420px]:grid-cols-2 xl:grid-cols-1">
-          <Button
-            type="button"
-            size="sm"
-            disabled={isUploadingPhoto || !selectedPhoto}
-            onClick={handleUploadPhoto}
-            fullWidth
-          >
-            {isUploadingPhoto ? (
-              <>
-                <LoaderCircle
-                  className="h-4 w-4 animate-spin motion-reduce:animate-none"
-                  aria-hidden="true"
-                />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4" aria-hidden="true" />
-
-                {user?.profilePhotoUrl ? "Change photo" : "Upload photo"}
-              </>
-            )}
-          </Button>
-
-          <Button
-            type="button"
-            variant="danger"
-            size="sm"
-            disabled={isDeletingPhoto || !user?.profilePhotoUrl}
-            onClick={handleDeletePhoto}
-            fullWidth
-          >
-            {isDeletingPhoto ? (
-              <>
-                <LoaderCircle
-                  className="h-4 w-4 animate-spin motion-reduce:animate-none"
-                  aria-hidden="true"
-                />
-                Removing...
-              </>
-            ) : (
-              <>
-                <Trash2 className="h-4 w-4" aria-hidden="true" />
-                Remove photo
-              </>
-            )}
-          </Button>
-        </div>
-      </>
-    );
-
+  if (compact) {
     if (embedded) {
       return (
         <section className="mt-5 border-t border-slate-100 pt-5">
@@ -357,7 +351,16 @@ const ProfilePhotoManager = ({
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={handlePhotoChange}
-            className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-blue-700 hover:file:bg-blue-100"
+            className={[
+              "block w-full",
+              "rounded-xl border border-slate-200",
+              "bg-white px-3 py-2.5",
+              "text-sm text-slate-700",
+              "file:mr-4 file:rounded-xl file:border-0",
+              "file:bg-blue-50 file:px-4 file:py-2",
+              "file:text-sm file:font-bold file:text-blue-700",
+              "hover:file:bg-blue-100",
+            ].join(" ")}
           />
 
           {selectedPhoto && (

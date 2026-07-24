@@ -421,7 +421,6 @@ const CompanyApplicationsPage = () => {
   return (
     <div className="grid gap-6">
       <PageHero
-        eyebrow="Company applications"
         title="Applications by job"
         description="Review applicant activity grouped by job, compare match information, and open the focused hiring pipeline for each role."
         actions={

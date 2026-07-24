@@ -339,7 +339,6 @@ const CompanyProfilePage = () => {
   return (
     <div className="grid gap-6">
       <PageHero
-        eyebrow="Company profile"
         title={
           mode === "edit" ? "Edit company profile" : "Create company profile"
         }

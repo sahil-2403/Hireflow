@@ -304,7 +304,6 @@ const CompanyJobFormPage = () => {
   return (
     <div className="grid gap-6">
       <PageHero
-        eyebrow="Company jobs"
         title={isEditMode ? "Edit job" : "Create job"}
         description={
           isEditMode

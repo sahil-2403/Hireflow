@@ -184,7 +184,6 @@ const CompanyRecruitersPage = () => {
   return (
     <div className="grid gap-6">
       <PageHero
-        eyebrow="Recruiters"
         title="Manage recruiters"
         description="Create recruiter accounts and activate or deactivate access to your company hiring workspace."
         meta={

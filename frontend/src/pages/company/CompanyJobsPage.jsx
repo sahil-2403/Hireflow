@@ -351,7 +351,6 @@ const CompanyJobsPage = () => {
   return (
     <div className="grid gap-6">
       <PageHero
-        eyebrow="Company jobs"
         title="Manage jobs"
         description="Search your company listings, review their status, manage applications, and open or close job postings."
         actions={
