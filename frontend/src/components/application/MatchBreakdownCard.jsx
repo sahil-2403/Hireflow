@@ -1,9 +1,8 @@
-import { Card, CardBody, CardHeader } from "../ui/Card";
-
 const BREAKDOWN_ITEMS = [
   {
     key: "skills",
     label: "Skills",
+
     helper: (item) => {
       if (
         typeof item?.matchedSkillCount === "number" &&
@@ -18,17 +17,19 @@ const BREAKDOWN_ITEMS = [
   {
     key: "title",
     label: "Title fit",
+
     helper: (item) => {
       if (typeof item?.similarityPercentage === "number") {
         return `${item.similarityPercentage}% title similarity`;
       }
 
-      return item?.source ? `Source: ${item.source}` : "Role alignment";
+      return "Role-title alignment";
     },
   },
   {
     key: "experience",
     label: "Experience",
+
     helper: (item) => {
       if (item?.candidateExperienceLevel || item?.jobExperienceLevel) {
         return `${item?.candidateExperienceLevel || "candidate"} → ${
@@ -42,17 +43,19 @@ const BREAKDOWN_ITEMS = [
   {
     key: "location",
     label: "Location",
+
     helper: (item) => {
       if (item?.matchedLocation) {
         return `Matched: ${item.matchedLocation}`;
       }
 
-      return item?.source ? `Source: ${item.source}` : "Location fit";
+      return "Location fit";
     },
   },
   {
     key: "workplaceType",
     label: "Workplace",
+
     helper: (item) => {
       if (typeof item?.matched === "boolean") {
         return item.matched ? "Preference matched" : "Preference not matched";
@@ -64,6 +67,7 @@ const BREAKDOWN_ITEMS = [
   {
     key: "employmentType",
     label: "Employment",
+
     helper: (item) => {
       if (typeof item?.matched === "boolean") {
         return item.matched ? "Preference matched" : "Preference not matched";
@@ -74,6 +78,18 @@ const BREAKDOWN_ITEMS = [
   },
 ];
 
+const formatNumber = (number) => {
+  if (!Number.isFinite(number)) {
+    return "0";
+  }
+
+  if (Number.isInteger(number)) {
+    return String(number);
+  }
+
+  return Number(number.toFixed(2)).toString();
+};
+
 const formatScore = (item) => {
   if (
     !item ||
@@ -83,51 +99,92 @@ const formatScore = (item) => {
     return "Not available";
   }
 
-  return `${item.score}/${item.maxScore}`;
+  return `${formatNumber(item.score)}/${formatNumber(item.maxScore)}`;
+};
+
+const getScorePercentage = (item) => {
+  if (
+    !item ||
+    typeof item.score !== "number" ||
+    typeof item.maxScore !== "number" ||
+    item.maxScore <= 0
+  ) {
+    return 0;
+  }
+
+  return Math.min(Math.max((item.score / item.maxScore) * 100, 0), 100);
+};
+
+const getBarClassName = (percentage) => {
+  if (percentage >= 70) {
+    return "bg-emerald-500";
+  }
+
+  if (percentage >= 40) {
+    return "bg-amber-500";
+  }
+
+  return "bg-red-500";
 };
 
 const MatchBreakdownCard = ({ breakdown }) => {
   return (
-    <Card>
-      <CardHeader>
-        <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-          Match breakdown
-        </p>
-
-        <h2 className="mt-1 text-xl font-black text-slate-950">
+    <section className="overflow-hidden rounded-xl border border-slate-200">
+      <header className="border-b border-slate-100 bg-slate-50/60 px-4 py-3">
+        <p className="text-xs font-medium leading-5 text-slate-500">
           Score by category
-        </h2>
-      </CardHeader>
+        </p>
+      </header>
 
-      <CardBody>
-        <div className="grid gap-3">
-          {BREAKDOWN_ITEMS.map((item) => {
-            const value = breakdown?.[item.key];
+      <div className="divide-y divide-slate-100">
+        {BREAKDOWN_ITEMS.map((item) => {
+          const value = breakdown?.[item.key];
 
-            return (
-              <div
-                key={item.key}
-                className="flex flex-col gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="text-sm font-black text-slate-950">
-                    {item.label}
-                  </p>
+          const percentage = getScorePercentage(value);
 
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    {item.helper(value)}
-                  </p>
+          return (
+            <div
+              key={item.key}
+              className="grid gap-2 px-4 py-3 sm:grid-cols-[90px_minmax(0,1fr)_auto] sm:items-center sm:gap-3"
+            >
+              <p className="text-xs font-medium leading-5 text-slate-800">
+                {item.label}
+              </p>
+
+              <div className="min-w-0">
+                <p className="truncate text-[11px] leading-4 text-slate-500">
+                  {item.helper(value)}
+                </p>
+
+                <div
+                  role="progressbar"
+                  aria-label={`${item.label} score`}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(percentage)}
+                  className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100"
+                >
+                  <div
+                    className={[
+                      "h-full rounded-full",
+                      "transition-[width]",
+                      getBarClassName(percentage),
+                    ].join(" ")}
+                    style={{
+                      width: `${percentage}%`,
+                    }}
+                  />
                 </div>
-
-                <span className="w-fit rounded-full bg-white px-3 py-1 text-xs font-black text-slate-700 ring-1 ring-slate-200">
-                  {formatScore(value)}
-                </span>
               </div>
-            );
-          })}
-        </div>
-      </CardBody>
-    </Card>
+
+              <span className="w-fit rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700">
+                {formatScore(value)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 };
 

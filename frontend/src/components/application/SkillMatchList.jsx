@@ -23,15 +23,15 @@ const SkillMatchList = ({
   return (
     <section>
       {title && (
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <p className="text-sm font-medium tracking-wider">
           {title}
         </p>
       )}
 
       {skills.length === 0 ? (
-        <p className="mt-2 text-sm text-slate-500">{emptyMessage}</p>
+        <p className="mt-4 text-sm text-slate-500">{emptyMessage}</p>
       ) : (
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           {visibleSkills.map((skill) => (
             <span
               key={skill}
