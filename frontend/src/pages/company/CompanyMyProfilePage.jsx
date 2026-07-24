@@ -85,7 +85,7 @@ const ProfileAndPhotoCard = ({
   fullName,
 }) => {
   return (
-    <Card>
+    <Card className="h-full">
       <CardBody>
         <div className="flex items-center gap-2">
           <UserRound
@@ -373,7 +373,7 @@ const CompanyMyProfilePage = () => {
 
       {isReady && (
         <>
-          <div className="grid min-w-0 gap-5 xl:grid-cols-[400px_minmax(0,1fr)] xl:items-start">
+          <div className="grid min-w-0 gap-5 xl:grid-cols-[400px_minmax(0,1fr)] xl:items-stretch">
             <ProfileAndPhotoCard
               values={watchedValues}
               user={user}
