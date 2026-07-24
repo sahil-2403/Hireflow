@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { Info, LoaderCircle, UsersRound } from "lucide-react";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,24 +11,34 @@ import {
   updateRecruiterStatus,
 } from "../../api/company.api";
 
+import PasswordField from "../../components/common/PasswordField";
+import ProfileAvatar from "../../components/common/ProfileAvatar";
+
+import CompanySetupRequired from "../../components/company/CompanySetupRequired";
+
+import CompanyRecruitersPageSkeleton from "../../components/loading/CompanyRecruitersPageSkeleton";
+
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
+
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  CardHeader,
+} from "../../components/ui/Card";
+
+import EmptyState from "../../components/ui/EmptyState";
+import PageHero from "../../components/ui/PageHero";
+import Pill from "../../components/ui/Pill";
+import SectionError from "../../components/ui/SectionError";
+import TextInput from "../../components/ui/TextInput";
+
 import { createRecruiterSchema } from "../../features/companies/recruiter.schemas";
 
 import getApiError from "../../utils/getApiError";
 import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
-
-import PasswordField from "../../components/common/PasswordField";
-
-import ProfileAvatar from "../../components/common/ProfileAvatar";
-
-import Button from "../../components/ui/Button";
-import { Card, CardBody, CardHeader } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Alert from "../../components/ui/Alert";
-import Pill from "../../components/ui/Pill";
-import TextInput from "../../components/ui/TextInput";
-import PageHero from "../../components/ui/PageHero";
-
-import CompanySetupRequired from "../../components/company/CompanySetupRequired";
+import notify from "../../utils/notify";
 
 const defaultValues = {
   username: "",
@@ -38,7 +50,12 @@ const defaultValues = {
 };
 
 const getRecruiterId = (recruiter) => {
-  return recruiter._id || recruiter.id;
+  return (
+    recruiter._id ||
+    recruiter.id ||
+    recruiter.userId?._id ||
+    recruiter.userId?.id
+  );
 };
 
 const getRecruiterUsername = (recruiter) => {
@@ -47,10 +64,6 @@ const getRecruiterUsername = (recruiter) => {
 
 const getRecruiterEmail = (recruiter) => {
   return recruiter.email || recruiter.userId?.email || "Email unavailable";
-};
-
-const getRecruiterStatus = (recruiter) => {
-  return recruiter.isActive ? "Active" : "Inactive";
 };
 
 const getRecruiterName = (recruiter) => {
@@ -64,8 +77,330 @@ const getRecruiterName = (recruiter) => {
 const RecruiterStatusPill = ({ recruiter }) => {
   return (
     <Pill variant={recruiter.isActive ? "emerald" : "slate"}>
-      {getRecruiterStatus(recruiter)}
+      {recruiter.isActive ? "Active" : "Inactive"}
     </Pill>
+  );
+};
+
+const RecruiterStats = ({ activeCount, inactiveCount, totalCount }) => {
+  const stats = [
+    {
+      label: "Active",
+      value: activeCount,
+      valueClassName: "text-emerald-700",
+    },
+    {
+      label: "Inactive",
+      value: inactiveCount,
+      valueClassName: "text-slate-700",
+    },
+    {
+      label: "Total",
+      value: totalCount,
+      valueClassName: "text-blue-700",
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-3 divide-x divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/60">
+      {stats.map((stat) => (
+        <div key={stat.label} className="px-2 py-2.5 text-center sm:px-3">
+          <p className="text-[11px] font-medium leading-4 text-slate-500">
+            {stat.label}
+          </p>
+
+          <p
+            className={[
+              "mt-0.5",
+              "text-lg",
+              "font-semibold",
+              "leading-6",
+              stat.valueClassName,
+            ].join(" ")}
+          >
+            {stat.value}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const RecruiterRow = ({ recruiter, updatingRecruiterId, onToggleStatus }) => {
+  const recruiterId = getRecruiterId(recruiter);
+
+  const isUpdating = updatingRecruiterId === recruiterId;
+
+  return (
+    <article className="grid gap-4 py-4 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+      <div className="flex min-w-0 items-start gap-3">
+        <ProfileAvatar
+          user={recruiter.userId}
+          name={getRecruiterName(recruiter)}
+          size="md"
+          fallbackClassName="bg-blue-50 text-blue-700"
+        />
+
+        <div className="min-w-0">
+          <h3 className="wrap-break-word text-sm font-semibold leading-6 text-slate-950">
+            {getRecruiterName(recruiter)}
+          </h3>
+
+          <p className="wrap-break-word text-sm font-medium leading-5 text-slate-700">
+            {recruiter.jobTitle || "Recruiter"}
+          </p>
+
+          <p className="mt-1 wrap-break-word text-xs leading-5 text-slate-500">
+            @{getRecruiterUsername(recruiter)}
+          </p>
+
+          <p className="wrap-break-word text-xs leading-5 text-slate-500">
+            {getRecruiterEmail(recruiter)}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 sm:contents">
+        <RecruiterStatusPill recruiter={recruiter} />
+
+        <Button
+          type="button"
+          variant={recruiter.isActive ? "danger" : "secondary"}
+          size="sm"
+          disabled={isUpdating}
+          onClick={() => onToggleStatus(recruiter)}
+          className={[
+            "w-full",
+            "sm:w-auto",
+            "sm:min-w-28",
+
+            recruiter.isActive
+              ? ""
+              : ["border-blue-200", "text-blue-700", "hover:bg-blue-50"].join(
+                  " ",
+                ),
+          ].join(" ")}
+        >
+          {isUpdating && (
+            <LoaderCircle
+              className="h-4 w-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+          )}
+
+          {isUpdating
+            ? "Updating"
+            : recruiter.isActive
+              ? "Deactivate"
+              : "Activate"}
+        </Button>
+      </div>
+    </article>
+  );
+};
+
+const RecruiterAccountsCard = ({
+  recruiters,
+  activeCount,
+  inactiveCount,
+  updatingRecruiterId,
+  isRefreshing,
+  onToggleStatus,
+}) => {
+  return (
+    <Card className="flex h-full flex-col">
+      <CardHeader>
+        <div className="flex min-w-0 items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold leading-7 text-slate-950">
+              Recruiter accounts
+            </h2>
+
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Active recruiters can log in and work on company jobs and
+              applications.
+            </p>
+          </div>
+
+          {isRefreshing && (
+            <p
+              role="status"
+              className="inline-flex shrink-0 items-center gap-2 text-xs leading-5 text-slate-500"
+            >
+              <LoaderCircle
+                className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
+              Refreshing
+            </p>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardBody className="flex flex-1 flex-col">
+        <RecruiterStats
+          activeCount={activeCount}
+          inactiveCount={inactiveCount}
+          totalCount={recruiters.length}
+        />
+
+        {recruiters.length === 0 ? (
+          <EmptyState
+            icon={UsersRound}
+            size="compact"
+            title="No recruiters created yet"
+            description="Create your first recruiter account to let your team manage jobs and applications."
+            className="mt-5 border-0 bg-transparent"
+          />
+        ) : (
+          <div
+            className={[
+              "mt-10",
+              "divide-y",
+              "divide-slate-100",
+              "transition-opacity",
+
+              isRefreshing ? "opacity-60" : "",
+            ].join(" ")}
+          >
+            {recruiters.map((recruiter) => {
+              const recruiterId = getRecruiterId(recruiter);
+
+              return (
+                <RecruiterRow
+                  key={recruiterId || getRecruiterUsername(recruiter)}
+                  recruiter={recruiter}
+                  updatingRecruiterId={updatingRecruiterId}
+                  onToggleStatus={onToggleStatus}
+                />
+              );
+            })}
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+};
+
+const CreateRecruiterCard = ({
+  register,
+  errors,
+  formError,
+  isSubmitting,
+  onSubmit,
+}) => {
+  return (
+    <form onSubmit={onSubmit} className="h-full">
+      <Card className="flex h-full flex-col">
+        <CardHeader>
+          <h2 className="text-lg font-semibold leading-7 text-slate-950">
+            Create recruiter
+          </h2>
+
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Recruiters can manage jobs and applications. Only company admins can
+            manage the company profile and recruiter access.
+          </p>
+        </CardHeader>
+
+        <CardBody className="flex-1">
+          {formError && (
+            <Alert variant="error" className="mb-5">
+              {formError}
+            </Alert>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextInput
+              id="firstName"
+              type="text"
+              label="First name"
+              placeholder="First name"
+              autoComplete="given-name"
+              error={errors.firstName?.message}
+              {...register("firstName")}
+            />
+
+            <TextInput
+              id="lastName"
+              type="text"
+              label="Last name"
+              placeholder="Last name"
+              autoComplete="family-name"
+              error={errors.lastName?.message}
+              {...register("lastName")}
+            />
+
+            <TextInput
+              id="jobTitle"
+              type="text"
+              label="Job title"
+              placeholder="Technical Recruiter"
+              autoComplete="organization-title"
+              error={errors.jobTitle?.message}
+              className="sm:col-span-2"
+              {...register("jobTitle")}
+            />
+
+            <TextInput
+              id="username"
+              type="text"
+              label="Username"
+              placeholder="recruiter_one"
+              autoComplete="username"
+              hint="Only letters, numbers, and underscores are allowed."
+              error={errors.username?.message}
+              {...register("username")}
+            />
+
+            <TextInput
+              id="email"
+              type="email"
+              label="Email"
+              placeholder="recruiter@example.com"
+              autoComplete="email"
+              error={errors.email?.message}
+              {...register("email")}
+            />
+
+            <PasswordField
+              id="password"
+              label="Temporary password"
+              placeholder="Recruiter123"
+              autoComplete="new-password"
+              registration={register("password")}
+              error={errors.password?.message}
+              className="sm:col-span-2"
+            />
+
+            <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2.5 text-xs leading-5 text-slate-600 sm:col-span-2">
+              <Info
+                className="mt-0.5 h-4 w-4 shrink-0 text-blue-700"
+                aria-hidden="true"
+              />
+
+              <p>
+                Password must contain at least 8 characters, one uppercase
+                letter, one lowercase letter, and one number.
+              </p>
+            </div>
+          </div>
+        </CardBody>
+
+        <CardFooter>
+          <Button type="submit" disabled={isSubmitting} fullWidth>
+            {isSubmitting && (
+              <LoaderCircle
+                className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
+            )}
+
+            {isSubmitting ? "Creating..." : "Create recruiter"}
+          </Button>
+        </CardFooter>
+      </Card>
+    </form>
   );
 };
 
@@ -74,21 +409,27 @@ const CompanyRecruitersPage = () => {
 
   const [recruiters, setRecruiters] = useState([]);
 
-  const [apiError, setApiError] = useState("");
+  const [loadError, setLoadError] = useState("");
 
-  const [successMessage, setSuccessMessage] = useState("");
+  const [formError, setFormError] = useState("");
 
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const [updatingRecruiterId, setUpdatingRecruiterId] = useState(null);
+
+  const hasLoadedDataRef = useRef(false);
 
   const {
     register,
     handleSubmit,
     reset,
+
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(createRecruiterSchema),
+
     defaultValues,
   });
 
@@ -96,10 +437,17 @@ const CompanyRecruitersPage = () => {
     let shouldIgnore = false;
 
     const fetchRecruiters = async () => {
-      try {
-        setRequestStatus("loading");
-        setApiError("");
+      const isRefresh = hasLoadedDataRef.current;
 
+      if (isRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setRequestStatus("loading");
+      }
+
+      setLoadError("");
+
+      try {
         const result = await listRecruiters();
 
         if (shouldIgnore) {
@@ -107,6 +455,9 @@ const CompanyRecruitersPage = () => {
         }
 
         setRecruiters(result.data ?? []);
+
+        hasLoadedDataRef.current = true;
+
         setRequestStatus("success");
       } catch (error) {
         if (shouldIgnore) {
@@ -115,14 +466,35 @@ const CompanyRecruitersPage = () => {
 
         const normalizedError = getApiError(error);
 
-        setApiError(normalizedError.message);
+        if (isCompanyProfileMissingError(normalizedError)) {
+          setRecruiters([]);
 
-        setRecruiters([]);
-        setRequestStatus(
-          isCompanyProfileMissingError(normalizedError)
-            ? "company-missing"
-            : "error",
-        );
+          hasLoadedDataRef.current = false;
+
+          setLoadError(normalizedError.message);
+
+          setRequestStatus("company-missing");
+
+          return;
+        }
+
+        if (isRefresh) {
+          setRequestStatus("success");
+
+          notify.error("Could not refresh recruiters", {
+            description: normalizedError.message,
+          });
+
+          return;
+        }
+
+        setLoadError(normalizedError.message);
+
+        setRequestStatus("error");
+      } finally {
+        if (!shouldIgnore) {
+          setIsRefreshing(false);
+        }
       }
     };
 
@@ -133,22 +505,29 @@ const CompanyRecruitersPage = () => {
     };
   }, [refreshKey]);
 
+  const handleRetryLoad = () => {
+    setLoadError("");
+
+    setRequestStatus("loading");
+
+    setRefreshKey((currentValue) => currentValue + 1);
+  };
+
   const onSubmit = async (formData) => {
-    setApiError("");
-    setSuccessMessage("");
+    setFormError("");
 
     try {
       const result = await createRecruiter(formData);
 
-      setSuccessMessage(result.message);
-
       reset(defaultValues);
+
+      notify.success(result.message || "Recruiter created successfully.");
 
       setRefreshKey((currentValue) => currentValue + 1);
     } catch (error) {
       const normalizedError = getApiError(error);
 
-      setApiError(normalizedError.message);
+      setFormError(normalizedError.message);
     }
   };
 
@@ -159,261 +538,92 @@ const CompanyRecruitersPage = () => {
 
     try {
       setUpdatingRecruiterId(recruiterId);
-      setApiError("");
-      setSuccessMessage("");
 
       const result = await updateRecruiterStatus(recruiterId, nextStatus);
 
-      setSuccessMessage(result.message);
+      setRecruiters((currentRecruiters) =>
+        currentRecruiters.map((currentRecruiter) => {
+          if (getRecruiterId(currentRecruiter) !== recruiterId) {
+            return currentRecruiter;
+          }
+
+          return {
+            ...currentRecruiter,
+            isActive: nextStatus,
+          };
+        }),
+      );
+
+      notify.success(
+        result.message ||
+          `Recruiter ${nextStatus ? "activated" : "deactivated"} successfully.`,
+      );
 
       setRefreshKey((currentValue) => currentValue + 1);
     } catch (error) {
       const normalizedError = getApiError(error);
 
-      setApiError(normalizedError.message);
+      notify.error("Could not update recruiter access", {
+        description: normalizedError.message,
+      });
     } finally {
       setUpdatingRecruiterId(null);
     }
   };
 
-  const activeRecruiters = recruiters.filter((recruiter) => recruiter.isActive);
-  const inactiveRecruiters = recruiters.filter(
-    (recruiter) => !recruiter.isActive,
-  );
+  const activeCount = recruiters.reduce((total, recruiter) => {
+    return total + (recruiter.isActive ? 1 : 0);
+  }, 0);
+
+  const inactiveCount = recruiters.length - activeCount;
+
+  const isLoading = requestStatus === "loading";
+
+  const isCompanyMissing = requestStatus === "company-missing";
+
+  const hasLoadError = requestStatus === "error";
+
+  const isReady = requestStatus === "success";
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <PageHero
         title="Manage recruiters"
         description="Create recruiter accounts and activate or deactivate access to your company hiring workspace."
-        meta={
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 text-center shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Active
-              </p>
-
-              <p className="mt-1 text-2xl font-black text-emerald-700">
-                {activeRecruiters.length}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 text-center shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Total
-              </p>
-
-              <p className="mt-1 text-2xl font-black text-slate-950">
-                {recruiters.length}
-              </p>
-            </div>
-          </div>
-        }
       />
 
-      {apiError && <Alert variant="error">{apiError}</Alert>}
-
-      {successMessage && <Alert variant="success">{successMessage}</Alert>}
-
-      {requestStatus === "company-missing" && (
+      {isCompanyMissing && (
         <CompanySetupRequired description="Create your company profile before inviting recruiters." />
       )}
 
-      {requestStatus !== "company-missing" && (
-        <div className="grid gap-6 xl:grid-cols-[750px_1fr]">
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-                    Team access
-                  </p>
+      {isLoading && <CompanyRecruitersPageSkeleton />}
 
-                  <h2 className="mt-1 text-xl font-black text-slate-950">
-                    Recruiter accounts
-                  </h2>
+      {hasLoadError && (
+        <SectionError
+          title="Could not load recruiters"
+          message={loadError}
+          onRetry={handleRetryLoad}
+        />
+      )}
 
-                  <p className="mt-1 text-sm leading-6 text-slate-600">
-                    Active recruiters can log in and work on company jobs and
-                    applications.
-                  </p>
-                </div>
+      {isReady && (
+        <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(380px,0.85fr)] xl:items-stretch">
+          <RecruiterAccountsCard
+            recruiters={recruiters}
+            activeCount={activeCount}
+            inactiveCount={inactiveCount}
+            updatingRecruiterId={updatingRecruiterId}
+            isRefreshing={isRefreshing}
+            onToggleStatus={handleToggleRecruiterStatus}
+          />
 
-                <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
-                  {inactiveRecruiters.length} inactive
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardBody>
-              {requestStatus === "loading" && (
-                <p className="text-sm text-slate-600">Loading recruiters...</p>
-              )}
-
-              {requestStatus === "error" && (
-                <Alert variant="error">Could not load recruiters.</Alert>
-              )}
-
-              {requestStatus === "success" && recruiters.length === 0 && (
-                <EmptyState
-                  icon="🤝"
-                  title="No recruiters created yet"
-                  description="Create your first recruiter account to let your team manage jobs and applications."
-                />
-              )}
-
-              {requestStatus === "success" && recruiters.length > 0 && (
-                <div className="divide-y divide-slate-100">
-                  {recruiters.map((recruiter) => {
-                    const recruiterId = getRecruiterId(recruiter);
-
-                    return (
-                      <article
-                        key={recruiterId}
-                        className="grid gap-4 py-5 first:pt-0 last:pb-0 lg:grid-cols-[2fr_0.5fr_auto] lg:items-center"
-                      >
-                        <div className="flex gap-4">
-                          <ProfileAvatar
-                            user={recruiter.userId}
-                            name={getRecruiterName(recruiter)}
-                            size="md"
-                            fallbackClassName="bg-blue-50 text-blue-700"
-                          />
-
-                          <div>
-                            <p className="font-black text-slate-950">
-                              {getRecruiterName(recruiter)}
-                            </p>
-
-                            <p className="mt-1 text-sm font-semibold text-slate-600">
-                              {recruiter.jobTitle || "Recruiter"}
-                            </p>
-
-                            <p className="mt-1 text-sm text-slate-500">
-                              @{getRecruiterUsername(recruiter)}
-                            </p>
-
-                            <p className="mt-1 text-sm text-slate-500">
-                              {getRecruiterEmail(recruiter)}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-col mr-5 w-full place-items-end self-center">
-                            <RecruiterStatusPill recruiter={recruiter} />
-                          </div>
-                        </div>
-
-                        <Button
-                          type="button"
-                          disabled={updatingRecruiterId === recruiterId}
-                          onClick={() => handleToggleRecruiterStatus(recruiter)}
-                          variant={recruiter.isActive ? "danger" : "secondary"}
-                          size="sm"
-                          className={
-                            recruiter.isActive
-                              ? ""
-                              : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                          }
-                        >
-                          {updatingRecruiterId === recruiterId
-                            ? "Updating..."
-                            : recruiter.isActive
-                              ? "Deactivate"
-                              : "Activate"}
-                        </Button>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
-            </CardBody>
-          </Card>
-
-          <Card className="self-start xl:sticky xl:top-24">
-            <CardHeader>
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                New recruiter
-              </p>
-
-              <h2 className="mt-1 text-xl font-black text-slate-950">
-                Create recruiter
-              </h2>
-
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                Recruiters can manage jobs and applications. Only owners can
-                manage company profile and recruiter access.
-              </p>
-            </CardHeader>
-
-            <CardBody>
-              <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5">
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                  <TextInput
-                    id="firstName"
-                    type="text"
-                    label="First name"
-                    placeholder="First name"
-                    error={errors.firstName?.message}
-                    {...register("firstName")}
-                  />
-
-                  <TextInput
-                    id="lastName"
-                    type="text"
-                    label="Last name"
-                    placeholder="Last name"
-                    error={errors.lastName?.message}
-                    {...register("lastName")}
-                  />
-                </div>
-
-                <TextInput
-                  id="jobTitle"
-                  type="text"
-                  label="Job title"
-                  placeholder="Technical Recruiter"
-                  error={errors.jobTitle?.message}
-                  {...register("jobTitle")}
-                />
-
-                <TextInput
-                  id="username"
-                  type="text"
-                  label="Username"
-                  placeholder="recruiter_one"
-                  hint="Only letters, numbers, and underscores are allowed."
-                  error={errors.username?.message}
-                  {...register("username")}
-                />
-
-                <TextInput
-                  id="email"
-                  type="email"
-                  label="Email"
-                  placeholder="recruiter@example.com"
-                  error={errors.email?.message}
-                  {...register("email")}
-                />
-
-                <PasswordField
-                  id="password"
-                  label="Temporary password"
-                  placeholder="Recruiter123"
-                  registration={register("password")}
-                  error={errors.password?.message}
-                />
-
-                <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-                  Password must contain at least 8 characters, one uppercase
-                  letter, one lowercase letter, and one number.
-                </div>
-
-                <Button type="submit" disabled={isSubmitting} fullWidth>
-                  {isSubmitting ? "Creating..." : "Create recruiter"}
-                </Button>
-              </form>
-            </CardBody>
-          </Card>
+          <CreateRecruiterCard
+            register={register}
+            errors={errors}
+            formError={formError}
+            isSubmitting={isSubmitting}
+            onSubmit={handleSubmit(onSubmit)}
+          />
         </div>
       )}
     </div>

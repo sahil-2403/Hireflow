@@ -355,11 +355,6 @@ const CompanyMyProfilePage = () => {
       <PageHero
         title={pageTitle}
         description="Keep your personal company workspace details and profile photo up to date."
-        actions={
-          <Button as={Link} to="/company/dashboard" variant="secondary">
-            Back to dashboard
-          </Button>
-        }
       />
 
       {isCompanyMissing && (
