@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { ArrowLeft, LoaderCircle, Save } from "lucide-react";
+import { LoaderCircle, Save } from "lucide-react";
 
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -34,9 +34,7 @@ import SectionError from "../../components/ui/SectionError";
 import { createJobSchema } from "../../features/jobs/job.schemas";
 
 import getApiError from "../../utils/getApiError";
-
 import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
-
 import notify from "../../utils/notify";
 
 const defaultValues = {
@@ -189,9 +187,7 @@ const CompanyJobFormPage = () => {
     const loadPage = async () => {
       try {
         setPageStatus("loading");
-
         setApiError("");
-
         setIsCompanyMissing(false);
 
         const [companyResult, jobResult] = await Promise.all([
@@ -245,9 +241,15 @@ const CompanyJobFormPage = () => {
     };
   }, [isEditMode, jobId, reset, loadAttempt]);
 
+  const handleRetryLoad = () => {
+    setApiError("");
+    setPageStatus("loading");
+
+    setLoadAttempt((currentAttempt) => currentAttempt + 1);
+  };
+
   const onSubmit = async (formData) => {
     setApiError("");
-
     setIsCompanyMissing(false);
 
     const payload = convertFormDataToPayload(formData);
@@ -278,31 +280,14 @@ const CompanyJobFormPage = () => {
     }
   };
 
-  if (pageStatus === "loading") {
-    return <CompanyJobFormPageSkeleton />;
-  }
+  const isLoading = pageStatus === "loading";
 
-  if (pageStatus === "error") {
-    return (
-      <div className="grid gap-5">
-        <Button as={Link} to="/company/jobs" variant="ghost" className="w-fit">
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to jobs
-        </Button>
+  const hasLoadError = pageStatus === "error";
 
-        <SectionError
-          title={
-            isEditMode ? "Could not load job" : "Could not prepare job form"
-          }
-          message={apiError}
-          onRetry={() => setLoadAttempt((currentAttempt) => currentAttempt + 1)}
-        />
-      </div>
-    );
-  }
+  const isReady = pageStatus === "ready";
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <PageHero
         title={isEditMode ? "Edit job" : "Create job"}
         description={
@@ -310,50 +295,54 @@ const CompanyJobFormPage = () => {
             ? "Update the listing while keeping its responsibilities, requirements, compensation, and public information accurate."
             : "Create a structured job post that candidates can discover, understand, and apply to."
         }
-        actions={
-          <Button as={Link} to="/company/jobs" variant="secondary">
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Back to jobs
-          </Button>
-        }
       />
 
-      {isCompanyMissing ? (
+      {isLoading && <CompanyJobFormPageSkeleton />}
+
+      {hasLoadError && (
+        <SectionError
+          title={
+            isEditMode ? "Could not load job" : "Could not prepare job form"
+          }
+          message={apiError}
+          onRetry={handleRetryLoad}
+        />
+      )}
+
+      {isReady && isCompanyMissing && (
         <CompanySetupRequired description="Create your company profile before posting or editing a job." />
-      ) : (
+      )}
+
+      {isReady && !isCompanyMissing && (
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="grid gap-6"
+          className="grid gap-5"
           noValidate
         >
           {apiError && <Alert variant="error">{apiError}</Alert>}
 
-          <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
-            <CompanyJobFormFields register={register} errors={errors} />
+          <CompanyJobPostAssistantCard
+            control={control}
+            getValues={getValues}
+            setValue={setValue}
+            availability={aiJobPostAvailability}
+          />
 
-            <aside className="min-w-0">
-              <CompanyJobPostAssistantCard
-                control={control}
-                getValues={getValues}
-                setValue={setValue}
-                availability={aiJobPostAvailability}
-              />
-            </aside>
-          </div>
+          <CompanyJobFormFields register={register} errors={errors} />
 
-          <Card className="sticky bottom-3 z-20 border-slate-200 bg-white/90 shadow-lg shadow-slate-200/50 backdrop-blur">
-            <CardBody className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+          <Card className="sticky bottom-0 border-2 z-40">
+            <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold leading-5 text-slate-900">
                   {isEditMode
-                    ? "Ready to update this job?"
+                    ? "You're almost done"
                     : "Ready to publish this job?"}
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-slate-500">
                   {isEditMode
-                    ? "Saved changes will update the public job listing."
-                    : "The listing will become available to candidates after creation."}
+                    ? "Review your changes and update the public job listing."
+                    : "Review the job details before making the listing available to candidates."}
                 </p>
               </div>
 
