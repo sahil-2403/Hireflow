@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
 
-import { BriefcaseBusiness, ClipboardList } from "lucide-react";
-
-import { Link } from "react-router-dom";
-
 import { listMyApplications } from "../../api/application.api";
 
 import { getMyCandidateProfile } from "../../api/candidate.api";
@@ -14,7 +10,6 @@ import CandidateDashboardOverview, {
 
 import CandidateRecentApplications from "../../components/candidate/CandidateRecentApplications";
 
-import Button from "../../components/ui/Button";
 import PageHero from "../../components/ui/PageHero";
 
 import useAuth from "../../hooks/useAuth";
@@ -148,22 +143,8 @@ const CandidateDashboardPage = () => {
   return (
     <div className="grid gap-6">
       <PageHero
-        eyebrow="Candidate dashboard"
         title={`Welcome back, ${getDisplayName(user)}`}
         description="Manage your profile, resume, applications, job recommendations, and AI-assisted preparation from one workspace."
-        actions={
-          <>
-            <Button as={Link} to="/jobs">
-              <BriefcaseBusiness className="h-4 w-4" aria-hidden="true" />
-              Browse jobs
-            </Button>
-
-            <Button as={Link} to="/candidate/applications" variant="secondary">
-              <ClipboardList className="h-4 w-4" aria-hidden="true" />
-              My applications
-            </Button>
-          </>
-        }
       />
 
       <CandidateDashboardOverview

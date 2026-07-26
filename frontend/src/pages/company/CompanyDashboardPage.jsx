@@ -419,17 +419,6 @@ const CompanyDashboardPage = () => {
       <PageHero
         title="Overview of your hiring activity"
         description="Track jobs, applications, candidates, and hiring progress from one place."
-        actions={
-          <>
-            <Button as={Link} to="/company/jobs" variant="secondary">
-              Manage jobs
-            </Button>
-
-            <Button as={Link} to="/company/applications">
-              View applications
-            </Button>
-          </>
-        }
       />
 
       {isCompanyMissing ? (

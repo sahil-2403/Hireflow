@@ -99,7 +99,7 @@ const RecentApplicationRow = ({ application }) => {
           </p>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 lg:border-t-0 lg:pt-0">
+        <div className="flex items-center justify-between gap-5 border-t border-slate-100 pt-3 lg:border-t-0 lg:pt-0">
           <div className="hidden lg:block">
             <ApplicationStatusBadge status={application.status} />
           </div>

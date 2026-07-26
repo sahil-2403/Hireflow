@@ -1,16 +1,13 @@
 import { useId, useRef, useState } from "react";
 
-import { Camera, LoaderCircle, Trash2, Upload } from "lucide-react";
+import { LoaderCircle, Trash2, Upload } from "lucide-react";
 
 import { deleteProfilePhoto, uploadProfilePhoto } from "../../api/auth.api";
 
 import getApiError from "../../utils/getApiError";
 
-import ProfileAvatar from "../common/ProfileAvatar";
-
 import Alert from "../ui/Alert";
 import Button from "../ui/Button";
-import { Card, CardBody, CardHeader } from "../ui/Card";
 
 const PROFILE_PHOTO_MAX_SIZE = 2 * 1024 * 1024;
 
@@ -32,26 +29,21 @@ const validateProfilePhotoFile = (file) => {
   return "";
 };
 
-const ProfilePhotoManager = ({
-  user,
-  updateUser,
-  name,
-  eyebrow = "Profile photo",
-  title = "Your photo",
-  description = "Upload a clear photo so people can recognize your profile.",
-  compact = false,
-  embedded = false,
-  compactActionsHorizontal = false,
-  showCompactHeader = true,
-}) => {
+const ProfilePhotoManager = ({ user, updateUser }) => {
   const inputId = useId();
   const fileInputRef = useRef(null);
 
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+
   const [photoError, setPhotoError] = useState("");
+
   const [photoSuccess, setPhotoSuccess] = useState("");
+
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
   const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
+
+  const isBusy = isUploadingPhoto || isDeletingPhoto;
 
   const clearSelectedPhoto = () => {
     setSelectedPhoto(null);
@@ -76,7 +68,9 @@ const ProfilePhotoManager = ({
 
     if (validationError) {
       clearSelectedPhoto();
+
       setPhotoError(validationError);
+
       return;
     }
 
@@ -88,6 +82,7 @@ const ProfilePhotoManager = ({
 
     if (validationError) {
       setPhotoError(validationError);
+
       return;
     }
 
@@ -99,8 +94,10 @@ const ProfilePhotoManager = ({
       const result = await uploadProfilePhoto(selectedPhoto);
 
       updateUser(result.data.user);
+
       clearSelectedPhoto();
-      setPhotoSuccess(result.message);
+
+      setPhotoSuccess(result.message || "Profile photo updated successfully.");
     } catch (error) {
       const normalizedError = getApiError(error);
 
@@ -127,8 +124,10 @@ const ProfilePhotoManager = ({
       const result = await deleteProfilePhoto();
 
       updateUser(result.data.user);
+
       clearSelectedPhoto();
-      setPhotoSuccess(result.message);
+
+      setPhotoSuccess(result.message || "Profile photo removed successfully.");
     } catch (error) {
       const normalizedError = getApiError(error);
 
@@ -138,116 +137,72 @@ const ProfilePhotoManager = ({
     }
   };
 
-  const compactActionsClassName = [
-    "mt-4 grid gap-2",
-    "min-[420px]:grid-cols-2",
-    compactActionsHorizontal ? "" : "xl:grid-cols-1",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  return (
+    <div className="min-w-0">
+      <label
+        htmlFor={inputId}
+        className="mb-2 block text-sm font-medium leading-6 text-slate-700"
+      >
+        Choose photo
+      </label>
 
-  const compactHeader = embedded ? (
-    <div className="flex min-w-0 items-start gap-3">
-      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
-        <Camera className="h-4 w-4" aria-hidden="true" />
-      </div>
+      <input
+        id={inputId}
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        disabled={isBusy}
+        onChange={handlePhotoChange}
+        className={[
+          "block w-full min-w-0",
+          "rounded-xl border",
+          "border-slate-200",
+          "bg-white px-3 py-2",
+          "text-sm text-slate-700",
+          "disabled:cursor-not-allowed",
+          "disabled:opacity-60",
+          "file:mr-3",
+          "file:rounded-lg",
+          "file:border-0",
+          "file:bg-blue-50",
+          "file:px-3 file:py-2",
+          "file:text-sm",
+          "file:font-medium",
+          "file:text-blue-700",
+          "hover:file:bg-blue-100",
+        ].join(" ")}
+      />
 
-      <div className="min-w-0">
-        <p className="text-xs font-medium leading-5 text-blue-600">{eyebrow}</p>
+      <p className="mt-2 text-xs leading-5 text-slate-500">
+        JPG, PNG or WebP. Maximum 2 MB.
+      </p>
 
-        <h2 className="text-base font-semibold leading-6 text-slate-950">
-          {title}
-        </h2>
-
-        <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
-      </div>
-    </div>
-  ) : (
-    <div className="flex min-w-0 items-start gap-3">
-      <ProfileAvatar user={user} name={name} size="lg" />
-
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <Camera
-            className="h-4 w-4 shrink-0 text-blue-600"
-            aria-hidden="true"
-          />
-
-          <p className="text-xs font-medium leading-5 text-blue-600">
-            {eyebrow}
-          </p>
-        </div>
-
-        <h2 className="mt-0.5 text-base font-semibold leading-6 text-slate-950">
-          {title}
-        </h2>
-
-        <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
-      </div>
-    </div>
-  );
-
-  const compactContent = (
-    <>
-      {showCompactHeader && compactHeader}
-
-      <div className={showCompactHeader ? "mt-4" : ""}>
-        <label
-          htmlFor={inputId}
-          className="mb-2 block text-sm font-medium text-slate-700"
-        >
-          Choose photo
-        </label>
-
-        <input
-          id={inputId}
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={handlePhotoChange}
-          className={[
-            "block w-full",
-            "rounded-xl border border-slate-200",
-            "bg-white px-3 py-2",
-            "text-sm text-slate-700",
-            "file:mr-3 file:rounded-lg file:border-0",
-            "file:bg-blue-50 file:px-3 file:py-2",
-            "file:text-sm file:font-medium file:text-blue-700",
-            "hover:file:bg-blue-100",
-          ].join(" ")}
-        />
-
-        <p className="mt-2 text-xs leading-5 text-slate-500">
-          JPG, PNG or WebP. Maximum 2 MB.
+      {selectedPhoto && (
+        <p className="mt-2 wrap-break-word text-xs leading-5 text-slate-600">
+          Selected:{" "}
+          <span className="font-medium text-slate-900">
+            {selectedPhoto.name}
+          </span>
         </p>
-
-        {selectedPhoto && (
-          <p className="mt-2 wrap-break-word text-xs leading-5 text-slate-600">
-            Selected:{" "}
-            <span className="font-medium text-slate-900">
-              {selectedPhoto.name}
-            </span>
-          </p>
-        )}
-      </div>
+      )}
 
       {photoError && (
-        <Alert variant="error" className="mt-4">
+        <Alert variant="error" className="mt-3">
           {photoError}
         </Alert>
       )}
 
       {photoSuccess && (
-        <Alert variant="success" className="mt-4">
+        <Alert variant="success" className="mt-3">
           {photoSuccess}
         </Alert>
       )}
 
-      <div className={compactActionsClassName}>
+      <div className="mt-4 grid gap-2 min-[420px]:grid-cols-2">
         <Button
           type="button"
           size="sm"
-          disabled={isUploadingPhoto || !selectedPhoto}
+          disabled={isBusy || !selectedPhoto}
           onClick={handleUploadPhoto}
           fullWidth
         >
@@ -262,6 +217,7 @@ const ProfilePhotoManager = ({
           ) : (
             <>
               <Upload className="h-4 w-4" aria-hidden="true" />
+
               {user?.profilePhotoUrl ? "Change photo" : "Upload photo"}
             </>
           )}
@@ -271,7 +227,7 @@ const ProfilePhotoManager = ({
           type="button"
           variant="danger"
           size="sm"
-          disabled={isDeletingPhoto || !user?.profilePhotoUrl}
+          disabled={isBusy || !user?.profilePhotoUrl}
           onClick={handleDeletePhoto}
           fullWidth
         >
@@ -291,126 +247,7 @@ const ProfilePhotoManager = ({
           )}
         </Button>
       </div>
-    </>
-  );
-
-  if (compact) {
-    if (embedded) {
-      return (
-        <section className="mt-5 border-t border-slate-100 pt-5">
-          {compactContent}
-        </section>
-      );
-    }
-
-    return (
-      <Card>
-        <CardBody className="p-4">{compactContent}</CardBody>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-          {eyebrow}
-        </p>
-
-        <h2 className="mt-2 text-xl font-black text-slate-950">{title}</h2>
-
-        <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
-      </CardHeader>
-
-      <CardBody>
-        <div className="flex items-center gap-4">
-          <ProfileAvatar user={user} name={name} size="xl" />
-
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-slate-900">
-              {user?.profilePhotoUrl ? "Photo uploaded" : "No photo uploaded"}
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              JPG, PNG, or WebP. Maximum size 2 MB.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5">
-          <label
-            htmlFor={inputId}
-            className="mb-2 block text-sm font-bold text-slate-700"
-          >
-            Choose photo
-          </label>
-
-          <input
-            id={inputId}
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handlePhotoChange}
-            className={[
-              "block w-full",
-              "rounded-xl border border-slate-200",
-              "bg-white px-3 py-2.5",
-              "text-sm text-slate-700",
-              "file:mr-4 file:rounded-xl file:border-0",
-              "file:bg-blue-50 file:px-4 file:py-2",
-              "file:text-sm file:font-bold file:text-blue-700",
-              "hover:file:bg-blue-100",
-            ].join(" ")}
-          />
-
-          {selectedPhoto && (
-            <p className="mt-2 text-sm text-slate-600">
-              Selected file:{" "}
-              <span className="font-bold text-slate-900">
-                {selectedPhoto.name}
-              </span>
-            </p>
-          )}
-        </div>
-
-        {photoError && (
-          <Alert variant="error" className="mt-4">
-            {photoError}
-          </Alert>
-        )}
-
-        {photoSuccess && (
-          <Alert variant="success" className="mt-4">
-            {photoSuccess}
-          </Alert>
-        )}
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <Button
-            type="button"
-            disabled={isUploadingPhoto || !selectedPhoto}
-            onClick={handleUploadPhoto}
-            fullWidth
-          >
-            {isUploadingPhoto
-              ? "Uploading..."
-              : user?.profilePhotoUrl
-                ? "Change photo"
-                : "Upload photo"}
-          </Button>
-
-          <Button
-            type="button"
-            variant="danger"
-            disabled={isDeletingPhoto || !user?.profilePhotoUrl}
-            onClick={handleDeletePhoto}
-            fullWidth
-          >
-            {isDeletingPhoto ? "Removing..." : "Remove photo"}
-          </Button>
-        </div>
-      </CardBody>
-    </Card>
+    </div>
   );
 };
 

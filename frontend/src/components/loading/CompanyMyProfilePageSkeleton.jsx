@@ -16,8 +16,8 @@ const CompanyMyProfilePageSkeleton = () => {
     <div className="grid gap-5" aria-busy="true" aria-live="polite">
       <span className="sr-only">Loading your profile</span>
 
-      <div className="grid min-w-0 gap-5 xl:grid-cols-[400px_minmax(0,1fr)] xl:items-start">
-        <Card>
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[400px_minmax(0,1fr)] xl:items-stretch">
+        <Card className="h-full">
           <CardBody>
             <Skeleton className="h-4 w-20" />
 

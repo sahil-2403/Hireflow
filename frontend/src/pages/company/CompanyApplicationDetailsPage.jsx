@@ -183,7 +183,14 @@ const MinimalCandidateHeader = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+          <div
+            className={[
+              "grid gap-2",
+              "sm:flex sm:justify-end",
+
+              candidate?.resumeUrl ? "grid-cols-2" : "grid-cols-1",
+            ].join(" ")}
+          >
             {candidate?.resumeUrl && (
               <Button
                 type="button"
@@ -193,7 +200,7 @@ const MinimalCandidateHeader = ({
               >
                 {openingResume ? (
                   <LoaderCircle
-                    className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                    className="h-4 w-4 animate-spin "
                     aria-hidden="true"
                   />
                 ) : (
@@ -203,7 +210,6 @@ const MinimalCandidateHeader = ({
                 {openingResume ? "Opening" : "View resume"}
               </Button>
             )}
-
             <Button as={Link} to={`/jobs/${jobId}`}>
               View job
               <ExternalLinkIcon className="h-4 w-4" aria-hidden="true" />
@@ -466,7 +472,7 @@ const ApplicationStageCard = ({
                   {updatingStatus ? (
                     <>
                       <LoaderCircle
-                        className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                        className="h-4 w-4 animate-spin"
                         aria-hidden="true"
                       />
                       Updating

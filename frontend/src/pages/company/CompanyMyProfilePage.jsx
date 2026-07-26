@@ -6,7 +6,6 @@ import {
   Building2,
   Mail,
   ShieldCheck,
-  UserRound,
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
@@ -20,10 +19,9 @@ import {
   updateMyCompanyMemberProfile,
 } from "../../api/companyMember.api";
 
-import ProfilePhotoManager from "../../components/account/ProfilePhotoManager";
+import ProfileIdentityCard from "../../components/account/ProfileIdentityCard";
 
 import CompanyLogo from "../../components/common/CompanyLogo";
-import ProfileAvatar from "../../components/common/ProfileAvatar";
 
 import CompanySetupRequired from "../../components/company/CompanySetupRequired";
 
@@ -75,64 +73,6 @@ const getFullName = (values, user) => {
   const name = [values.firstName, values.lastName].filter(Boolean).join(" ");
 
   return name || user?.username || user?.email || "Your profile";
-};
-
-const ProfileAndPhotoCard = ({
-  values,
-  user,
-  updateUser,
-  profile,
-  fullName,
-}) => {
-  return (
-    <Card className="h-full">
-      <CardBody>
-        <div className="flex items-center gap-2">
-          <UserRound
-            className="h-4 w-4 shrink-0 text-blue-600"
-            aria-hidden="true"
-          />
-
-          <p className="text-xs font-medium text-blue-600">Profile</p>
-        </div>
-
-        <div className="mt-3 flex min-w-0 items-start gap-4">
-          <ProfileAvatar
-            user={user}
-            name={fullName}
-            size="xl"
-            fallbackClassName="bg-blue-50 text-blue-700"
-          />
-
-          <div className="min-w-0">
-            <h2 className="wrap-break-word text-lg font-semibold leading-7 text-slate-950">
-              {fullName}
-            </h2>
-
-            <p className="mt-1 wrap-break-word text-sm font-medium leading-5 text-slate-700">
-              {values.jobTitle || "Add your job title"}
-            </p>
-
-            <p className="mt-1 wrap-break-word text-sm leading-5 text-slate-500">
-              {profile?.company?.name
-                ? `${profile.company.name} workspace`
-                : "Company workspace"}
-            </p>
-          </div>
-        </div>
-
-        <ProfilePhotoManager
-          user={user}
-          updateUser={updateUser}
-          name={fullName}
-          compact
-          embedded
-          compactActionsHorizontal
-          showCompactHeader={false}
-        />
-      </CardBody>
-    </Card>
-  );
 };
 
 const AccountInformationItem = ({ icon: Icon, label, value, company }) => {
@@ -373,13 +313,17 @@ const CompanyMyProfilePage = () => {
 
       {isReady && (
         <>
-          <div className="grid min-w-0 gap-5 xl:grid-cols-[400px_minmax(0,1fr)] xl:items-stretch">
-            <ProfileAndPhotoCard
-              values={watchedValues}
+          <div className="grid min-w-0 gap-5 xl:grid-cols-[400px_minmax(0,1fr)]">
+            <ProfileIdentityCard
               user={user}
               updateUser={updateUser}
-              profile={profile}
-              fullName={fullName}
+              name={fullName}
+              subtitle={watchedValues.jobTitle || "Add your job title"}
+              description={
+                profile?.company?.name
+                  ? `${profile.company.name} workspace`
+                  : "Company workspace"
+              }
             />
 
             <form onSubmit={handleSubmit(onSubmit)}>

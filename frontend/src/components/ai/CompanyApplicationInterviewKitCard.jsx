@@ -365,7 +365,7 @@ const CompanyApplicationInterviewKitCard = ({
                   {isGenerating ? (
                     <>
                       <LoaderCircle
-                        className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                        className="h-4 w-4 animate-spin"
                         aria-hidden="true"
                       />
                       Generating

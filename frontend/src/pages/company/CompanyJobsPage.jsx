@@ -444,7 +444,7 @@ const CompanyJobsPage = () => {
                     className="inline-flex items-center gap-2 text-sm leading-6 text-slate-500"
                   >
                     <LoaderCircle
-                      className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                      className="h-4 w-4 animate-spin"
                       aria-hidden="true"
                     />
                     Updating jobs

@@ -182,10 +182,7 @@ const RecruiterRow = ({ recruiter, updatingRecruiterId, onToggleStatus }) => {
           ].join(" ")}
         >
           {isUpdating && (
-            <LoaderCircle
-              className="h-4 w-4 animate-spin motion-reduce:animate-none"
-              aria-hidden="true"
-            />
+            <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
           )}
 
           {isUpdating
@@ -228,7 +225,7 @@ const RecruiterAccountsCard = ({
               className="inline-flex shrink-0 items-center gap-2 text-xs leading-5 text-slate-500"
             >
               <LoaderCircle
-                className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                className="h-4 w-4 animate-spin"
                 aria-hidden="true"
               />
               Refreshing
@@ -391,7 +388,7 @@ const CreateRecruiterCard = ({
           <Button type="submit" disabled={isSubmitting} fullWidth>
             {isSubmitting && (
               <LoaderCircle
-                className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                className="h-4 w-4 animate-spin"
                 aria-hidden="true"
               />
             )}

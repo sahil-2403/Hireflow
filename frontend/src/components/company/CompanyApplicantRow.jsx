@@ -222,10 +222,7 @@ const CompanyApplicantRow = ({
           onClick={() => onViewResume(application)}
         >
           {isOpeningResume ? (
-            <LoaderCircle
-              className="h-4 w-4 animate-spin motion-reduce:animate-none"
-              aria-hidden="true"
-            />
+            <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
             <FileText className="h-4 w-4" aria-hidden="true" />
           )}

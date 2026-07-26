@@ -736,7 +736,7 @@ const CompanyJobApplicationsPage = () => {
                   className="mt-3 inline-flex items-center gap-2 text-xs leading-5 text-slate-500"
                 >
                   <LoaderCircle
-                    className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none"
+                    className="h-3.5 w-3.5 animate-spin"
                     aria-hidden="true"
                   />
                   Updating applicants

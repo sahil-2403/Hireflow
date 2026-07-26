@@ -362,7 +362,7 @@ const ApplicationsMetricCard = ({
 
   return (
     <Card>
-      <CardBody className="flex min-h-full flex-col p-5">
+      <CardBody className="flex min-h-full flex-col p-5 justify-between">
         <div className="flex justify-between items-center">
           <div>
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-violet-50 text-violet-700">
@@ -381,15 +381,15 @@ const ApplicationsMetricCard = ({
 
         {latestApplication ? (
           <div className="my-4 mt-4 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-            <p className="text-xs font-medium leading-5 text-slate-500">
+            <p className="text-[0.7rem] font-medium leading-5 text-slate-500">
               Latest application
             </p>
 
-            <p className="mt-1 wrap-break-word text-sm font-semibold leading-5 text-slate-950">
-              {latestApplication.jobId?.title || "Job unavailable"}
-            </p>
+            <div className="flex mt-2 gap-3">
+              <p className="mt-1 wrap-break-word text-sm font-semibold leading-5 text-slate-950">
+                {latestApplication.jobId?.title || "Job unavailable"}
+              </p>
 
-            <div className="mt-2">
               <ApplicationStatusBadge status={latestApplication.status} />
             </div>
           </div>
@@ -404,7 +404,6 @@ const ApplicationsMetricCard = ({
           to="/candidate/applications"
           variant="secondary"
           fullWidth
-          className="mt-auto pt-0"
         >
           View applications
         </Button>
