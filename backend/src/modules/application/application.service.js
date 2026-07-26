@@ -1452,6 +1452,46 @@ const getManagedApplicationResume = async (userId, role, applicationId) => {
   };
 };
 
+const getMyApplicationSummary = async (candidateUserId) => {
+  const candidateObjectId = new mongoose.Types.ObjectId(
+    String(candidateUserId),
+  );
+
+  const groupedStatusCounts = await Application.aggregate([
+    {
+      $match: {
+        candidateUserId: candidateObjectId,
+      },
+    },
+    {
+      $group: {
+        _id: "$status",
+        count: {
+          $sum: 1,
+        },
+      },
+    },
+  ]);
+
+  const statusCounts = createEmptyStatusCounts();
+
+  groupedStatusCounts.forEach(({ _id: applicationStatus, count }) => {
+    if (statusCounts[applicationStatus] !== undefined) {
+      statusCounts[applicationStatus] = count;
+    }
+  });
+
+  const totalApplications = Object.values(statusCounts).reduce(
+    (total, count) => total + count,
+    0,
+  );
+
+  return {
+    totalApplications,
+    statusCounts,
+  };
+};
+
 export {
   applyToJob,
   listMyApplications,
@@ -1461,4 +1501,5 @@ export {
   getManagedJobApplicationDetails,
   updateApplicationStatus,
   getManagedApplicationResume,
+  getMyApplicationSummary,
 };

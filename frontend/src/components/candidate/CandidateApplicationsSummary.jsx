@@ -1,6 +1,7 @@
 import {
   BriefcaseBusiness,
   CalendarClock,
+  LoaderCircle,
   ScanSearch,
   Trophy,
 } from "lucide-react";
@@ -15,61 +16,64 @@ const SUMMARY_METRICS = [
     key: "total",
     icon: BriefcaseBusiness,
     label: "Total applications",
-    description: "Applications submitted from your candidate account.",
     tone: "bg-blue-50 text-blue-700",
+    getValue: (summary) => summary?.totalApplications ?? 0,
   },
   {
     key: "screening",
     icon: ScanSearch,
     label: "Screening",
-    description: "Applications currently being reviewed.",
-    tone: "bg-violet-50 text-violet-700",
+    tone: "bg-slate-100 text-slate-700",
+    getValue: (summary) => summary?.statusCounts?.screening ?? 0,
   },
   {
     key: "interview",
     icon: CalendarClock,
     label: "Interviews",
-    description: "Applications that reached the interview stage.",
     tone: "bg-emerald-50 text-emerald-700",
+    getValue: (summary) => summary?.statusCounts?.interview ?? 0,
   },
   {
     key: "offers",
     icon: Trophy,
     label: "Offers / hired",
-    description: "Applications with offer or hired status.",
     tone: "bg-amber-50 text-amber-700",
+    getValue: (summary) =>
+      (summary?.statusCounts?.offer ?? 0) + (summary?.statusCounts?.hired ?? 0),
   },
 ];
 
 const SummarySkeleton = () => {
   return (
     <Card>
-      <CardBody className="p-4 sm:p-5">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <Skeleton className="h-5 w-44" />
+      <CardBody>
+        <div>
+          <Skeleton className="h-6 w-48" />
 
-            <Skeleton className="mt-2 h-4 w-72 max-w-full" />
-          </div>
-
-          <Skeleton className="h-8 w-20 rounded-full" />
+          <Skeleton className="mt-2 h-4 w-80 max-w-full" />
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div
+          aria-busy="true"
+          aria-live="polite"
+          className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+        >
+          <span className="sr-only">Loading application overview</span>
+
           {Array.from({
             length: 4,
           }).map((_, index) => (
             <div
               key={index}
-              className="rounded-xl border border-slate-100 bg-slate-50/60 p-4"
+              className="flex min-w-0 items-center gap-3 rounded-xl bg-slate-50/70 p-3.5"
             >
-              <Skeleton className="h-9 w-9 rounded-xl" />
+              <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
 
-              <Skeleton className="mt-4 h-7 w-14" />
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-6 w-12" />
 
-              <Skeleton className="mt-2 h-4 w-28" />
-
-              <Skeleton className="mt-2 h-3 w-full" />
+                <Skeleton className="mt-2 h-4 w-28 max-w-full" />
+              </div>
             </div>
           ))}
         </div>
@@ -84,16 +88,21 @@ const CandidateApplicationsSummary = ({
   errorMessage,
   onRetry,
 }) => {
-  if (status === "loading") {
+  const hasLoadedSummary = summary !== null;
+
+  const isInitialLoading = status === "loading" && !hasLoadedSummary;
+
+  const isRefreshing = status === "loading" && hasLoadedSummary;
+
+  if (isInitialLoading) {
     return <SummarySkeleton />;
   }
 
-  if (status === "error") {
+  if (status === "error" && !hasLoadedSummary) {
     return (
       <Card>
-        <CardBody className="p-4 sm:p-5">
+        <CardBody>
           <SectionError
-            compact
             title="Could not load application overview"
             message={errorMessage}
             onRetry={onRetry}
@@ -105,21 +114,47 @@ const CandidateApplicationsSummary = ({
 
   return (
     <Card>
-      <CardBody className="p-4 sm:p-5">
-        <header>
-          <p className="text-xs font-medium leading-5 text-blue-600">
-            Application overview
-          </p>
+      <CardBody>
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-xl font-semibold leading-7 text-slate-950">
+              Application overview
+            </h2>
 
-          <h2 className="text-xl font-semibold leading-7 text-slate-950">
-            Your current progress
-          </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Review your submitted applications and active hiring stages.
+            </p>
+          </div>
 
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            A compact summary of your submitted applications and active hiring
-            stages.
-          </p>
+          {isRefreshing && (
+            <p
+              role="status"
+              className="inline-flex shrink-0 items-center gap-2 text-xs leading-5 text-slate-500"
+            >
+              <LoaderCircle
+                className="h-4 w-4 animate-spin"
+                aria-hidden="true"
+              />
+              Updating overview
+            </p>
+          )}
         </header>
+
+        {status === "error" && hasLoadedSummary && (
+          <div className="mt-4">
+            <SectionError
+              compact
+              title="Could not refresh application overview"
+              message={[
+                errorMessage,
+                "Previously loaded totals are still shown.",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onRetry={onRetry}
+            />
+          </div>
+        )}
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {SUMMARY_METRICS.map((metric) => {
@@ -128,32 +163,28 @@ const CandidateApplicationsSummary = ({
             return (
               <article
                 key={metric.key}
-                className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/60 p-4"
+                className="flex min-w-0 items-center gap-3 rounded-xl bg-slate-50/70 p-3.5"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div
-                    className={[
-                      "grid h-9 w-9",
-                      "shrink-0 place-items-center",
-                      "rounded-xl",
-                      metric.tone,
-                    ].join(" ")}
-                  >
-                    <MetricIcon className="h-4 w-4" aria-hidden="true" />
-                  </div>
-
-                  <p className="text-2xl font-semibold leading-8 text-slate-950">
-                    {summary[metric.key] ?? 0}
-                  </p>
+                <div
+                  className={[
+                    "grid h-9 w-9",
+                    "shrink-0 place-items-center",
+                    "rounded-xl",
+                    metric.tone,
+                  ].join(" ")}
+                >
+                  <MetricIcon className="h-4 w-4" aria-hidden="true" />
                 </div>
 
-                <h3 className="mt-3 text-sm font-semibold leading-5 text-slate-950">
-                  {metric.label}
-                </h3>
+                <div className="min-w-0">
+                  <p className="text-xl font-semibold leading-7 text-slate-950">
+                    {metric.getValue(summary)}
+                  </p>
 
-                <p className="mt-1 text-xs leading-5 text-slate-500">
-                  {metric.description}
-                </p>
+                  <h3 className="text-sm font-medium leading-5 text-slate-600">
+                    {metric.label}
+                  </h3>
+                </div>
               </article>
             );
           })}

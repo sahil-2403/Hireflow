@@ -1,15 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { BriefcaseBusiness } from "lucide-react";
-
-import { Link } from "react-router-dom";
-
-import { listMyApplications } from "../../api/application.api";
+import {
+  getMyApplicationSummary,
+  listMyApplications,
+} from "../../api/application.api";
 
 import CandidateApplicationsList from "../../components/candidate/CandidateApplicationsList";
 import CandidateApplicationsSummary from "../../components/candidate/CandidateApplicationsSummary";
 
-import Button from "../../components/ui/Button";
 import PageHero from "../../components/ui/PageHero";
 
 import getApiError from "../../utils/getApiError";
@@ -45,25 +43,23 @@ const APPLICATION_STATUS_OPTIONS = [
   },
 ];
 
-const SUMMARY_FETCH_LIMIT = 100;
+const INITIAL_LIST_STATE = {
+  status: "loading",
+  applicationsData: null,
+  errorMessage: "",
+  successfulQuery: null,
+};
 
-const getStatusCount = (applications, status) => {
-  return applications.filter((application) => application.status === status)
-    .length;
+const INITIAL_SUMMARY_STATE = {
+  status: "loading",
+  summary: null,
+  errorMessage: "",
 };
 
 const CandidateApplicationsPage = () => {
-  const [status, setStatus] = useState("loading");
+  const [listState, setListState] = useState(INITIAL_LIST_STATE);
 
-  const [applicationsData, setApplicationsData] = useState(null);
-
-  const [summaryStatus, setSummaryStatus] = useState("loading");
-
-  const [summaryApplications, setSummaryApplications] = useState([]);
-
-  const [errorMessage, setErrorMessage] = useState("");
-
-  const [summaryErrorMessage, setSummaryErrorMessage] = useState("");
+  const [summaryState, setSummaryState] = useState(INITIAL_SUMMARY_STATE);
 
   const [selectedStatus, setSelectedStatus] = useState("");
 
@@ -77,10 +73,18 @@ const CandidateApplicationsPage = () => {
     let shouldIgnore = false;
 
     const fetchApplications = async () => {
-      try {
-        setStatus("loading");
-        setErrorMessage("");
+      const requestedQuery = {
+        page,
+        status: selectedStatus,
+      };
 
+      setListState((currentState) => ({
+        ...currentState,
+        status: "loading",
+        errorMessage: "",
+      }));
+
+      try {
         const params = {
           page,
           limit: 10,
@@ -96,9 +100,12 @@ const CandidateApplicationsPage = () => {
           return;
         }
 
-        setApplicationsData(result.data);
-
-        setStatus("success");
+        setListState({
+          status: "success",
+          applicationsData: result.data,
+          errorMessage: "",
+          successfulQuery: requestedQuery,
+        });
       } catch (error) {
         if (shouldIgnore) {
           return;
@@ -106,14 +113,15 @@ const CandidateApplicationsPage = () => {
 
         const normalizedError = getApiError(error);
 
-        setErrorMessage(normalizedError.message);
-
         /*
-         * Keep already-loaded rows
-         * visible if a filter or
-         * pagination refresh fails.
+         * Keep the most recent successful
+         * rows and query metadata visible.
          */
-        setStatus("error");
+        setListState((currentState) => ({
+          ...currentState,
+          status: "error",
+          errorMessage: normalizedError.message,
+        }));
       }
     };
 
@@ -128,24 +136,24 @@ const CandidateApplicationsPage = () => {
     let shouldIgnore = false;
 
     const fetchApplicationSummary = async () => {
+      setSummaryState((currentState) => ({
+        ...currentState,
+        status: "loading",
+        errorMessage: "",
+      }));
+
       try {
-        setSummaryStatus("loading");
-
-        setSummaryErrorMessage("");
-
-        const result = await listMyApplications({
-          page: 1,
-
-          limit: SUMMARY_FETCH_LIMIT,
-        });
+        const result = await getMyApplicationSummary();
 
         if (shouldIgnore) {
           return;
         }
 
-        setSummaryApplications(result.data?.applications ?? []);
-
-        setSummaryStatus("success");
+        setSummaryState({
+          status: "success",
+          summary: result.data,
+          errorMessage: "",
+        });
       } catch (error) {
         if (shouldIgnore) {
           return;
@@ -153,11 +161,15 @@ const CandidateApplicationsPage = () => {
 
         const normalizedError = getApiError(error);
 
-        setSummaryErrorMessage(normalizedError.message);
-
-        setSummaryApplications([]);
-
-        setSummaryStatus("error");
+        /*
+         * Preserve previously loaded summary
+         * data if a refresh request fails.
+         */
+        setSummaryState((currentState) => ({
+          ...currentState,
+          status: "error",
+          errorMessage: normalizedError.message,
+        }));
       }
     };
 
@@ -168,63 +180,45 @@ const CandidateApplicationsPage = () => {
     };
   }, [summaryLoadAttempt]);
 
-  const summary = useMemo(
-    () => ({
-      total: summaryApplications.length,
-
-      screening: getStatusCount(summaryApplications, "screening"),
-
-      interview: getStatusCount(summaryApplications, "interview"),
-
-      offers:
-        getStatusCount(summaryApplications, "offer") +
-        getStatusCount(summaryApplications, "hired"),
-    }),
-    [summaryApplications],
-  );
-
   const handleStatusChange = (nextStatus) => {
     setSelectedStatus(nextStatus);
-
     setPage(1);
   };
 
   const handlePreviousPage = () => {
-    setPage((currentPage) => Math.max(currentPage - 1, 1));
+    const displayedPage = listState.applicationsData?.pagination?.page ?? page;
+
+    setPage(Math.max(displayedPage - 1, 1));
   };
 
   const handleNextPage = () => {
-    setPage((currentPage) => currentPage + 1);
+    const displayedPage = listState.applicationsData?.pagination?.page ?? page;
+
+    setPage(displayedPage + 1);
   };
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <PageHero
-        eyebrow="Candidate applications"
         title="My applications"
         description="Track submitted jobs, review current statuses, and open the original job details from one workspace."
-        actions={
-          <Button as={Link} to="/jobs">
-            <BriefcaseBusiness className="h-4 w-4" aria-hidden="true" />
-            Browse jobs
-          </Button>
-        }
       />
 
       <CandidateApplicationsSummary
-        status={summaryStatus}
-        summary={summary}
-        errorMessage={summaryErrorMessage}
+        status={summaryState.status}
+        summary={summaryState.summary}
+        errorMessage={summaryState.errorMessage}
         onRetry={() =>
           setSummaryLoadAttempt((currentAttempt) => currentAttempt + 1)
         }
       />
 
       <CandidateApplicationsList
-        status={status}
-        applicationsData={applicationsData}
-        errorMessage={errorMessage}
+        status={listState.status}
+        applicationsData={listState.applicationsData}
+        errorMessage={listState.errorMessage}
         selectedStatus={selectedStatus}
+        successfulQuery={listState.successfulQuery}
         statusOptions={APPLICATION_STATUS_OPTIONS}
         onStatusChange={handleStatusChange}
         onRetry={() =>

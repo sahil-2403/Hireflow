@@ -39,30 +39,38 @@ const getAppliedDate = (application) => {
   return application.appliedAt || application.createdAt;
 };
 
+const getApplicationCountLabel = (count) => {
+  return `${count} ${count === 1 ? "application" : "applications"}`;
+};
+
 const ApplicationRowSkeleton = () => {
   return (
-    <div className="grid gap-4 px-4 py-5 sm:px-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(150px,0.65fr)_auto_auto] lg:items-center">
-      <div className="flex min-w-0 gap-3">
+    <div className="grid min-w-0 gap-4 px-4 py-5 sm:px-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.8fr)] lg:items-center">
+      <div className="flex min-w-0 items-start gap-3">
         <Skeleton className="h-11 w-11 shrink-0 rounded-xl" />
 
         <div className="min-w-0 flex-1">
           <Skeleton className="h-4 w-48 max-w-full" />
 
-          <Skeleton className="mt-2 h-3 w-36" />
+          <Skeleton className="mt-2 h-3 w-36 max-w-full" />
 
-          <Skeleton className="mt-2 h-3 w-24" />
+          <Skeleton className="mt-2 h-3 w-24 max-w-full" />
+
+          <Skeleton className="mt-3 h-6 w-20 rounded-full lg:hidden" />
         </div>
       </div>
 
-      <div>
-        <Skeleton className="h-3 w-16" />
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-slate-100 pt-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:border-t-0 lg:pt-0">
+        <div>
+          <Skeleton className="h-3 w-16" />
 
-        <Skeleton className="mt-2 h-4 w-24" />
+          <Skeleton className="mt-2 h-4 w-24" />
+        </div>
+
+        <Skeleton className="hidden h-7 w-20 rounded-full lg:block" />
+
+        <Skeleton className="h-9 w-24 rounded-xl" />
       </div>
-
-      <Skeleton className="h-7 w-20 rounded-full" />
-
-      <Skeleton className="h-9 w-24 rounded-xl" />
     </div>
   );
 };
@@ -93,7 +101,7 @@ const CandidateApplicationRow = ({ application }) => {
   const companyName = application.companyId?.name || "Company unavailable";
 
   return (
-    <article className="grid min-w-0 gap-4 px-4 py-5 sm:px-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(250px,0.8fr)] lg:items-center">
+    <article className="grid min-w-0 gap-4 px-4 py-5 sm:px-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.8fr)] lg:items-center">
       <div className="flex min-w-0 items-start gap-3">
         <CompanyLogo
           company={application.companyId}
@@ -129,25 +137,23 @@ const CandidateApplicationRow = ({ application }) => {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <div>
-            <p className="inline-flex items-center gap-1.5 text-xs font-medium leading-5 text-slate-500">
-              <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
-              Applied on
-            </p>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-slate-100 pt-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:border-t-0 lg:pt-0">
+        <div className="min-w-0">
+          <p className="inline-flex items-center gap-1.5 text-xs font-medium leading-5 text-slate-500">
+            <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+            Applied on
+          </p>
 
-            <p className="mt-1 text-sm font-medium leading-6 text-slate-700">
-              {formatShortDate(getAppliedDate(application))}
-            </p>
-          </div>
+          <p className="mt-1 text-sm font-medium leading-6 text-slate-700">
+            {formatShortDate(getAppliedDate(application))}
+          </p>
         </div>
 
         <div className="hidden lg:block">
           <ApplicationStatusBadge status={application.status} />
         </div>
 
-        <div className="flex items-center justify-end border-t border-slate-100 pt-3 lg:border-t-0 lg:pt-0">
+        <div className="flex items-center justify-end">
           {jobId ? (
             <Button as={Link} to={`/jobs/${jobId}`} variant="ghost" size="sm">
               View job
@@ -164,7 +170,12 @@ const CandidateApplicationRow = ({ application }) => {
   );
 };
 
-const ApplicationsPagination = ({ pagination, onPreviousPage, onNextPage }) => {
+const ApplicationsPagination = ({
+  pagination,
+  disabled,
+  onPreviousPage,
+  onNextPage,
+}) => {
   if (!pagination) {
     return null;
   }
@@ -180,7 +191,7 @@ const ApplicationsPagination = ({ pagination, onPreviousPage, onNextPage }) => {
         <Button
           type="button"
           variant="secondary"
-          disabled={!pagination.hasPreviousPage}
+          disabled={disabled || !pagination.hasPreviousPage}
           onClick={onPreviousPage}
         >
           Previous
@@ -189,7 +200,7 @@ const ApplicationsPagination = ({ pagination, onPreviousPage, onNextPage }) => {
         <Button
           type="button"
           variant="secondary"
-          disabled={!pagination.hasNextPage}
+          disabled={disabled || !pagination.hasNextPage}
           onClick={onNextPage}
         >
           Next
@@ -204,6 +215,7 @@ const CandidateApplicationsList = ({
   applicationsData,
   errorMessage,
   selectedStatus,
+  successfulQuery,
   statusOptions,
   onStatusChange,
   onRetry,
@@ -220,35 +232,43 @@ const CandidateApplicationsList = ({
 
   const isUpdating = status === "loading" && hasLoadedData;
 
+  const hasRefreshError = status === "error" && hasLoadedData;
+
   const currentTotal = pagination?.total ?? applications.length;
 
-  const selectedOption = statusOptions.find(
-    (option) => option.value === selectedStatus,
+  const displayedStatus = successfulQuery?.status ?? "";
+
+  const displayedOption = statusOptions.find(
+    (option) => option.value === displayedStatus,
   );
+
+  const applicationCountLabel = getApplicationCountLabel(currentTotal);
+
+  const historyDescription = hasLoadedData
+    ? displayedStatus
+      ? `${applicationCountLabel} with ${
+          displayedOption?.label.toLowerCase() || displayedStatus
+        } status.`
+      : `${applicationCountLabel} across all statuses.`
+    : "Review submitted jobs and track each hiring stage.";
+
+  const resolvedErrorMessage = hasLoadedData
+    ? [errorMessage, "Previously loaded results are still shown."]
+        .filter(Boolean)
+        .join(" ")
+    : errorMessage;
 
   return (
     <Card>
       <CardBody className="p-0">
         <header className="flex flex-col gap-5 border-b border-slate-100 p-4 sm:p-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
-            <p className="text-xs font-medium leading-5 text-blue-600">
-              Application history
-            </p>
-
             <h2 className="text-xl font-semibold leading-7 text-slate-950">
-              {hasLoadedData
-                ? `${currentTotal} ${
-                    currentTotal === 1 ? "application" : "applications"
-                  }`
-                : "Your applications"}
+              Application history
             </h2>
 
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              {selectedStatus
-                ? `Showing ${
-                    selectedOption?.label || selectedStatus
-                  } applications.`
-                : "Showing all application statuses."}
+              {historyDescription}
             </p>
           </div>
 
@@ -267,7 +287,7 @@ const CandidateApplicationsList = ({
                 className="inline-flex items-center gap-2 text-xs leading-5 text-slate-500"
               >
                 <LoaderCircle
-                  className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none"
+                  className="h-4 w-4 animate-spin"
                   aria-hidden="true"
                 />
                 Updating applications
@@ -282,8 +302,12 @@ const CandidateApplicationsList = ({
           <div className="border-b border-slate-100 p-4 sm:p-5">
             <SectionError
               compact={hasLoadedData}
-              title="Could not load applications"
-              message={errorMessage}
+              title={
+                hasLoadedData
+                  ? "Could not update applications"
+                  : "Could not load applications"
+              }
+              message={resolvedErrorMessage}
               onRetry={onRetry}
             />
           </div>
@@ -296,7 +320,7 @@ const CandidateApplicationsList = ({
               icon={BriefcaseBusiness}
               title="No applications found"
               description={
-                selectedStatus
+                displayedStatus
                   ? "No applications currently match this status."
                   : "Browse open jobs and submit your first application."
               }
@@ -316,7 +340,6 @@ const CandidateApplicationsList = ({
                 "divide-y",
                 "divide-slate-100",
                 "transition-opacity",
-
                 isUpdating ? "opacity-60" : "",
               ].join(" ")}
             >
@@ -330,6 +353,7 @@ const CandidateApplicationsList = ({
 
             <ApplicationsPagination
               pagination={pagination}
+              disabled={isUpdating || hasRefreshError}
               onPreviousPage={onPreviousPage}
               onNextPage={onNextPage}
             />
