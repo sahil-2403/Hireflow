@@ -22,39 +22,9 @@ import {
 import getApiError from "../../utils/getApiError";
 import notify from "../../utils/notify";
 
+import Button from "../ui/Button";
 import SectionError from "../ui/SectionError";
 import Skeleton from "../ui/Skeleton";
-
-const AI_BUTTON_CLASS_NAME = [
-  "inline-flex min-h-10",
-  "items-center justify-center",
-  "gap-2 rounded-lg",
-  "bg-violet-600 px-4 py-2.5",
-  "text-sm font-medium text-white",
-  "transition",
-  "hover:bg-violet-700",
-  "focus-visible:outline-none",
-  "focus-visible:ring-2",
-  "focus-visible:ring-violet-500",
-  "focus-visible:ring-offset-2",
-  "disabled:cursor-not-allowed",
-  "disabled:opacity-60",
-].join(" ");
-
-const SECONDARY_BUTTON_CLASS_NAME = [
-  "inline-flex min-h-9",
-  "items-center justify-center",
-  "gap-2 rounded-lg",
-  "border border-slate-200",
-  "bg-white px-3 py-2",
-  "text-sm font-medium text-slate-700",
-  "transition",
-  "hover:bg-slate-50",
-  "focus-visible:outline-none",
-  "focus-visible:ring-2",
-  "focus-visible:ring-violet-500",
-  "focus-visible:ring-offset-2",
-].join(" ");
 
 const INSIGHT_TONES = {
   emerald: {
@@ -431,16 +401,13 @@ const ResumeInsightsToggle = ({ analysis, isOpen, onToggle }) => {
         </div>
       </div>
 
-      <button
+      <Button
         type="button"
+        variant="secondary"
         aria-expanded={isOpen}
         aria-controls="candidate-resume-insights-result"
         onClick={onToggle}
-        className={[
-          SECONDARY_BUTTON_CLASS_NAME,
-          "w-full shrink-0",
-          "sm:w-auto",
-        ].join(" ")}
+        className="w-full shrink-0 sm:w-auto"
       >
         {isOpen ? "Hide insights" : "View insights"}
 
@@ -454,7 +421,7 @@ const ResumeInsightsToggle = ({ analysis, isOpen, onToggle }) => {
             isOpen ? "rotate-180" : "",
           ].join(" ")}
         />
-      </button>
+      </Button>
     </div>
   );
 };
@@ -679,7 +646,7 @@ const CandidateResumeInsightsCard = ({ hasResume, resumeUrl }) => {
               </p>
 
               <p className="mt-1 text-sm leading-6 text-amber-800">
-                Upload a PDF in the section below before generating insights.
+                Upload a PDF resume before generating insights.
               </p>
             </div>
           </div>
@@ -705,15 +672,12 @@ const CandidateResumeInsightsCard = ({ hasResume, resumeUrl }) => {
               </div>
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="ai"
               disabled={!canGenerate}
               onClick={handleGenerateInsights}
-              className={[
-                AI_BUTTON_CLASS_NAME,
-                "w-full shrink-0",
-                "sm:w-auto",
-              ].join(" ")}
+              className="w-full shrink-0 sm:w-auto"
             >
               {isGenerating ? (
                 <LoaderCircle
@@ -731,7 +695,7 @@ const CandidateResumeInsightsCard = ({ hasResume, resumeUrl }) => {
                 : hasUsageRemaining
                   ? "Generate insights"
                   : "Daily limit reached"}
-            </button>
+            </Button>
           </div>
         )}
 
