@@ -160,7 +160,8 @@ const CompanyIdentityAndLogoCard = ({
           </h3>
 
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            Upload a JPG, PNG, or WebP logo. Maximum size is 2 MB.
+            Upload a clear company logo candidates can recognise across jobs and
+            public listings.
           </p>
 
           <div className="mt-4">
@@ -176,12 +177,15 @@ const CompanyIdentityAndLogoCard = ({
               ref={logoInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
+              disabled={isUploadingLogo || isDeletingLogo}
               onChange={onLogoChange}
               className={[
-                "block w-full",
+                "block w-full min-w-0",
                 "rounded-xl border border-slate-200",
                 "bg-white px-3 py-2",
                 "text-sm text-slate-700",
+                "disabled:cursor-not-allowed",
+                "disabled:opacity-60",
                 "file:mr-3 file:rounded-lg file:border-0",
                 "file:bg-blue-50 file:px-3 file:py-2",
                 "file:text-sm file:font-medium file:text-blue-700",
