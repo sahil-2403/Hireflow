@@ -352,21 +352,15 @@ const CompanyJobApplicationsPage = () => {
 
   const [openingResumeId, setOpeningResumeId] = useState(null);
 
-  const [activeAiPanel, setActiveAiPanel] = useState(null);
+  const [activeAiPanelState, setActiveAiPanelState] = useState({
+    jobId,
+    panel: null,
+  });
 
   const [comparisonSelectionState, setComparisonSelectionState] = useState({
     jobId: null,
     candidates: [],
   });
-
-  useEffect(() => {
-    setActiveAiPanel(null);
-
-    setComparisonSelectionState({
-      jobId,
-      candidates: [],
-    });
-  }, [jobId]);
 
   useEffect(() => {
     let shouldIgnore = false;
@@ -456,6 +450,9 @@ const CompanyJobApplicationsPage = () => {
       }),
     [search, selectedStatus, sortValue],
   );
+
+  const activeAiPanel =
+    activeAiPanelState.jobId === jobId ? activeAiPanelState.panel : null;
 
   const selectedComparisonCandidates =
     comparisonSelectionState.jobId === jobId
@@ -633,23 +630,31 @@ const CompanyJobApplicationsPage = () => {
 
       <section className="grid min-w-0 gap-5 lg:grid-cols-2 lg:items-stretch">
         <CompanySuggestedShortlistCard
+          key={`shortlist-${jobId}`}
           jobId={jobId}
           availability={aiSuggestedShortlist}
           isResultVisible={activeAiPanel === "shortlist"}
           resultsContainerId="company-ai-results"
           onResultVisibilityChange={(isVisible) =>
-            setActiveAiPanel(isVisible ? "shortlist" : null)
+            setActiveAiPanelState({
+              jobId,
+              panel: isVisible ? "shortlist" : null,
+            })
           }
         />
 
         <CompanyCandidateComparisonCard
+          key={`comparison-${jobId}`}
           jobId={jobId}
           availability={aiCandidateComparison}
           selectedApplications={selectedComparisonCandidates}
           isResultVisible={activeAiPanel === "comparison"}
           resultsContainerId="company-ai-results"
           onResultVisibilityChange={(isVisible) =>
-            setActiveAiPanel(isVisible ? "comparison" : null)
+            setActiveAiPanelState({
+              jobId,
+              panel: isVisible ? "comparison" : null,
+            })
           }
           onRemoveSelected={handleRemoveComparisonCandidate}
           onClearSelected={() =>

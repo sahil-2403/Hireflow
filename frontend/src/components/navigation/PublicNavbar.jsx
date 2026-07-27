@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 import { ROLES } from "../../features/auth/auth.constants";
 
@@ -207,8 +207,6 @@ const PublicNavbar = ({ variant = "public" }) => {
 
   const { logoutUser } = useLogout();
 
-  const location = useLocation();
-
   const menuButtonRef = useRef(null);
 
   const closeButtonRef = useRef(null);
@@ -277,15 +275,6 @@ const PublicNavbar = ({ variant = "public" }) => {
 
     await logoutUser();
   };
-
-  /*
-   * Close the drawer after navigation.
-   * Do not restore focus because the page
-   * route itself has changed.
-   */
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [location.pathname]);
 
   /*
    * Lock page scrolling while the mobile

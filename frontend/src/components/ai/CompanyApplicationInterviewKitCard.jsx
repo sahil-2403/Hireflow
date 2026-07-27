@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { createPortal } from "react-dom";
 
@@ -124,9 +124,14 @@ const CompanyApplicationInterviewKitCard = ({
   resultsContainerId,
   onResultVisibilityChange,
 }) => {
-  const [interviewKit, setInterviewKit] = useState(null);
+  const [generatedInterviewKit, setGeneratedInterviewKit] = useState(null);
 
-  const [usage, setUsage] = useState(null);
+  const [generatedUsage, setGeneratedUsage] = useState(null);
+
+  const interviewKit =
+    generatedInterviewKit ?? availability?.interviewKit ?? null;
+
+  const usage = generatedUsage ?? availability?.usage ?? null;
 
   const [runtimeBlockReason, setRuntimeBlockReason] = useState(null);
 
@@ -135,17 +140,6 @@ const CompanyApplicationInterviewKitCard = ({
   const [errorMessage, setErrorMessage] = useState("");
 
   const [successMessage, setSuccessMessage] = useState("");
-
-  useEffect(() => {
-    setInterviewKit(availability?.interviewKit || null);
-
-    setUsage(availability?.usage || null);
-
-    setRuntimeBlockReason(null);
-
-    setErrorMessage("");
-    setSuccessMessage("");
-  }, [applicationId, availability]);
 
   const interviewKitGenerated = Boolean(interviewKit);
 
@@ -185,10 +179,8 @@ const CompanyApplicationInterviewKitCard = ({
 
       const result = await generateApplicationInterviewKit(applicationId);
 
-      setInterviewKit(result.data.interviewKit);
-
-      setUsage(result.data.usage);
-
+      setGeneratedInterviewKit(result.data.interviewKit);
+      setGeneratedUsage(result.data.usage);
       setRuntimeBlockReason(null);
 
       setSuccessMessage(result.message);

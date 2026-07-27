@@ -665,6 +665,7 @@ const JobDetailsPage = () => {
           />
 
           <CandidateJobResumeFitCard
+            key={`resume-fit-${jobId}`}
             jobId={jobId}
             availabilityStatus={matchState.status}
             availability={matchState.data?.aiResumeFit || null}

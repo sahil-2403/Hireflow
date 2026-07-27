@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { createPortal } from "react-dom";
 
@@ -180,9 +180,13 @@ const CompanyApplicationResumeReviewCard = ({
   resultsContainerId,
   onResultVisibilityChange,
 }) => {
-  const [review, setReview] = useState(null);
+  const [generatedReview, setGeneratedReview] = useState(null);
 
-  const [usage, setUsage] = useState(null);
+  const [generatedUsage, setGeneratedUsage] = useState(null);
+
+  const review = generatedReview ?? availability?.review ?? null;
+
+  const usage = generatedUsage ?? availability?.usage ?? null;
 
   const [runtimeBlockReason, setRuntimeBlockReason] = useState(null);
 
@@ -191,17 +195,6 @@ const CompanyApplicationResumeReviewCard = ({
   const [errorMessage, setErrorMessage] = useState("");
 
   const [successMessage, setSuccessMessage] = useState("");
-
-  useEffect(() => {
-    setReview(availability?.review || null);
-
-    setUsage(availability?.usage || null);
-
-    setRuntimeBlockReason(null);
-
-    setErrorMessage("");
-    setSuccessMessage("");
-  }, [applicationId, availability]);
 
   const blockReason = runtimeBlockReason || availability?.blockReason || null;
 
@@ -237,10 +230,8 @@ const CompanyApplicationResumeReviewCard = ({
 
       const result = await generateApplicationResumeReview(applicationId);
 
-      setReview(result.data.review);
-
-      setUsage(result.data.usage);
-
+      setGeneratedReview(result.data.review);
+      setGeneratedUsage(result.data.usage);
       setRuntimeBlockReason(null);
 
       setSuccessMessage(result.message);

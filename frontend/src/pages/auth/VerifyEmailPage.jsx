@@ -14,15 +14,22 @@ import Button from "../../components/ui/Button";
 
 import getApiError from "../../utils/getApiError";
 
+const VERIFYING_MESSAGE = "Please wait while we verify your email address.";
+
+const MISSING_TOKEN_MESSAGE =
+  "The verification token is missing. Request a new verification email to continue.";
+
 const VerifyEmailPage = () => {
   const { token } = useParams();
 
   const navigate = useNavigate();
 
-  const [status, setStatus] = useState("verifying");
+  const hasToken = Boolean(token);
+
+  const [status, setStatus] = useState(hasToken ? "verifying" : "error");
 
   const [message, setMessage] = useState(
-    "Please wait while we verify your email address.",
+    hasToken ? VERIFYING_MESSAGE : MISSING_TOKEN_MESSAGE,
   );
 
   /*
@@ -38,12 +45,6 @@ const VerifyEmailPage = () => {
 
   useEffect(() => {
     if (!token) {
-      setStatus("error");
-
-      setMessage(
-        "The verification token is missing. Request a new verification email to continue.",
-      );
-
       return;
     }
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   CheckCircle2,
@@ -278,7 +278,9 @@ const CompanyJobPostAssistantCard = ({
 
   const [suggestions, setSuggestions] = useState(null);
 
-  const [usage, setUsage] = useState(null);
+  const [generatedUsage, setGeneratedUsage] = useState(null);
+
+  const usage = generatedUsage ?? availability?.usage ?? null;
 
   const [runtimeBlockReason, setRuntimeBlockReason] = useState(null);
 
@@ -287,12 +289,6 @@ const CompanyJobPostAssistantCard = ({
   const [isResultOpen, setIsResultOpen] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState("");
-
-  useEffect(() => {
-    setUsage(availability?.usage || null);
-
-    setRuntimeBlockReason(null);
-  }, [availability]);
 
   const aiDraft = useMemo(() => {
     return buildAiJobDraft(formValues || {});
@@ -445,7 +441,7 @@ const CompanyJobPostAssistantCard = ({
 
       setSuggestions(result.data.suggestions);
 
-      setUsage(result.data.usage);
+      setGeneratedUsage(result.data.usage);
 
       setRuntimeBlockReason(null);
 

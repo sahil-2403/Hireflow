@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { createPortal } from "react-dom";
 
@@ -201,9 +201,13 @@ const CompanySuggestedShortlistCard = ({
   resultsContainerId,
   onResultVisibilityChange,
 }) => {
-  const [shortlist, setShortlist] = useState(null);
+  const [generatedShortlist, setGeneratedShortlist] = useState(null);
 
-  const [usage, setUsage] = useState(null);
+  const [generatedUsage, setGeneratedUsage] = useState(null);
+
+  const shortlist = generatedShortlist ?? availability?.shortlist ?? null;
+
+  const usage = generatedUsage ?? availability?.usage ?? null;
 
   const [runtimeBlockReason, setRuntimeBlockReason] = useState(null);
 
@@ -212,17 +216,6 @@ const CompanySuggestedShortlistCard = ({
   const [errorMessage, setErrorMessage] = useState("");
 
   const [successMessage, setSuccessMessage] = useState("");
-
-  useEffect(() => {
-    setShortlist(availability?.shortlist || null);
-
-    setUsage(availability?.usage || null);
-
-    setRuntimeBlockReason(null);
-
-    setErrorMessage("");
-    setSuccessMessage("");
-  }, [jobId, availability]);
 
   const requestedLimit = Number(availability?.requestedLimit) || 0;
 
@@ -269,9 +262,9 @@ const CompanySuggestedShortlistCard = ({
 
       const result = await generateSuggestedShortlist(jobId, requestedLimit);
 
-      setShortlist(result.data.shortlist);
+      setGeneratedShortlist(result.data.shortlist);
 
-      setUsage(result.data.usage);
+      setGeneratedUsage(result.data.usage);
 
       setRuntimeBlockReason(null);
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { ChevronDown, LoaderCircle } from "lucide-react";
 
@@ -231,9 +231,13 @@ const CandidateJobResumeFitCard = ({
   availability,
   availabilityError = "",
 }) => {
-  const [fit, setFit] = useState(null);
+  const [generatedFit, setGeneratedFit] = useState(null);
 
-  const [usage, setUsage] = useState(null);
+  const [generatedUsage, setGeneratedUsage] = useState(null);
+
+  const fit = generatedFit ?? availability?.fit ?? null;
+
+  const usage = generatedUsage ?? availability?.usage ?? null;
 
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -244,21 +248,6 @@ const CandidateJobResumeFitCard = ({
   const [errorMessage, setErrorMessage] = useState("");
 
   const [successMessage, setSuccessMessage] = useState("");
-
-  useEffect(() => {
-    setFit(availability?.fit || null);
-    setUsage(availability?.usage || null);
-
-    setRuntimeBlockReason(null);
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    /*
-     * Cached results remain collapsed
-     * when the page is opened normally.
-     */
-    setIsResultOpen(false);
-  }, [jobId, availability]);
 
   const handleGenerateFit = async () => {
     const isAllowed =
@@ -279,8 +268,8 @@ const CandidateJobResumeFitCard = ({
 
       const result = await generateCandidateJobResumeFit(jobId);
 
-      setFit(result.data.fit);
-      setUsage(result.data.usage);
+      setGeneratedFit(result.data.fit);
+      setGeneratedUsage(result.data.usage);
       setRuntimeBlockReason(null);
       setSuccessMessage(result.message);
 

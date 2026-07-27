@@ -322,6 +322,7 @@ const CompanyJobFormPage = () => {
           {apiError && <Alert variant="error">{apiError}</Alert>}
 
           <CompanyJobPostAssistantCard
+            key={`job-post-assistant-${jobId || "create"}`}
             control={control}
             getValues={getValues}
             setValue={setValue}

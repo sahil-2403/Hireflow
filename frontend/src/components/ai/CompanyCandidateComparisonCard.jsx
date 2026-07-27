@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { createPortal } from "react-dom";
 
@@ -238,9 +238,13 @@ const CompanyCandidateComparisonCard = ({
   onRemoveSelected,
   onClearSelected,
 }) => {
-  const [comparison, setComparison] = useState(null);
+  const [generatedComparison, setGeneratedComparison] = useState(null);
 
-  const [usage, setUsage] = useState(null);
+  const [generatedUsage, setGeneratedUsage] = useState(null);
+
+  const comparison = generatedComparison ?? availability?.comparison ?? null;
+
+  const usage = generatedUsage ?? availability?.usage ?? null;
 
   const [runtimeBlockReason, setRuntimeBlockReason] = useState(null);
 
@@ -249,17 +253,6 @@ const CompanyCandidateComparisonCard = ({
   const [errorMessage, setErrorMessage] = useState("");
 
   const [successMessage, setSuccessMessage] = useState("");
-
-  useEffect(() => {
-    setComparison(availability?.comparison || null);
-
-    setUsage(availability?.usage || null);
-
-    setRuntimeBlockReason(null);
-
-    setErrorMessage("");
-    setSuccessMessage("");
-  }, [jobId, availability]);
 
   const minimumCandidates = Number(availability?.minimumCandidates) || 2;
 
@@ -338,9 +331,8 @@ const CompanyCandidateComparisonCard = ({
 
       const result = await generateCandidateComparison(jobId, selectedIds);
 
-      setComparison(result.data.comparison);
-
-      setUsage(result.data.usage);
+      setGeneratedComparison(result.data.comparison);
+      setGeneratedUsage(result.data.usage);
 
       setRuntimeBlockReason(null);
 

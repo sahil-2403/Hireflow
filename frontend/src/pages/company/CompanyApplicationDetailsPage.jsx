@@ -911,6 +911,7 @@ const CompanyApplicationDetailsPage = () => {
 
       <section className="grid min-w-0 gap-5 lg:grid-cols-2 lg:items-stretch">
         <CompanyApplicationResumeReviewCard
+          key={`resume-review-${applicationId}`}
           applicationId={applicationId}
           availability={details?.aiResumeReview}
           isResultVisible={activeAiPanel === "resume-review"}
@@ -921,6 +922,7 @@ const CompanyApplicationDetailsPage = () => {
         />
 
         <CompanyApplicationInterviewKitCard
+          key={`interview-kit-${applicationId}`}
           applicationId={applicationId}
           availability={details?.aiInterviewKit}
           isResultVisible={activeAiPanel === "interview-kit"}

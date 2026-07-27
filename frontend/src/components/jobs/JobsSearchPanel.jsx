@@ -185,6 +185,8 @@ const JobsSearchPanel = ({
 
     const drawer = drawerRef.current;
 
+    const filtersButton = filtersButtonRef.current;
+
     const focusableSelector = [
       "button:not([disabled])",
       "select:not([disabled])",
@@ -236,7 +238,7 @@ const JobsSearchPanel = ({
 
       window.removeEventListener("keydown", handleKeyDown);
 
-      filtersButtonRef.current?.focus();
+      filtersButton?.focus();
     };
   }, [isFiltersOpen]);
 
