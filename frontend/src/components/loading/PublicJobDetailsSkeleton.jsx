@@ -4,47 +4,47 @@ import Skeleton from "../ui/Skeleton";
 
 const PublicJobDetailsSkeleton = () => {
   return (
-    <div aria-busy="true" aria-live="polite" className="grid gap-6">
+    <div
+      aria-busy="true"
+      aria-live="polite"
+      className="mx-auto grid max-w-375 gap-5"
+    >
       <span className="sr-only">Loading job details</span>
 
       <Skeleton className="h-9 w-32 rounded-xl" />
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-7">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-          <Skeleton className="h-16 w-16 shrink-0 rounded-2xl" />
+      <section className="border-b border-slate-200 pb-5 sm:pb-6">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+          <div className="flex min-w-0 flex-col gap-4 min-[420px]:flex-row">
+            <Skeleton className="h-16 w-16 shrink-0 rounded-2xl" />
 
-          <div className="min-w-0 flex-1">
-            <Skeleton className="h-4 w-40" />
+            <div className="min-w-0 flex-1">
+              <Skeleton className="h-4 w-40" />
 
-            <Skeleton className="mt-3 h-8 w-96 max-w-full" />
+              <Skeleton className="mt-3 h-8 w-96 max-w-full" />
 
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Skeleton className="h-6 w-24 rounded-full" />
-              <Skeleton className="h-6 w-20 rounded-full" />
-              <Skeleton className="h-6 w-20 rounded-full" />
-              <Skeleton className="h-6 w-16 rounded-full" />
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Skeleton className="h-7 w-24 rounded-full" />
+                <Skeleton className="h-7 w-20 rounded-full" />
+                <Skeleton className="h-7 w-20 rounded-full" />
+                <Skeleton className="h-7 w-24 rounded-full" />
+              </div>
+
+              <Skeleton className="mt-4 h-3 w-28" />
             </div>
           </div>
 
-          <div className="sm:text-right">
-            <Skeleton className="h-3 w-16 sm:ml-auto" />
-            <Skeleton className="mt-2 h-6 w-32 sm:ml-auto" />
+          <div className="lg:text-right">
+            <Skeleton className="h-3 w-16 lg:ml-auto" />
+
+            <Skeleton className="mt-2 h-6 w-40 lg:ml-auto" />
           </div>
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <Card className="lg:col-start-2">
-          <CardBody>
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="mt-3 h-4 w-full" />
-            <Skeleton className="mt-6 h-28 w-full rounded-xl" />
-            <Skeleton className="mt-5 h-11 w-full rounded-xl" />
-          </CardBody>
-        </Card>
-
-        <Card className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
-          <CardBody>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+        <Card>
+          <CardBody className="p-5 sm:p-6">
             <Skeleton className="h-6 w-44" />
 
             <div className="mt-5 grid gap-3">
@@ -60,27 +60,108 @@ const PublicJobDetailsSkeleton = () => {
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-5/6" />
                 <Skeleton className="h-4 w-4/5" />
+                <Skeleton className="h-4 w-11/12" />
+              </div>
+            </div>
+
+            <div className="mt-8 border-t border-slate-100 pt-6">
+              <Skeleton className="h-6 w-36" />
+
+              <div className="mt-4 grid gap-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-4 w-4/5" />
               </div>
             </div>
           </CardBody>
         </Card>
 
-        <div className="grid gap-6 lg:col-start-2">
+        <aside className="grid gap-5">
           <Card>
             <CardBody>
-              <Skeleton className="h-5 w-36" />
-              <Skeleton className="mt-4 h-20 w-full rounded-xl" />
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-xl" />
+
+                <Skeleton className="h-5 w-40" />
+              </div>
+
+              <Skeleton className="mt-6 h-4 w-28" />
+
+              <Skeleton className="mt-3 h-28 w-full rounded-xl" />
+
+              <Skeleton className="mt-5 h-11 w-full rounded-xl" />
             </CardBody>
           </Card>
 
           <Card>
             <CardBody>
-              <Skeleton className="h-5 w-36" />
-              <Skeleton className="mt-4 h-16 w-full" />
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-xl" />
+
+                <Skeleton className="h-5 w-36" />
+              </div>
+
+              <div className="mt-5 flex gap-3">
+                <Skeleton className="h-12 w-12 shrink-0 rounded-xl" />
+
+                <div className="min-w-0 flex-1">
+                  <Skeleton className="h-4 w-36 max-w-full" />
+
+                  <Skeleton className="mt-2 h-3 w-28" />
+                </div>
+              </div>
+
+              <Skeleton className="mt-5 h-4 w-32" />
+
+              <Skeleton className="mt-3 h-16 w-full" />
             </CardBody>
           </Card>
-        </div>
+        </aside>
       </div>
+
+      <Card>
+        <CardBody>
+          <div className="flex items-start gap-3">
+            <Skeleton className="h-10 w-10 rounded-xl" />
+
+            <div className="min-w-0 flex-1">
+              <Skeleton className="h-5 w-48 max-w-full" />
+
+              <Skeleton className="mt-2 h-4 w-80 max-w-full" />
+            </div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Skeleton className="h-10 w-32 rounded-full" />
+
+            <Skeleton className="h-7 w-28 rounded-full" />
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <Skeleton className="h-24 w-full rounded-xl" />
+
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </div>
+        </CardBody>
+      </Card>
+
+      <Card className="border-violet-200">
+        <CardBody>
+          <Skeleton className="h-7 w-28 rounded-full" />
+
+          <Skeleton className="mt-4 h-5 w-52 max-w-full" />
+
+          <Skeleton className="mt-2 h-4 w-96 max-w-full" />
+
+          <div className="mt-5 rounded-xl bg-slate-50/70 p-4">
+            <Skeleton className="h-4 w-52 max-w-full" />
+
+            <Skeleton className="mt-3 h-4 w-full" />
+
+            <Skeleton className="mt-5 h-11 w-48 max-w-full rounded-xl" />
+          </div>
+        </CardBody>
+      </Card>
     </div>
   );
 };

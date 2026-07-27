@@ -367,24 +367,24 @@ const RecommendationAccessNotice = ({
   );
 };
 
-const JobsPagination = ({ pagination, page, onPageChange }) => {
-  if (!pagination) {
+const JobsPagination = ({ pagination, disabled, onPageChange }) => {
+  if (!pagination || pagination.totalPages <= 1) {
     return null;
   }
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm leading-6 text-slate-600">
-        Page {pagination.page} of {pagination.totalPages || 1} ·{" "}
-        {pagination.total} jobs
+        Page {pagination.page} of {pagination.totalPages} · {pagination.total}{" "}
+        jobs
       </p>
 
       <div className="grid grid-cols-2 gap-3 sm:flex">
         <Button
           type="button"
           variant="secondary"
-          disabled={!pagination.hasPreviousPage}
-          onClick={() => onPageChange(Math.max(page - 1, 1))}
+          disabled={disabled || !pagination.hasPreviousPage}
+          onClick={() => onPageChange(Math.max(pagination.page - 1, 1))}
         >
           Previous
         </Button>
@@ -392,8 +392,8 @@ const JobsPagination = ({ pagination, page, onPageChange }) => {
         <Button
           type="button"
           variant="secondary"
-          disabled={!pagination.hasNextPage}
-          onClick={() => onPageChange(page + 1)}
+          disabled={disabled || !pagination.hasNextPage}
+          onClick={() => onPageChange(pagination.page + 1)}
         >
           Next
         </Button>
@@ -436,6 +436,9 @@ const JobsPage = () => {
 
   const [loadAttempt, setLoadAttempt] = useState(0);
 
+  const [successfulRecommendedMode, setSuccessfulRecommendedMode] =
+    useState(null);
+
   useEffect(() => {
     let shouldIgnore = false;
 
@@ -473,6 +476,8 @@ const JobsPage = () => {
         }
 
         setJobsData(result.data);
+
+        setSuccessfulRecommendedMode(isRecommendedMode);
 
         setStatus("success");
       } catch (error) {
@@ -569,6 +574,15 @@ const JobsPage = () => {
 
   const isUpdating = status === "loading" && hasLoadedData;
 
+  const hasRefreshError = status === "error" && hasLoadedData;
+
+  const displayedRecommendedMode = hasLoadedData
+    ? (successfulRecommendedMode ?? false)
+    : isRecommendedMode;
+
+  const showRecommendationAccessNotice =
+    filters.recommended && !canUseRecommendations;
+
   const activeFilterChips = useMemo(
     () => getActiveFilterChips(filters),
     [filters],
@@ -585,24 +599,21 @@ const JobsPage = () => {
   const totalJobs = pagination?.total ?? jobs.length;
 
   return (
-    <div className="mx-auto grid max-w-375 gap-6">
+    <div className="mx-auto grid max-w-375 gap-5">
       <PageHero
-        eyebrow={isRecommendedMode ? "Suggested jobs" : "Public jobs"}
         title={
-          isRecommendedMode
+          displayedRecommendedMode
             ? "Jobs matched to your profile"
             : "Browse open jobs"
         }
         description={
-          isRecommendedMode
-            ? jobsData?.aiEnhancement?.enabled
-              ? "Open roles ranked using your candidate profile and stored AI Resume Insights."
-              : "Open roles ranked using your skills, target roles, experience, and job preferences."
+          displayedRecommendedMode
+            ? "Open roles ranked using your candidate profile and available Resume Insights."
             : "Search open roles by job title, skill, location, workplace type, or experience level."
         }
       />
 
-      {filters.recommended && !canUseRecommendations && (
+      {showRecommendationAccessNotice && (
         <RecommendationAccessNotice
           isAuthenticated={isAuthenticated}
           onBrowsePublicJobs={() => handleRemoveFilter("recommended")}
@@ -627,7 +638,7 @@ const JobsPage = () => {
         onModeChange={handleModeChange}
       />
 
-      {isRecommendedMode && jobsData && (
+      {displayedRecommendedMode && jobsData && (
         <SuggestedJobsEnhancementCard enhancement={jobsData.aiEnhancement} />
       )}
 
@@ -638,13 +649,9 @@ const JobsPage = () => {
       >
         <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-medium leading-5 text-blue-600">
-              Job results
-            </p>
-
             <h2
               id="jobs-results-heading"
-              className="mt-0.5 text-2xl font-semibold leading-8 tracking-tight text-slate-950"
+              className="text-xl font-semibold leading-7 text-slate-950"
             >
               {hasLoadedData
                 ? `${totalJobs} matching ${totalJobs === 1 ? "job" : "jobs"}`
@@ -659,16 +666,10 @@ const JobsPage = () => {
                 className="inline-flex items-center gap-2 text-sm leading-6 text-slate-500"
               >
                 <LoaderCircle
-                  className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                  className="h-4 w-4 animate-spin "
                   aria-hidden="true"
                 />
                 Updating results
-              </p>
-            )}
-
-            {pagination && (
-              <p className="text-sm leading-6 text-slate-500">
-                Page {pagination.page} of {pagination.totalPages || 1}
               </p>
             )}
           </div>
@@ -679,8 +680,16 @@ const JobsPage = () => {
         {status === "error" && (
           <SectionError
             compact={hasLoadedData}
-            title="Could not update jobs"
-            message={errorMessage}
+            title={
+              hasLoadedData ? "Could not update jobs" : "Could not load jobs"
+            }
+            message={
+              hasLoadedData
+                ? [errorMessage, "Previously loaded results are still shown."]
+                    .filter(Boolean)
+                    .join(" ")
+                : errorMessage
+            }
             onRetry={() =>
               setLoadAttempt((currentAttempt) => currentAttempt + 1)
             }
@@ -689,6 +698,7 @@ const JobsPage = () => {
 
         {hasLoadedData && jobs.length === 0 && !isInitialLoading && (
           <EmptyState
+            size="compact"
             icon={Search}
             title="No jobs found"
             description="Try changing your keyword, location, or advanced filters."
@@ -711,21 +721,21 @@ const JobsPage = () => {
                 <PublicJobCard
                   key={job._id || job.id}
                   job={job}
-                  showMatch={isRecommendedMode}
+                  showMatch={displayedRecommendedMode}
                 />
               ))}
             </div>
 
             <JobsPagination
               pagination={pagination}
-              page={page}
+              disabled={isUpdating || hasRefreshError}
               onPageChange={handlePageChange}
             />
           </>
         )}
       </section>
 
-      {!isAuthenticated && (
+      {!isAuthenticated && !showRecommendationAccessNotice && (
         <Card variant="subtle">
           <CardBody className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div className="flex min-w-0 items-start gap-3">

@@ -1,4 +1,4 @@
-import { ChevronDown, Sparkles } from "lucide-react";
+import { ChevronDown, Target } from "lucide-react";
 
 import MatchScoreBadge from "../application/MatchScoreBadge";
 import SkillMatchList from "../application/SkillMatchList";
@@ -20,37 +20,65 @@ const CandidateJobMatchCard = ({
   return (
     <Card>
       <CardBody className="p-4 sm:p-5">
-        <header className="flex min-w-0 items-start gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
-            <Sparkles className="h-5 w-5" aria-hidden="true" />
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
+              <Target className="h-5 w-5" aria-hidden="true" />
+            </div>
+
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold leading-7 text-slate-950">
+                Profile fit for this role
+              </h2>
+
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                See how well your profile matches the job requirements.
+              </p>
+            </div>
           </div>
 
-          <div className="min-w-0">
-            <p className="text-xs font-medium leading-5 text-blue-600">
-              Your match
-            </p>
+          {status === "success" && match && (
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <MatchScoreBadge match={match} size="lg" />
 
-            <h2 className="text-lg font-semibold leading-7 text-slate-950">
-              Profile fit for this role
-            </h2>
-          </div>
+              <Pill variant="slate" size="sm" className="normal-case">
+                {match.confidenceLevel
+                  ? `${match.confidenceLevel} confidence`
+                  : "Confidence unavailable"}
+              </Pill>
+            </div>
+          )}
         </header>
 
         {status === "loading" && (
           <div aria-busy="true" aria-live="polite" className="mt-5 grid gap-4">
             <span className="sr-only">Calculating your job match</span>
 
-            <div className="flex items-center justify-between gap-4">
-              <Skeleton className="h-10 w-28 rounded-full" />
-              <Skeleton className="h-6 w-24 rounded-full" />
+            <div className="flex flex-wrap items-center gap-3">
+              <Skeleton className="h-10 w-32 rounded-full" />
+
+              <Skeleton className="h-7 w-28 rounded-full" />
             </div>
 
-            <Skeleton className="h-4 w-32" />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-xl bg-slate-50/70 p-4">
+                <Skeleton className="h-4 w-28" />
 
-            <div className="flex flex-wrap gap-2">
-              <Skeleton className="h-6 w-16 rounded-full" />
-              <Skeleton className="h-6 w-20 rounded-full" />
-              <Skeleton className="h-6 w-14 rounded-full" />
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                  <Skeleton className="h-6 w-14 rounded-full" />
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-slate-50/70 p-4">
+                <Skeleton className="h-4 w-28" />
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -68,37 +96,27 @@ const CandidateJobMatchCard = ({
 
         {status === "success" && match && (
           <div className="mt-5 grid gap-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="mb-2 text-xs font-medium leading-5 text-slate-500">
-                  Match score
-                </p>
-
-                <MatchScoreBadge match={match} size="lg" />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-xl bg-slate-50/70 p-4">
+                <SkillMatchList
+                  title="Matched skills"
+                  skills={match.matchedSkills || []}
+                  emptyMessage="No matched skills yet."
+                  variant="matched"
+                  limit={5}
+                />
               </div>
 
-              <Pill variant="slate" size="sm" className="normal-case">
-                {match.confidenceLevel
-                  ? `${match.confidenceLevel} confidence`
-                  : "Confidence unavailable"}
-              </Pill>
+              <div className="rounded-xl bg-slate-50/70 p-4">
+                <SkillMatchList
+                  title="Missing skills"
+                  skills={match.missingSkills || []}
+                  emptyMessage="No missing skills listed."
+                  variant="missing"
+                  limit={5}
+                />
+              </div>
             </div>
-
-            <SkillMatchList
-              title="Matched skills"
-              skills={match.matchedSkills || []}
-              emptyMessage="No matched skills yet."
-              variant="matched"
-              limit={5}
-            />
-
-            <SkillMatchList
-              title="Missing skills"
-              skills={match.missingSkills || []}
-              emptyMessage="No missing skills listed."
-              variant="missing"
-              limit={5}
-            />
 
             {match.reasons?.length > 0 && (
               <details className="group rounded-xl border border-slate-200 bg-slate-50/70">
@@ -109,7 +127,7 @@ const CandidateJobMatchCard = ({
                     "list-none",
                     "items-center",
                     "justify-between",
-                    "gap-3 px-3 py-2",
+                    "gap-3 px-4 py-3",
                     "text-sm font-medium",
                     "text-slate-700",
 
@@ -127,10 +145,10 @@ const CandidateJobMatchCard = ({
                   />
                 </summary>
 
-                <ul className="grid gap-2 border-t border-slate-200 px-3 py-3">
-                  {match.reasons.slice(0, 3).map((reason) => (
+                <ul className="grid gap-2 border-t border-slate-200 px-4 py-3">
+                  {match.reasons.slice(0, 3).map((reason, index) => (
                     <li
-                      key={reason}
+                      key={`${reason}-${index}`}
                       className="text-sm leading-6 text-slate-600"
                     >
                       {reason}

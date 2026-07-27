@@ -5,12 +5,7 @@ const Skeleton = ({ className = "", ...props }) => {
     <div
       aria-hidden="true"
       className={cn(
-        [
-          "animate-pulse",
-          "rounded-lg",
-          "bg-slate-200/80",
-          "motion-reduce:animate-none",
-        ].join(" "),
+        ["animate-pulse", "rounded-lg", "bg-slate-200/80"].join(" "),
         className,
       )}
       {...props}

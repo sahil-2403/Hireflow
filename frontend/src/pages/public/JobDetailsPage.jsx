@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   BriefcaseBusiness,
+  Building2,
   Check,
   CheckCircle2,
   ExternalLink,
@@ -18,9 +19,7 @@ import {
 import { Link, useParams } from "react-router-dom";
 
 import { applyToJob } from "../../api/application.api";
-
 import { getPublicJobById } from "../../api/job.api";
-
 import { getRecommendedJobMatch } from "../../api/recommendation.api";
 
 import CandidateJobResumeFitCard from "../../components/ai/CandidateJobResumeFitCard";
@@ -50,6 +49,28 @@ import getApiError from "../../utils/getApiError";
 import formatSalary from "../../utils/formatSalary";
 import notify from "../../utils/notify";
 
+const JOB_METADATA_LABELS = {
+  "full-time": "Full time",
+  "part-time": "Part time",
+  contract: "Contract",
+  internship: "Internship",
+  onsite: "Onsite",
+  remote: "Remote",
+  hybrid: "Hybrid",
+  entry: "Entry level",
+  mid: "Mid level",
+  senior: "Senior level",
+  lead: "Lead",
+};
+
+const getMetadataLabel = (value, fallback) => {
+  if (!value) {
+    return fallback;
+  }
+
+  return JOB_METADATA_LABELS[value] || value;
+};
+
 const JobMetadataPill = ({ icon: Icon, children }) => {
   return (
     <Pill variant="slate" size="sm" className="normal-case ring-0">
@@ -63,8 +84,8 @@ const JobMetadataPill = ({ icon: Icon, children }) => {
 const SectionList = ({ items }) => {
   return (
     <ul className="grid gap-3">
-      {items.map((item) => (
-        <li key={item} className="flex min-w-0 items-start gap-3">
+      {items.map((item, index) => (
+        <li key={`${item}-${index}`} className="flex min-w-0 items-start gap-3">
           <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-700">
             <Check className="h-3 w-3" aria-hidden="true" />
           </span>
@@ -116,20 +137,14 @@ const JobApplicationCard = ({
   return (
     <Card id="job-application" className="scroll-mt-24">
       <CardBody className="p-4 sm:p-5">
-        <header className="flex items-start gap-3">
+        <header className="flex items-center gap-3">
           <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
             <Send className="h-5 w-5" aria-hidden="true" />
           </div>
 
-          <div>
-            <p className="text-xs font-medium leading-5 text-blue-600">
-              Application
-            </p>
-
-            <h2 className="text-lg font-semibold leading-7 text-slate-950">
-              Apply for this job
-            </h2>
-          </div>
+          <h2 className="text-lg font-semibold leading-7 text-slate-950">
+            Apply for this job
+          </h2>
         </header>
 
         {!isAuthenticated && (
@@ -173,7 +188,7 @@ const JobApplicationCard = ({
         )}
 
         {canApply && applyStatus === "success" && (
-          <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+          <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
             <div className="flex items-start gap-3">
               <CheckCircle2
                 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700"
@@ -246,7 +261,7 @@ const JobApplicationCard = ({
               {applyStatus === "submitting" ? (
                 <>
                   <LoaderCircle
-                    className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                    className="h-4 w-4 animate-spin"
                     aria-hidden="true"
                   />
                   Submitting...
@@ -265,42 +280,48 @@ const JobApplicationCard = ({
   );
 };
 
-const CompanyInformationCard = ({ company, fallbackName }) => {
-  const companyName = company?.name || fallbackName || "Company unavailable";
+const CompanyInformationCard = ({ company }) => {
+  const companyName = company?.name || "Company unavailable";
 
   return (
     <Card>
       <CardBody className="p-4 sm:p-5">
-        <header className="flex items-start gap-3">
+        <header className="flex items-center gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
+            <Building2 className="h-5 w-5" aria-hidden="true" />
+          </div>
+
+          <h2 className="text-lg font-semibold leading-7 text-slate-950">
+            Company profile
+          </h2>
+        </header>
+
+        <div className="mt-5 flex min-w-0 items-start gap-3">
           <CompanyLogo company={company} name={companyName} size="md" />
 
           <div className="min-w-0">
-            <p className="text-xs font-medium leading-5 text-violet-600">
-              Company
-            </p>
-
-            <h2 className="wrap-break-word text-lg font-semibold leading-7 text-slate-950">
+            <h3 className="wrap-break-word text-base font-semibold leading-6 text-slate-950">
               {companyName}
-            </h2>
+            </h3>
 
             {company?.industry && (
-              <p className="mt-1 text-sm leading-5 text-slate-500">
+              <p className="mt-1 wrap-break-word text-sm leading-5 text-slate-500">
                 {company.industry}
               </p>
             )}
           </div>
-        </header>
+        </div>
 
         {company?.headquarters && (
           <p className="mt-4 inline-flex items-start gap-2 text-sm leading-6 text-slate-600">
             <MapPin className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
 
-            {company.headquarters}
+            <span className="wrap-break-word">{company.headquarters}</span>
           </p>
         )}
 
         {company?.description && (
-          <p className="mt-4 whitespace-pre-line text-sm leading-6 text-slate-600">
+          <p className="mt-4 whitespace-pre-line wrap-break-word text-sm leading-6 text-slate-600">
             {company.description}
           </p>
         )}
@@ -380,9 +401,7 @@ const JobDetailsPage = () => {
         const normalizedError = getApiError(error);
 
         setJob(null);
-
         setErrorMessage(normalizedError.message);
-
         setStatus("error");
       }
     };
@@ -473,7 +492,6 @@ const JobDetailsPage = () => {
       const normalizedError = getApiError(error);
 
       setApplyError(normalizedError.message);
-
       setApplyStatus("error");
     }
   };
@@ -484,7 +502,7 @@ const JobDetailsPage = () => {
 
   if (status === "error" || !job) {
     return (
-      <div className="grid gap-5">
+      <div className="mx-auto grid max-w-375 gap-5">
         <Button as={Link} to="/jobs" variant="ghost" className="w-fit">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Back to jobs
@@ -504,39 +522,15 @@ const JobDetailsPage = () => {
   const companyName = job.companyId?.name || "Company unavailable";
 
   return (
-    <div className="grid gap-6">
+    <div className="mx-auto grid max-w-375 gap-5">
       <Button as={Link} to="/jobs" variant="ghost" className="w-fit">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Back to jobs
       </Button>
 
-      <section
-        className={[
-          "relative isolate",
-          "overflow-hidden",
-          "rounded-3xl",
-          "border border-blue-100",
-          "bg-linear-to-br",
-          "from-blue-50/90",
-          "via-white",
-          "to-violet-50/70",
-          "p-5",
-
-          "sm:p-7",
-        ].join(" ")}
-      >
-        <div
-          aria-hidden="true"
-          className="absolute -left-20 -top-24 h-64 w-64 rounded-full bg-blue-200/30 blur-3xl"
-        />
-
-        <div
-          aria-hidden="true"
-          className="absolute -bottom-28 right-0 h-72 w-72 rounded-full bg-violet-200/25 blur-3xl"
-        />
-
-        <div className="relative flex min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 flex-col gap-4 sm:flex-row">
+      <section className="border-b border-slate-200 pb-5 sm:pb-6">
+        <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+          <div className="flex min-w-0 flex-col gap-4 min-[420px]:flex-row">
             <CompanyLogo
               company={job.companyId}
               name={companyName}
@@ -559,53 +553,43 @@ const JobDetailsPage = () => {
                 </JobMetadataPill>
 
                 <JobMetadataPill icon={Laptop}>
-                  {job.workplaceType || "Workplace unavailable"}
+                  {getMetadataLabel(job.workplaceType, "Workplace unavailable")}
                 </JobMetadataPill>
 
                 <JobMetadataPill icon={BriefcaseBusiness}>
-                  {job.employmentType || "Employment unavailable"}
+                  {getMetadataLabel(
+                    job.employmentType,
+                    "Employment unavailable",
+                  )}
                 </JobMetadataPill>
 
                 <JobMetadataPill icon={GraduationCap}>
-                  {job.experienceLevel || "Level unavailable"}
+                  {getMetadataLabel(job.experienceLevel, "Level unavailable")}
                 </JobMetadataPill>
               </div>
 
               {job.createdAt && (
                 <p className="mt-4 text-xs leading-5 text-slate-500">
-                  {formatRelativePostedDate(job.createdAt)}
+                  Posted {formatRelativePostedDate(job.createdAt)}
                 </p>
               )}
             </div>
           </div>
 
-          <div className="shrink-0 rounded-2xl border border-white/90 bg-white/75 px-4 py-3 backdrop-blur lg:text-right">
+          <div className="min-w-0 lg:max-w-xs lg:text-right">
             <p className="text-xs font-medium leading-5 text-slate-500">
               Salary
             </p>
 
-            <p className="mt-1 text-lg font-semibold leading-7 text-slate-950">
+            <p className="mt-1 wrap-break-word text-lg font-semibold leading-7 text-slate-950">
               {formatSalary(job)}
             </p>
           </div>
         </div>
       </section>
 
-      <section className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
-        <div className="lg:col-start-2 lg:row-start-1">
-          <JobApplicationCard
-            isAuthenticated={isAuthenticated}
-            canApply={canApply}
-            isCompanyUser={isCompanyUser}
-            coverLetter={coverLetter}
-            applyStatus={applyStatus}
-            applyError={applyError}
-            onCoverLetterChange={(event) => setCoverLetter(event.target.value)}
-            onSubmit={handleApply}
-          />
-        </div>
-
-        <div className="min-w-0 lg:col-start-1 lg:row-start-1 lg:row-span-2">
+      <section className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+        <div className="min-w-0">
           <Card>
             <CardBody className="grid gap-6 p-5 sm:p-6">
               <ContentSection title="Job description" showBorder={false}>
@@ -650,33 +634,44 @@ const JobDetailsPage = () => {
           </Card>
         </div>
 
-        <aside className="grid min-w-0 gap-6 lg:col-start-2 lg:row-start-2">
-          {canApply && (
-            <>
-              <CandidateJobMatchCard
-                status={matchState.status}
-                matchData={matchState.data}
-                errorMessage={matchState.errorMessage}
-                onRetry={() =>
-                  setMatchAttempt((currentAttempt) => currentAttempt + 1)
-                }
-              />
-
-              <CandidateJobResumeFitCard
-                jobId={jobId}
-                availabilityStatus={matchState.status}
-                availability={matchState.data?.aiResumeFit || null}
-                availabilityError={matchState.errorMessage}
-              />
-            </>
-          )}
-
-          <CompanyInformationCard
-            company={job.companyId}
-            fallbackName={job.title}
+        <aside className="grid min-w-0 gap-5">
+          <JobApplicationCard
+            isAuthenticated={isAuthenticated}
+            canApply={canApply}
+            isCompanyUser={isCompanyUser}
+            coverLetter={coverLetter}
+            applyStatus={applyStatus}
+            applyError={applyError}
+            onCoverLetterChange={(event) => setCoverLetter(event.target.value)}
+            onSubmit={handleApply}
           />
+
+          <CompanyInformationCard company={job.companyId} />
         </aside>
       </section>
+
+      {canApply && (
+        <section
+          className="grid min-w-0 gap-5"
+          aria-label="Candidate job insights"
+        >
+          <CandidateJobMatchCard
+            status={matchState.status}
+            matchData={matchState.data}
+            errorMessage={matchState.errorMessage}
+            onRetry={() =>
+              setMatchAttempt((currentAttempt) => currentAttempt + 1)
+            }
+          />
+
+          <CandidateJobResumeFitCard
+            jobId={jobId}
+            availabilityStatus={matchState.status}
+            availability={matchState.data?.aiResumeFit || null}
+            availabilityError={matchState.errorMessage}
+          />
+        </section>
+      )}
     </div>
   );
 };

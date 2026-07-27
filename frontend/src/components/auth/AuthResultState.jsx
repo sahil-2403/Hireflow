@@ -53,7 +53,7 @@ const AuthResultState = ({
             "h-7 w-7",
             toneClasses.icon,
 
-            isLoading && "animate-spin motion-reduce:animate-none",
+            isLoading && "animate-spin",
           )}
           aria-hidden="true"
         />

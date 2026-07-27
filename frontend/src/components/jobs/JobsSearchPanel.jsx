@@ -419,9 +419,8 @@ const JobsSearchPanel = ({
           </form>
 
           {isFiltersOpen && (
-            <div className="mt-5 hidden rounded-2xl border border-slate-200 bg-slate-50/70 p-4 lg:block">
+            <div className="mt-5 hidden rounded-xl border border-slate-100 bg-slate-50/70 p-4 lg:block">
               {filterFields("desktop-jobs")}
-
               <div className="mt-5 flex justify-end gap-3">
                 <Button
                   type="button"

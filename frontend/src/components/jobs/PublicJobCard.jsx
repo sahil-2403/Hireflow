@@ -35,6 +35,28 @@ const MetadataPill = ({ icon: Icon, children }) => {
   );
 };
 
+const JOB_METADATA_LABELS = {
+  "full-time": "Full time",
+  "part-time": "Part time",
+  contract: "Contract",
+  internship: "Internship",
+  onsite: "Onsite",
+  remote: "Remote",
+  hybrid: "Hybrid",
+  entry: "Entry level",
+  mid: "Mid level",
+  senior: "Senior level",
+  lead: "Lead",
+};
+
+const getMetadataLabel = (value, fallback) => {
+  if (!value) {
+    return fallback;
+  }
+
+  return JOB_METADATA_LABELS[value] || value;
+};
+
 const PublicJobCard = ({ job, showMatch = false }) => {
   const jobId = job._id || job.id;
 
@@ -71,9 +93,7 @@ const PublicJobCard = ({ job, showMatch = false }) => {
                 <MatchScoreBadge match={job.match} size="sm" />
               )}
 
-              {isAiEnhanced && (
-                <AiBadge className="text-[10px]">AI-enhanced</AiBadge>
-              )}
+              {isAiEnhanced && <AiBadge>AI-enhanced</AiBadge>}
             </div>
 
             <p className="mt-1 wrap-break-word text-sm font-medium leading-5 text-slate-700">
@@ -86,15 +106,24 @@ const PublicJobCard = ({ job, showMatch = false }) => {
               </MetadataPill>
 
               <MetadataPill icon={BriefcaseBusiness}>
-                {job.employmentType || "Employment unavailable"}
+                {getMetadataLabel(
+                  job.employmentType,
+                  "Employment unavailable",
+                )}{" "}
               </MetadataPill>
 
               <MetadataPill icon={Laptop}>
-                {job.workplaceType || "Workplace unavailable"}
+                {getMetadataLabel(
+                  job.workplaceType,
+                  "Workplace unavailable",
+                )}{" "}
               </MetadataPill>
 
               <MetadataPill icon={GraduationCap}>
-                {job.experienceLevel || "Level unavailable"}
+                {getMetadataLabel(
+                  job.experienceLevel,
+                  "Level unavailable",
+                )}{" "}
               </MetadataPill>
             </div>
 
