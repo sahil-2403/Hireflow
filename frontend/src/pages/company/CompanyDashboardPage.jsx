@@ -367,7 +367,7 @@ const CompanyDashboardPage = () => {
       value: applications.totalApplications,
       helperText: "Applications received",
       icon: Inbox,
-      tone: "violet",
+      tone: "slate",
     },
     {
       label: "Unique candidates",

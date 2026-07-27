@@ -7,10 +7,8 @@ import {
   LoaderCircle,
   MapPin,
   Pencil,
-  RotateCcw,
   Search,
   UsersRound,
-  X,
 } from "lucide-react";
 
 import { Link, useParams } from "react-router-dom";
@@ -39,14 +37,15 @@ import Pill from "../../components/ui/Pill";
 import SectionError from "../../components/ui/SectionError";
 import SelectInput from "../../components/ui/SelectInput";
 import TextInput from "../../components/ui/TextInput";
+import FilterChips from "../../components/ui/FilterChips";
 
 import { APPLICATION_STATUS_FILTERS } from "../../features/applications/application.constants";
 
 import getApiError from "../../utils/getApiError";
 import notify from "../../utils/notify";
 import openPdfBlob from "../../utils/openPdfBlob";
-
 import { getOptionLabel, getSortOptionByValue } from "../../utils/options";
+import formatJobMetadata from "../../utils/formatJobMetadata";
 
 const SORT_OPTIONS = [
   {
@@ -149,15 +148,15 @@ const JobPipelineHeader = ({ job, jobId }) => {
           <Pill variant="slate" size="xs" className="normal-case">
             <BriefcaseBusiness className="h-3.5 w-3.5" aria-hidden="true" />
 
-            {job?.employmentType || "Employment unavailable"}
+            {formatJobMetadata(job?.employmentType, "Employment unavailable")}
           </Pill>
 
           <Pill variant="slate" size="xs" className="normal-case">
-            {job?.workplaceType || "Workplace unavailable"}
+            {formatJobMetadata(job?.workplaceType, "Workplace unavailable")}
           </Pill>
 
           <Pill variant="slate" size="xs" className="normal-case">
-            {job?.experienceLevel || "Level unavailable"}
+            {formatJobMetadata(job?.experienceLevel, "Level unavailable")}
           </Pill>
         </div>
       </div>
@@ -260,40 +259,8 @@ const PipelineSummary = ({ summary }) => {
   );
 };
 
-const ActiveFilters = ({ chips, onRemove, onClear }) => {
-  if (!chips.length) {
-    return null;
-  }
-
-  return (
-    <div className="mt-4 flex flex-wrap items-center gap-2">
-      {chips.map((chip) => (
-        <button
-          key={chip.key}
-          type="button"
-          onClick={() => onRemove(chip.key)}
-          className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          <span className="min-w-0 wrap-break-word">{chip.label}</span>
-
-          <X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        </button>
-      ))}
-
-      <button
-        type="button"
-        onClick={onClear}
-        className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-      >
-        <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-        Clear all
-      </button>
-    </div>
-  );
-};
-
 const ApplicantPagination = ({ pagination, onPreviousPage, onNextPage }) => {
-  if (!pagination) {
+  if (!pagination || Number(pagination.totalPages || 1) <= 1) {
     return null;
   }
 
@@ -623,7 +590,7 @@ const CompanyJobApplicationsPage = () => {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <JobPipelineHeader job={job} jobId={jobId} />
 
       <PipelineSummary summary={summary} />
@@ -729,10 +696,12 @@ const CompanyJobApplicationsPage = () => {
                 </div>
               </form>
 
-              <ActiveFilters
+              <FilterChips
                 chips={activeFilterChips}
                 onRemove={handleRemoveFilter}
                 onClear={handleClearFilters}
+                showDivider={false}
+                className="mt-4"
               />
 
               {isUpdating && (
@@ -788,7 +757,7 @@ const CompanyJobApplicationsPage = () => {
               </div>
             ) : (
               <>
-                <div className="hidden border-b items-start border-slate-100 bg-slate-50/60 px-5 py-2.5 text-[11px] font-medium uppercase tracking-wide text-slate-500 xl:grid xl:grid-cols-[0.4fr_1.4fr_1fr_0.4fr_1fr_auto] xl:gap-4">
+                <div className="hidden border-b items-start border-slate-100 bg-slate-50/60 px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-slate-500 xl:grid xl:grid-cols-[0.4fr_1.4fr_1fr_0.4fr_1fr_auto] xl:gap-4">
                   <span>Compare</span>
 
                   <span>Candidate</span>

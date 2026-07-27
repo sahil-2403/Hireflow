@@ -141,7 +141,7 @@ const CandidateDashboardPage = () => {
   }, [applicationsLoadAttempt]);
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <PageHero
         title={`Welcome back, ${getDisplayName(user)}`}
         description="Manage your profile, resume, applications, job recommendations, and AI-assisted preparation from one workspace."

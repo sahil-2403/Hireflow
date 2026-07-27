@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   AtSign,
-  BriefcaseBusiness,
   Building2,
+  LoaderCircle,
   Mail,
   ShieldCheck,
 } from "lucide-react";
@@ -128,12 +128,6 @@ const AccountInfoCard = ({ user, profile }) => {
       label: "Your role",
       value: getRoleDisplayName(user?.role),
       icon: ShieldCheck,
-    },
-    {
-      key: "company",
-      label: "Company",
-      value: companyName,
-      icon: BriefcaseBusiness,
     },
   ];
 
@@ -401,8 +395,17 @@ const CompanyMyProfilePage = () => {
                   </Button>
 
                   <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && (
+                      <LoaderCircle
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                    )}
+
                     {isSubmitting
-                      ? "Saving..."
+                      ? mode === "create"
+                        ? "Creating..."
+                        : "Saving..."
                       : mode === "create"
                         ? "Create profile"
                         : "Save changes"}

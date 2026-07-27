@@ -599,7 +599,7 @@ const JobsPage = () => {
   const totalJobs = pagination?.total ?? jobs.length;
 
   return (
-    <div className="mx-auto grid max-w-375 gap-5">
+    <div className="grid gap-5">
       <PageHero
         title={
           displayedRecommendedMode

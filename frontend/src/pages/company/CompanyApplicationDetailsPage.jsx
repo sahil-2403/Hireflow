@@ -878,7 +878,7 @@ const CompanyApplicationDetailsPage = () => {
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <Button
         as={Link}
         to={`/company/applications/${jobId}`}

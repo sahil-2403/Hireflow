@@ -331,8 +331,8 @@ const CompanyJobFormPage = () => {
 
           <CompanyJobFormFields register={register} errors={errors} />
 
-          <Card className="sticky bottom-0 border-2 z-40">
-            <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <Card className="sticky bottom-3 z-20 border-slate-200 bg-white/90 shadow-lg shadow-slate-200/50 backdrop-blur">
+            <CardBody className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
               <div>
                 <p className="text-sm font-semibold leading-5 text-slate-900">
                   {isEditMode

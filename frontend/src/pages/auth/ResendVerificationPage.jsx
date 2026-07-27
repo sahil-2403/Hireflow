@@ -98,7 +98,7 @@ const ResendVerificationPage = () => {
       ) : (
         <>
           <header>
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-700">
               <MailPlus className="h-5 w-5" aria-hidden="true" />
             </div>
 

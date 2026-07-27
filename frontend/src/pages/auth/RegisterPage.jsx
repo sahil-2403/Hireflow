@@ -237,10 +237,6 @@ const RegisterPage = () => {
                     <span className="block text-sm font-semibold leading-5 text-slate-950">
                       {option.title}
                     </span>
-
-                    <span className="mt-1 block text-xs leading-4.5 text-slate-500">
-                      {option.description}
-                    </span>
                   </span>
                 </button>
               );

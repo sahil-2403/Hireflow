@@ -105,7 +105,7 @@ const RecruiterStats = ({ activeCount, inactiveCount, totalCount }) => {
     <div className="grid grid-cols-3 divide-x divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/60">
       {stats.map((stat) => (
         <div key={stat.label} className="px-2 py-2.5 text-center sm:px-3">
-          <p className="text-[11px] font-medium leading-4 text-slate-500">
+          <p className="text-xs font-medium leading-4 text-slate-500">
             {stat.label}
           </p>
 
@@ -252,7 +252,7 @@ const RecruiterAccountsCard = ({
         ) : (
           <div
             className={[
-              "mt-10",
+              "mt-8",
               "divide-y",
               "divide-slate-100",
               "transition-opacity",

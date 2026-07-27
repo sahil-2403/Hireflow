@@ -25,6 +25,8 @@ import { Card, CardBody } from "../ui/Card";
 
 import Pill from "../ui/Pill";
 
+import formatJobMetadata from "../../utils/formatJobMetadata";
+
 const MetadataPill = ({ icon: Icon, children }) => {
   return (
     <Pill variant="slate" size="xs" className="normal-case ring-0">
@@ -33,28 +35,6 @@ const MetadataPill = ({ icon: Icon, children }) => {
       {children}
     </Pill>
   );
-};
-
-const JOB_METADATA_LABELS = {
-  "full-time": "Full time",
-  "part-time": "Part time",
-  contract: "Contract",
-  internship: "Internship",
-  onsite: "Onsite",
-  remote: "Remote",
-  hybrid: "Hybrid",
-  entry: "Entry level",
-  mid: "Mid level",
-  senior: "Senior level",
-  lead: "Lead",
-};
-
-const getMetadataLabel = (value, fallback) => {
-  if (!value) {
-    return fallback;
-  }
-
-  return JOB_METADATA_LABELS[value] || value;
 };
 
 const PublicJobCard = ({ job, showMatch = false }) => {
@@ -106,24 +86,18 @@ const PublicJobCard = ({ job, showMatch = false }) => {
               </MetadataPill>
 
               <MetadataPill icon={BriefcaseBusiness}>
-                {getMetadataLabel(
+                {formatJobMetadata(
                   job.employmentType,
                   "Employment unavailable",
-                )}{" "}
+                )}
               </MetadataPill>
 
               <MetadataPill icon={Laptop}>
-                {getMetadataLabel(
-                  job.workplaceType,
-                  "Workplace unavailable",
-                )}{" "}
+                {formatJobMetadata(job.workplaceType, "Workplace unavailable")}
               </MetadataPill>
 
               <MetadataPill icon={GraduationCap}>
-                {getMetadataLabel(
-                  job.experienceLevel,
-                  "Level unavailable",
-                )}{" "}
+                {formatJobMetadata(job.experienceLevel, "Level unavailable")}
               </MetadataPill>
             </div>
 

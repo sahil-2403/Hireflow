@@ -3,10 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BriefcaseBusiness,
   LoaderCircle,
-  RotateCcw,
   Search,
   UsersRound,
-  X,
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
@@ -28,6 +26,7 @@ import PageHero from "../../components/ui/PageHero";
 import SectionError from "../../components/ui/SectionError";
 import SelectInput from "../../components/ui/SelectInput";
 import TextInput from "../../components/ui/TextInput";
+import FilterChips from "../../components/ui/FilterChips";
 
 import getApiError from "../../utils/getApiError";
 
@@ -143,79 +142,12 @@ const getActiveFilterChips = ({ search, selectedStatus, sortValue }) => {
   return chips;
 };
 
-const ActiveApplicationFilters = ({ chips, onRemove, onClear }) => {
-  if (!chips.length) {
-    return null;
-  }
-
-  return (
-    <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
-      <span className="mr-1 text-xs font-medium leading-5 text-slate-500">
-        Active filters:
-      </span>
-
-      {chips.map((chip) => (
-        <button
-          key={chip.key}
-          type="button"
-          onClick={() => onRemove(chip.key)}
-          className={[
-            "inline-flex min-h-9",
-            "max-w-full items-center",
-            "gap-1.5 rounded-full",
-            "border border-blue-100",
-            "bg-blue-50",
-            "px-3 py-1.5",
-            "text-xs font-medium",
-            "text-blue-700",
-            "transition-colors",
-
-            "hover:bg-blue-100",
-
-            "focus-visible:outline-none",
-            "focus-visible:ring-2",
-            "focus-visible:ring-blue-500",
-          ].join(" ")}
-        >
-          <span className="min-w-0 wrap-break-word">{chip.label}</span>
-
-          <X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        </button>
-      ))}
-
-      <button
-        type="button"
-        onClick={onClear}
-        className={[
-          "inline-flex min-h-9",
-          "items-center gap-1.5",
-          "rounded-full",
-          "px-3 py-1.5",
-          "text-xs font-medium",
-          "text-slate-600",
-          "transition-colors",
-
-          "hover:bg-slate-100",
-          "hover:text-slate-900",
-
-          "focus-visible:outline-none",
-          "focus-visible:ring-2",
-          "focus-visible:ring-blue-500",
-        ].join(" ")}
-      >
-        <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-        Clear all
-      </button>
-    </div>
-  );
-};
-
 const ApplicationGroupsPagination = ({
   pagination,
   onPreviousPage,
   onNextPage,
 }) => {
-  if (!pagination) {
+  if (!pagination || Number(pagination.totalPages || 1) <= 1) {
     return null;
   }
 
@@ -419,7 +351,7 @@ const CompanyApplicationsPage = () => {
   );
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <PageHero
         title="Applications by job"
         description="Review applicant activity grouped by job, compare match information, and open the focused hiring pipeline for each role."
@@ -483,17 +415,18 @@ const CompanyApplicationsPage = () => {
                 </div>
               </form>
 
-              <ActiveApplicationFilters
+              <FilterChips
                 chips={activeFilterChips}
                 onRemove={handleRemoveFilter}
                 onClear={handleClearFilters}
+                className="mt-5"
               />
             </CardBody>
           </Card>
 
           <Card>
             <CardBody className="p-0">
-              <header className="flex flex-col gap-3 border-b border-slate-100 p-2 sm:flex-row sm:items-end sm:justify-between sm:p-2">
+              <header className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
                 <div>
                   <h2 className="text-xl font-semibold leading-7 text-slate-950">
                     {hasLoadedData
@@ -509,7 +442,6 @@ const CompanyApplicationsPage = () => {
                       : "Showing open and closed job pipelines."}
                   </p>
                 </div>
-
                 {isUpdating && (
                   <p
                     role="status"
@@ -530,8 +462,21 @@ const CompanyApplicationsPage = () => {
                 <div className="border-b border-slate-100 p-4 sm:p-5">
                   <SectionError
                     compact={hasLoadedData}
-                    title="Could not load application groups"
-                    message={errorMessage}
+                    title={
+                      hasLoadedData
+                        ? "Could not update application groups"
+                        : "Could not load application groups"
+                    }
+                    message={
+                      hasLoadedData
+                        ? [
+                            errorMessage,
+                            "Previously loaded application groups are still shown.",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")
+                        : errorMessage
+                    }
                     onRetry={() =>
                       setLoadAttempt((currentAttempt) => currentAttempt + 1)
                     }

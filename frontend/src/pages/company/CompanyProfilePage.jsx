@@ -610,6 +610,13 @@ const CompanyProfilePage = () => {
                 </Button>
 
                 <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && (
+                    <LoaderCircle
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
+                  )}
+
                   {isSubmitting
                     ? mode === "edit"
                       ? "Updating..."

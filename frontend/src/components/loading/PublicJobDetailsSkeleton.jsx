@@ -7,7 +7,7 @@ const PublicJobDetailsSkeleton = () => {
     <div
       aria-busy="true"
       aria-live="polite"
-      className="mx-auto grid max-w-375 gap-5"
+      className="grid gap-5"
     >
       <span className="sr-only">Loading job details</span>
 

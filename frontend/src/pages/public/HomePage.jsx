@@ -42,6 +42,7 @@ import HomeAiFeaturesSection, {
 } from "../../components/public/HomeAiFeaturesSection";
 
 import getApiError from "../../utils/getApiError";
+import formatJobMetadata from "../../utils/formatJobMetadata";
 
 import { formatRelativePostedDate } from "../../utils/formatDate";
 
@@ -55,7 +56,7 @@ const QUICK_FILTERS = [
     to: "/jobs?workplaceType=hybrid",
   },
   {
-    label: "Full-time",
+    label: "Full time",
     to: "/jobs?employmentType=full-time",
   },
   {
@@ -436,6 +437,8 @@ const LatestJobSkeleton = () => {
 };
 
 const LatestJobCard = ({ job }) => {
+  const jobId = job._id || job.id;
+
   const companyName = job.companyId?.name || "Company unavailable";
 
   const skills = Array.isArray(job.skills) ? job.skills.slice(0, 3) : [];
@@ -469,8 +472,7 @@ const LatestJobCard = ({ job }) => {
           {job.employmentType && (
             <span className="inline-flex items-center gap-1">
               <BriefcaseBusiness className="h-3.5 w-3.5" aria-hidden="true" />
-
-              {job.employmentType}
+              {formatJobMetadata(job.employmentType)}
             </span>
           )}
         </div>
@@ -494,12 +496,7 @@ const LatestJobCard = ({ job }) => {
             {formatRelativePostedDate(job.createdAt)}
           </p>
 
-          <Button
-            as={Link}
-            to={`/jobs/${job._id}`}
-            variant="secondary"
-            size="xs"
-          >
+          <Button as={Link} to={`/jobs/${jobId}`} variant="secondary" size="xs">
             View job
           </Button>
         </div>
@@ -628,7 +625,7 @@ const LatestJobsSection = () => {
       {status === "success" && jobs.length > 0 && (
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
           {jobs.map((job) => (
-            <LatestJobCard key={job._id} job={job} />
+            <LatestJobCard key={job._id || job.id} job={job} />
           ))}
         </div>
       )}
@@ -798,7 +795,6 @@ const HomePage = () => {
 
           <div>
             <HeroPreview />
-            
           </div>
         </div>
         <HomeHeroAiDiscoveryPreview />

@@ -44,32 +44,11 @@ import { ROLES } from "../../features/auth/auth.constants";
 import useAuth from "../../hooks/useAuth";
 
 import { formatRelativePostedDate } from "../../utils/formatDate";
+import formatJobMetadata from "../../utils/formatJobMetadata";
 
 import getApiError from "../../utils/getApiError";
 import formatSalary from "../../utils/formatSalary";
 import notify from "../../utils/notify";
-
-const JOB_METADATA_LABELS = {
-  "full-time": "Full time",
-  "part-time": "Part time",
-  contract: "Contract",
-  internship: "Internship",
-  onsite: "Onsite",
-  remote: "Remote",
-  hybrid: "Hybrid",
-  entry: "Entry level",
-  mid: "Mid level",
-  senior: "Senior level",
-  lead: "Lead",
-};
-
-const getMetadataLabel = (value, fallback) => {
-  if (!value) {
-    return fallback;
-  }
-
-  return JOB_METADATA_LABELS[value] || value;
-};
 
 const JobMetadataPill = ({ icon: Icon, children }) => {
   return (
@@ -502,7 +481,7 @@ const JobDetailsPage = () => {
 
   if (status === "error" || !job) {
     return (
-      <div className="mx-auto grid max-w-375 gap-5">
+      <div className="grid gap-5">
         <Button as={Link} to="/jobs" variant="ghost" className="w-fit">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Back to jobs
@@ -522,7 +501,7 @@ const JobDetailsPage = () => {
   const companyName = job.companyId?.name || "Company unavailable";
 
   return (
-    <div className="mx-auto grid max-w-375 gap-5">
+    <div className="grid gap-5">
       <Button as={Link} to="/jobs" variant="ghost" className="w-fit">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Back to jobs
@@ -553,18 +532,21 @@ const JobDetailsPage = () => {
                 </JobMetadataPill>
 
                 <JobMetadataPill icon={Laptop}>
-                  {getMetadataLabel(job.workplaceType, "Workplace unavailable")}
+                  {formatJobMetadata(
+                    job.workplaceType,
+                    "Workplace unavailable",
+                  )}
                 </JobMetadataPill>
 
                 <JobMetadataPill icon={BriefcaseBusiness}>
-                  {getMetadataLabel(
+                  {formatJobMetadata(
                     job.employmentType,
                     "Employment unavailable",
                   )}
                 </JobMetadataPill>
 
                 <JobMetadataPill icon={GraduationCap}>
-                  {getMetadataLabel(job.experienceLevel, "Level unavailable")}
+                  {formatJobMetadata(job.experienceLevel, "Level unavailable")}
                 </JobMetadataPill>
               </div>
 
