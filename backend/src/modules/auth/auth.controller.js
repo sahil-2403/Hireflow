@@ -5,6 +5,7 @@ import {
   setAuthCookies,
   clearAuthCookies,
   getRefreshTokenCookieName,
+  getAccessTokenCookieName,
 } from "./auth.cookie.js";
 
 import {
@@ -61,9 +62,11 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
-  const refreshToken = req.cookies?.[getRefreshTokenCookieName()];
+  const result = await authService.logoutUser({
+    accessToken: req.cookies?.[getAccessTokenCookieName()],
 
-  const result = await authService.logoutUser(refreshToken);
+    refreshToken: req.cookies?.[getRefreshTokenCookieName()],
+  });
 
   clearAuthCookies(res);
 
