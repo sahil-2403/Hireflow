@@ -1,5 +1,7 @@
 import cn from "../../utils/cn";
 
+import { forwardRef } from "react";
+
 const VARIANT_CLASS_NAMES = {
   primary: [
     "bg-blue-600",
@@ -58,49 +60,57 @@ const SIZE_CLASS_NAMES = {
   lg: ["min-h-11", "px-5 py-2.5", "text-sm", "sm:min-h-12"].join(" "),
 };
 
-const Button = ({
-  as: Component = "button",
-  variant = "primary",
-  size = "md",
-  fullWidth = false,
-  className = "",
-  children,
-  ...props
-}) => {
-  const resolvedVariant = VARIANT_CLASS_NAMES[variant] ? variant : "primary";
+const Button = forwardRef(
+  (
+    {
+      as: Component = "button",
+      variant = "primary",
+      size = "md",
+      fullWidth = false,
+      className = "",
+      children,
+      ...props
+    },
+    ref,
+  ) => {
+    const resolvedVariant = VARIANT_CLASS_NAMES[variant] ? variant : "primary";
 
-  const resolvedSize = SIZE_CLASS_NAMES[size] ? size : "md";
+    const resolvedSize = SIZE_CLASS_NAMES[size] ? size : "md";
 
-  return (
-    <Component
-      className={cn(
-        [
-          "inline-flex min-w-0",
-          "items-center justify-center",
-          "gap-2 rounded-lg",
-          "font-medium leading-5",
-          "transition-colors",
-          "focus-visible:outline-none",
-          "focus-visible:ring-2",
-          "focus-visible:ring-blue-500",
-          "focus-visible:ring-offset-2",
-          "disabled:cursor-not-allowed",
-          "disabled:opacity-60",
-        ].join(" "),
+    return (
+      <Component
+        ref={ref}
+        className={cn(
+          [
+            "inline-flex min-w-0",
+            "items-center justify-center",
+            "gap-2 rounded-lg",
+            "font-medium leading-5",
+            "transition-colors",
+            "focus-visible:outline-none",
+            "focus-visible:ring-2",
+            "focus-visible:ring-blue-500",
+            "focus-visible:ring-offset-2",
+            "disabled:cursor-not-allowed",
+            "disabled:opacity-60",
+          ].join(" "),
 
-        VARIANT_CLASS_NAMES[resolvedVariant],
+          VARIANT_CLASS_NAMES[resolvedVariant],
 
-        SIZE_CLASS_NAMES[resolvedSize],
+          SIZE_CLASS_NAMES[resolvedSize],
 
-        fullWidth && "w-full",
+          fullWidth && "w-full",
 
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </Component>
-  );
-};
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </Component>
+    );
+  },
+);
+
+Button.displayName = "Button";
 
 export default Button;

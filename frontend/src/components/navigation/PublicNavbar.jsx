@@ -29,6 +29,8 @@ import getRoleDisplayName from "../../utils/getRoleDisplayName";
 
 import ProfileAvatar from "../common/ProfileAvatar";
 
+import LogoutDialog from "../auth/LogoutDialog";
+
 const FOCUSABLE_SELECTOR = [
   "a[href]",
   "button:not([disabled])",
@@ -213,7 +215,11 @@ const PublicNavbar = ({ variant = "public" }) => {
 
   const drawerRef = useRef(null);
 
+  const logoutReturnFocusRef = useRef(null);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   const isDashboardNavbar = variant === "dashboard";
 
@@ -270,10 +276,36 @@ const PublicNavbar = ({ variant = "public" }) => {
     openMobileMenu();
   };
 
-  const handleLogout = async () => {
-    setIsMobileMenuOpen(false);
+  const openLogoutDialog = (event, { fromMobileMenu = false } = {}) => {
+    /*
+     * The mobile logout button disappears when its
+     * drawer closes, so focus should return to the
+     * persistent menu button instead.
+     */
+    logoutReturnFocusRef.current = fromMobileMenu
+      ? menuButtonRef.current
+      : event.currentTarget;
 
-    await logoutUser();
+    if (fromMobileMenu) {
+      setIsMobileMenuOpen(false);
+
+      /*
+       * Wait until the drawer has unmounted and
+       * restored body scrolling before opening the
+       * logout dialog.
+       */
+      window.requestAnimationFrame(() => {
+        setIsLogoutDialogOpen(true);
+      });
+
+      return;
+    }
+
+    setIsLogoutDialogOpen(true);
+  };
+
+  const closeLogoutDialog = () => {
+    setIsLogoutDialogOpen(false);
   };
 
   /*
@@ -481,7 +513,7 @@ const PublicNavbar = ({ variant = "public" }) => {
 
                 <button
                   type="button"
-                  onClick={handleLogout}
+                  onClick={(event) => openLogoutDialog(event)}
                   aria-label="Log out"
                   className={[
                     "inline-flex min-h-10",
@@ -711,7 +743,11 @@ const PublicNavbar = ({ variant = "public" }) => {
               {isAuthenticated ? (
                 <button
                   type="button"
-                  onClick={handleLogout}
+                  onClick={(event) =>
+                    openLogoutDialog(event, {
+                      fromMobileMenu: true,
+                    })
+                  }
                   className={[
                     "flex min-h-11",
                     "w-full items-center",
@@ -788,6 +824,13 @@ const PublicNavbar = ({ variant = "public" }) => {
           </aside>
         </div>
       )}
+
+      <LogoutDialog
+        isOpen={isLogoutDialogOpen}
+        onClose={closeLogoutDialog}
+        onConfirm={logoutUser}
+        returnFocusRef={logoutReturnFocusRef}
+      />
     </>
   );
 };

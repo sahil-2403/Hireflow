@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
-import { logout } from "../api/auth.api";
+import { logout, logoutAllDevices } from "../api/auth.api";
+
 import useAuth from "./useAuth";
 
 const useLogout = () => {
@@ -8,21 +9,31 @@ const useLogout = () => {
 
   const { signOut } = useAuth();
 
-  const logoutUser = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Logout request failed:", error);
-    } finally {
-      signOut();
+  const logoutUser = async ({ logoutFromAllDevices = false } = {}) => {
+    const result = logoutFromAllDevices
+      ? await logoutAllDevices()
+      : await logout();
 
-      navigate("/login", {
-        replace: true,
-        state: {
-          message: "You have been logged out successfully.",
-        },
-      });
-    }
+    /*
+     * Local authentication state is cleared only
+     * after the server successfully revokes the
+     * requested session or sessions.
+     *
+     * Errors are intentionally allowed to propagate
+     * to the confirmation dialog.
+     */
+    signOut();
+
+    navigate("/login", {
+      replace: true,
+      state: {
+        message: logoutFromAllDevices
+          ? "You have been logged out from all devices."
+          : "You have been logged out successfully.",
+      },
+    });
+
+    return result;
   };
 
   return {
