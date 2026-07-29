@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import hireflowLogo from "../../assets/brand/hireflow-logo.png";
+
 import {
   BriefcaseBusiness,
   Building2,
@@ -172,34 +174,34 @@ const NavbarBrand = ({ to, onClick }) => {
     <NavLink
       to={to}
       onClick={onClick}
+      aria-label="Hireflow home"
       className={[
         "inline-flex min-w-0",
         "shrink-0 items-center",
-        "gap-2.5",
         "rounded-lg",
+
         "focus-visible:outline-none",
         "focus-visible:ring-2",
         "focus-visible:ring-blue-500",
         "focus-visible:ring-offset-2",
       ].join(" ")}
-      aria-label="HireFlow home"
     >
-      <span
+      <img
+        src={hireflowLogo}
+        alt=""
+        width={1261}
+        height={296}
+        draggable="false"
+        decoding="async"
         className={[
-          "grid h-9 w-9",
-          "shrink-0 place-items-center",
-          "rounded-xl",
-          "bg-blue-600",
-          "text-base font-semibold",
-          "text-white",
-        ].join(" ")}
-      >
-        H
-      </span>
+          "h-6 w-auto",
+          "max-w-34",
+          "object-contain",
 
-      <span className="truncate text-lg font-semibold tracking-tight text-slate-950">
-        HireFlow
-      </span>
+          "sm:h-7",
+          "sm:max-w-38.5",
+        ].join(" ")}
+      />
     </NavLink>
   );
 };
