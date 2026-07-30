@@ -38,12 +38,11 @@ const PageHero = ({
           className={cn(
             [
               "text-2xl",
-              "font-semibold",
+              "font-regular",
               "leading-8",
               "tracking-tight",
-              "text-slate-950",
 
-              "sm:text-3xl",
+              "sm:text-[23px]",
               "sm:leading-9",
             ].join(" "),
 
@@ -54,7 +53,7 @@ const PageHero = ({
         </h1>
 
         {description && (
-          <p className="mt-1.5 max-w-3xl text-sm leading-6 text-slate-600">
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
             {description}
           </p>
         )}

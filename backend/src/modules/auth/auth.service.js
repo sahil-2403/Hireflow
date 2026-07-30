@@ -11,6 +11,10 @@ import {
   deleteAsset,
 } from "../../shared/services/media.service.js";
 
+import buildVerificationEmail from "../../shared/email/templates/verificationEmail.template.js";
+
+import buildPasswordResetEmail from "../../shared/email/templates/passwordResetEmail.template.js";
+
 import {
   SESSION_REVOKE_REASONS,
   createAuthSession,
@@ -353,35 +357,35 @@ const registerUser = async ({
 };
 
 const sendVerificationEmail = async (user, rawToken) => {
-  const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${rawToken}`;
+  const verificationUrl =
+    `${process.env.CLIENT_URL}` + `/verify-email/${rawToken}`;
+
+  const emailContent = buildVerificationEmail({
+    username: user.username,
+    verificationUrl,
+
+    expiresInHours: EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS,
+  });
 
   await sendEmail({
     to: user.email,
-    subject: "Verify your HireFlow email",
-    html: `
-      <h2>Welcome to HireFlow</h2>
-      <p>Hello ${user.username},</p>
-      <p>Verify your email by clicking the link below:</p>
-      <p><a href="${verificationUrl}">Verify email</a></p>
-      <p>This link expires in ${EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS} hours.</p>
-    `,
+    ...emailContent,
   });
 };
 
 const sendPasswordResetEmail = async (user, rawToken) => {
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password/${rawToken}`;
+  const resetUrl = `${process.env.CLIENT_URL}` + `/reset-password/${rawToken}`;
+
+  const emailContent = buildPasswordResetEmail({
+    username: user.username,
+    resetUrl,
+
+    expiresInMinutes: PASSWORD_RESET_TOKEN_EXPIRY_MINUTES,
+  });
 
   await sendEmail({
     to: user.email,
-    subject: "Reset your HireFlow password",
-    html: `
-      <h2>HireFlow password reset</h2>
-      <p>Hello ${user.username},</p>
-      <p>Use the link below to reset your password:</p>
-      <p><a href="${resetUrl}">Reset password</a></p>
-      <p>This link expires in ${PASSWORD_RESET_TOKEN_EXPIRY_MINUTES} minutes.</p>
-      <p>If you did not request this, ignore this email.</p>
-    `,
+    ...emailContent,
   });
 };
 

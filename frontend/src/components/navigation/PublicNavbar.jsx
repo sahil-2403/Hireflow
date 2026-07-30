@@ -434,7 +434,7 @@ const PublicNavbar = ({ variant = "public" }) => {
           "backdrop-blur",
         ].join(" ")}
       >
-        <a
+        {/* <a
           href="#main-content"
           className={[
             "sr-only",
@@ -453,11 +453,11 @@ const PublicNavbar = ({ variant = "public" }) => {
           ].join(" ")}
         >
           Skip to main content
-        </a>
+        </a> */}
 
         <div
           className={[
-            "mx-auto flex h-16",
+            "mx-auto flex h-14",
             "w-full max-w-350",
             "items-center",
             "justify-between",
@@ -612,9 +612,9 @@ const PublicNavbar = ({ variant = "public" }) => {
               className={[
                 "grid h-11 w-11",
                 "shrink-0 place-items-center",
-                "rounded-xl",
-                "border",
-                "border-slate-200",
+                // "rounded-xl",
+                // "border",
+                // "border-slate-200",
                 "bg-white",
                 "text-slate-700",
                 "transition-colors",

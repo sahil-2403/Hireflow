@@ -281,16 +281,16 @@ const HeroPreview = () => {
         </div>
       </div>
 
-      <div className="absolute left-0 top-12 w-48 -rotate-3 rounded-2xl border border-blue-100 bg-white/90 p-3 shadow-lg shadow-blue-100/60">
+      <div className="absolute left-0 top-12 w-48 -rotate-3 rounded-2xl border border-blue-100 bg-white p-3 shadow-lg shadow-blue-100/60">
         <div className="flex items-center gap-3">
           <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-blue-100 text-blue-700">
             <UserRound className="h-5 w-5" />
           </div>
 
-          <div className="min-w-0 flex-1">
-            <div className="h-2.5 w-20 rounded-full bg-slate-700" />
-
-            <div className="mt-2 h-2 w-24 rounded-full bg-slate-200" />
+          <div className="min-w-0 flex items-center ">
+            <p className="font-bold text-xs tracking-tight">
+              Recommended jobs by AI
+            </p>
           </div>
 
           <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
@@ -661,7 +661,7 @@ const HomePage = () => {
   return (
     <div className="grid pb-5 gap-10 sm:gap-25">
       <section
-        className={["relative isolate", "overflow-hidden", "px-5"].join(" ")}
+        className={["relative isolate", "overflow-hidden", "px-5", "mt-8"].join(" ")}
       >
         <div className="relative grid min-w-0 gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.7fr)] lg:items-start">
           <div className="min-w-0">
@@ -797,8 +797,9 @@ const HomePage = () => {
             <HeroPreview />
           </div>
         </div>
-        <HomeHeroAiDiscoveryPreview />
       </section>
+
+      <HomeHeroAiDiscoveryPreview />
 
       <section>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

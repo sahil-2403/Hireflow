@@ -155,7 +155,7 @@ const AccountInfoCard = ({ user, profile }) => {
       </CardHeader>
 
       <CardBody>
-        <div className="grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="items-stretch grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
           {items.map((item) => (
             <AccountInformationItem
               key={item.key}
