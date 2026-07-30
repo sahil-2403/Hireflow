@@ -794,7 +794,7 @@ describe("Recommendation API", () => {
 
     const sameCreatedAt = new Date("2026-01-01T00:00:00.000Z");
 
-    await Job.updateMany(
+    await Job.collection.updateMany(
       {
         _id: {
           $in: jobs.map((job) => job._id),
@@ -804,8 +804,21 @@ describe("Recommendation API", () => {
         $set: {
           title: "Software Developer",
           createdAt: sameCreatedAt,
+          updatedAt: sameCreatedAt,
         },
       },
+    );
+
+    const tiedJobs = await Job.find({
+      _id: {
+        $in: jobs.map((job) => job._id),
+      },
+    })
+      .select("_id createdAt")
+      .lean();
+
+    expect(new Set(tiedJobs.map((job) => job.createdAt.getTime())).size).toBe(
+      1,
     );
 
     const firstResponse = await candidateSession.agent
