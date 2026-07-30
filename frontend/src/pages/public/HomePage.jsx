@@ -661,7 +661,9 @@ const HomePage = () => {
   return (
     <div className="grid pb-5 gap-10 sm:gap-25">
       <section
-        className={["relative isolate", "overflow-hidden", "px-5", "mt-8"].join(" ")}
+        className={["relative isolate", "overflow-hidden", "px-5", "mt-8"].join(
+          " ",
+        )}
       >
         <div className="relative grid min-w-0 gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.7fr)] lg:items-start">
           <div className="min-w-0">
@@ -671,7 +673,7 @@ const HomePage = () => {
             </span>
 
             <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-[1.15] tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">
-              Find the right opportunity or build the right team.
+              Connecting talent <br></br>with the right opportunities.
             </h1>
 
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base sm:leading-7">
