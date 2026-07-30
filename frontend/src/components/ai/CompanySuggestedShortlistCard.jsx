@@ -1,6 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+import { createPortal } from "react-dom";
 
 import { Link } from "react-router-dom";
+
+import {
+  ChevronDown,
+  ChevronUp,
+  Check,
+  CircleHelp,
+  LoaderCircle,
+  Sparkles,
+  UsersRound,
+} from "lucide-react";
 
 import { generateSuggestedShortlist } from "../../api/ai.api";
 
@@ -13,40 +25,49 @@ import Alert from "../ui/Alert";
 import Button from "../ui/Button";
 import Pill from "../ui/Pill";
 
-import AiBadge from "./AiBadge";
 import AiCard from "./AiCard";
 import AiUsageStatus from "./AiUsageStatus";
+
+const normalizeItems = (items) => {
+  return Array.isArray(items) ? items.filter(Boolean) : [];
+};
 
 const InformationList = ({
   title,
   items,
   emptyMessage,
-  marker = "•",
-  markerClassName = "bg-violet-100 text-violet-700",
+  variant = "strength",
 }) => {
-  const normalizedItems = Array.isArray(items) ? items.filter(Boolean) : [];
+  const normalizedItems = normalizeItems(items);
+
+  const isStrength = variant === "strength";
+
+  const MarkerIcon = isStrength ? Check : CircleHelp;
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-      <p className="text-xs font-black uppercase tracking-wider text-slate-600">
-        {title}
-      </p>
+    <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+      <p className="text-xs font-medium leading-5 text-slate-600">{title}</p>
 
       {normalizedItems.length > 0 ? (
-        <ul className="mt-3 grid gap-3">
+        <ul className="mt-3 grid gap-2.5">
           {normalizedItems.map((item, index) => (
             <li
               key={`${title}-${index}`}
-              className="flex gap-3 text-sm leading-6 text-slate-700"
+              className="flex gap-2.5 text-sm leading-6 text-slate-700"
             >
               <span
                 className={[
-                  "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center",
-                  "rounded-full text-xs font-black",
-                  markerClassName,
+                  "mt-0.5 grid h-5 w-5",
+                  "shrink-0",
+                  "place-items-center",
+                  "rounded-full",
+
+                  isStrength
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-amber-100 text-amber-700",
                 ].join(" ")}
               >
-                {marker}
+                <MarkerIcon className="h-3 w-3" aria-hidden="true" />
               </span>
 
               <span>{item}</span>
@@ -54,33 +75,36 @@ const InformationList = ({
           ))}
         </ul>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">{emptyMessage}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-500">{emptyMessage}</p>
       )}
-    </div>
+    </section>
   );
 };
 
 const SkillList = ({ title, skills, variant = "matched" }) => {
-  const normalizedSkills = Array.isArray(skills) ? skills.filter(Boolean) : [];
+  const normalizedSkills = normalizeItems(skills);
 
   const pillVariant = variant === "missing" ? "amber" : "green";
 
   return (
     <div>
-      <p className="text-xs font-black uppercase tracking-wider text-slate-500">
-        {title}
-      </p>
+      <p className="text-xs font-medium leading-5 text-slate-500">{title}</p>
 
       {normalizedSkills.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-2">
           {normalizedSkills.map((skill) => (
-            <Pill key={`${title}-${skill}`} variant={pillVariant}>
+            <Pill
+              key={`${title}-${skill}`}
+              variant={pillVariant}
+              size="xs"
+              className="normal-case"
+            >
               {skill}
             </Pill>
           ))}
         </div>
       ) : (
-        <p className="mt-2 text-sm text-slate-500">None listed.</p>
+        <p className="mt-2 text-sm leading-6 text-slate-500">None listed.</p>
       )}
     </div>
   );
@@ -88,15 +112,15 @@ const SkillList = ({ title, skills, variant = "matched" }) => {
 
 const ShortlistedCandidateCard = ({ candidate, position, jobId }) => {
   return (
-    <article className="rounded-2xl border border-white/90 bg-white/85 p-5 shadow-sm">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <article className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-violet-100 text-sm font-black text-violet-700">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-violet-100 text-xs font-semibold text-violet-700">
               {position}
             </span>
 
-            <h3 className="text-lg font-black text-slate-950">
+            <h3 className="wrap-break-word text-base font-semibold leading-6 text-slate-950">
               {candidate.candidateName || "Candidate"}
             </h3>
 
@@ -104,7 +128,7 @@ const ShortlistedCandidateCard = ({ candidate, position, jobId }) => {
           </div>
 
           {candidate.headline && (
-            <p className="mt-2 text-sm font-semibold text-slate-700">
+            <p className="mt-2 wrap-break-word text-sm font-medium leading-6 text-slate-700">
               {candidate.headline}
             </p>
           )}
@@ -120,8 +144,8 @@ const ShortlistedCandidateCard = ({ candidate, position, jobId }) => {
         />
       </div>
 
-      <div className="mt-4 rounded-2xl border border-violet-100 bg-violet-50/70 p-4">
-        <p className="text-xs font-black uppercase tracking-wider text-violet-700">
+      <div className="mt-4 rounded-xl border border-violet-100 bg-violet-50/40 p-4">
+        <p className="text-xs font-medium leading-5 text-violet-700">
           Suggested review summary
         </p>
 
@@ -130,25 +154,23 @@ const ShortlistedCandidateCard = ({ candidate, position, jobId }) => {
         </p>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
         <InformationList
           title="Supporting strengths"
           items={candidate.strengths}
           emptyMessage="No specific strengths were returned."
-          marker="✓"
-          markerClassName="bg-emerald-100 text-emerald-700"
+          variant="strength"
         />
 
         <InformationList
           title="Points to verify"
           items={candidate.verificationPoints}
-          emptyMessage="No specific verification points were returned."
-          marker="?"
-          markerClassName="bg-amber-100 text-amber-700"
+          emptyMessage="No verification points were returned."
+          variant="verify"
         />
       </div>
 
-      <div className="mt-4 grid gap-4 rounded-2xl border border-slate-100 bg-white p-4 lg:grid-cols-2">
+      <div className="mt-4 grid gap-4 rounded-xl border border-slate-200 bg-slate-50/40 p-4 lg:grid-cols-2">
         <SkillList title="Matched skills" skills={candidate.matchedSkills} />
 
         <SkillList
@@ -172,37 +194,28 @@ const ShortlistedCandidateCard = ({ candidate, position, jobId }) => {
   );
 };
 
-const CompanySuggestedShortlistCard = ({ jobId, availability }) => {
-  const [shortlist, setShortlist] = useState(null);
+const CompanySuggestedShortlistCard = ({
+  jobId,
+  availability,
+  isResultVisible = false,
+  resultsContainerId,
+  onResultVisibilityChange,
+}) => {
+  const [generatedShortlist, setGeneratedShortlist] = useState(null);
 
-  const [usage, setUsage] = useState(null);
+  const [generatedUsage, setGeneratedUsage] = useState(null);
+
+  const shortlist = generatedShortlist ?? availability?.shortlist ?? null;
+
+  const usage = generatedUsage ?? availability?.usage ?? null;
 
   const [runtimeBlockReason, setRuntimeBlockReason] = useState(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const [isResultOpen, setIsResultOpen] = useState(false);
-
   const [errorMessage, setErrorMessage] = useState("");
 
   const [successMessage, setSuccessMessage] = useState("");
-
-  useEffect(() => {
-    setShortlist(availability?.shortlist || null);
-
-    setUsage(availability?.usage || null);
-
-    setRuntimeBlockReason(null);
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    /*
-     * Cached results begin collapsed.
-     * Newly generated results are opened
-     * automatically inside the handler.
-     */
-    setIsResultOpen(false);
-  }, [jobId, availability]);
 
   const requestedLimit = Number(availability?.requestedLimit) || 0;
 
@@ -238,10 +251,6 @@ const CompanySuggestedShortlistCard = ({ jobId, availability }) => {
       !blockReason &&
       !isGenerating;
 
-    /*
-     * Protect against accidental or
-     * programmatic repeated requests.
-     */
     if (!isAllowed) {
       return;
     }
@@ -253,15 +262,15 @@ const CompanySuggestedShortlistCard = ({ jobId, availability }) => {
 
       const result = await generateSuggestedShortlist(jobId, requestedLimit);
 
-      setShortlist(result.data.shortlist);
+      setGeneratedShortlist(result.data.shortlist);
 
-      setUsage(result.data.usage);
+      setGeneratedUsage(result.data.usage);
 
       setRuntimeBlockReason(null);
 
       setSuccessMessage(result.message);
 
-      setIsResultOpen(true);
+      onResultVisibilityChange?.(true);
     } catch (error) {
       const normalizedError = getApiError(error);
 
@@ -316,248 +325,179 @@ const CompanySuggestedShortlistCard = ({ jobId, availability }) => {
     ? shortlist.candidates
     : [];
 
+  const resultsTarget =
+    typeof document !== "undefined" && resultsContainerId
+      ? document.getElementById(resultsContainerId)
+      : null;
+
   return (
-    <AiCard>
-      <div className="border-b border-violet-200/80 bg-white/10 p-5">
-        <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-start">
-          <div>
-            <AiBadge>AI Suggested Shortlist</AiBadge>
+    <>
+      <AiCard className="h-full">
+        <div className="flex h-full min-w-0 flex-col p-4 sm:p-5">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-700">
+              <Sparkles className="h-5 w-5" aria-hidden="true" />
+            </div>
 
-            <h2 className="mt-3 text-xl font-black text-slate-950">
-              Review a focused set of applicants
-            </h2>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base font-semibold leading-6 text-slate-950">
+                  AI Suggested Shortlist
+                </h2>
+              </div>
 
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
-              HireFlow combines the deterministic match results with available
-              resume-review evidence to suggest applicants worth reviewing
-              closely.
-            </p>
-
-            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-              This does not change application statuses, reject candidates, or
-              make hiring decisions.
-            </p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Focus on applicants supported by deterministic match data and
+                available resume evidence.
+              </p>
+            </div>
           </div>
 
-          <div className="rounded-xl border border-white/80 bg-white/70 px-4 py-3 text-center shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-              Status
-            </p>
+          {errorMessage && (
+            <Alert variant="error" className="mt-4">
+              {errorMessage}
+            </Alert>
+          )}
 
-            <p className="mt-1 text-sm font-black text-violet-700">
-              {statusLabel}
-            </p>
+          {successMessage && (
+            <Alert variant="success" className="mt-4">
+              {successMessage}
+            </Alert>
+          )}
+
+          <div className="mt-4 flex flex-1 flex-col justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="inline-flex min-h-9 items-center gap-2 rounded-full border border-violet-100 bg-white/80 px-3 text-xs font-medium text-violet-700">
+                <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
+
+                {shortlistGenerated
+                  ? `${candidates.length} suggested`
+                  : `${eligibleApplicationCount} eligible`}
+              </div>
+
+              <span className="text-xs font-medium leading-5 text-slate-500">
+                {statusLabel}
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-end min-[420px]:justify-between">
+              <div className="min-w-0">
+                {usage ? (
+                  <AiUsageStatus usage={usage} />
+                ) : (
+                  <p className="text-xs leading-5 text-slate-500">
+                    Human review remains required.
+                  </p>
+                )}
+              </div>
+
+              {shortlistGenerated ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  aria-expanded={isResultVisible}
+                  onClick={() => onResultVisibilityChange?.(!isResultVisible)}
+                  className="shrink-0"
+                >
+                  {isResultVisible ? "Hide shortlist" : "View shortlist"}
+
+                  {isResultVisible ? (
+                    <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ai"
+                  size="sm"
+                  disabled={!canGenerate}
+                  onClick={handleGenerate}
+                  className="shrink-0"
+                >
+                  {isGenerating ? (
+                    <>
+                      <LoaderCircle
+                        className="h-4 w-4 animate-spin "
+                        aria-hidden="true"
+                      />
+                      Generating
+                    </>
+                  ) : dailyLimitReached ? (
+                    "Limit reached"
+                  ) : noEligibleApplications ? (
+                    "Applicants required"
+                  ) : featureUnavailable ? (
+                    "Unavailable"
+                  ) : (
+                    "Generate shortlist"
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </AiCard>
 
-      <div className="grid gap-4 p-5">
-        {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
+      {shortlistGenerated &&
+        isResultVisible &&
+        resultsTarget &&
+        createPortal(
+          <section className="overflow-hidden rounded-2xl border border-violet-200 bg-white">
+            <header className="flex flex-col gap-3 border-b border-violet-100 bg-violet-50/40 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div>
+                <p className="text-xs font-medium leading-5 text-violet-700">
+                  AI Suggested Shortlist
+                </p>
 
-        {successMessage && <Alert variant="success">{successMessage}</Alert>}
+                <h2 className="text-xl font-semibold leading-7 text-slate-950">
+                  Suggested applicants
+                </h2>
 
-        {!shortlistGenerated && noEligibleApplications && (
-          <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              No eligible applications
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              The shortlist requires at least one complete application in
-              applied, screening, or interview status with a submitted resume.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Eligible applications required
-            </Button>
-          </div>
-        )}
-
-        {!shortlistGenerated && featureUnavailable && (
-          <div className="rounded-2xl border border-red-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              AI Suggested Shortlist unavailable
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              The shortlist feature is not currently configured.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Feature unavailable
-            </Button>
-          </div>
-        )}
-
-        {!shortlistGenerated && dailyLimitReached && (
-          <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              Daily AI limit reached
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Your company account has used all AI Suggested Shortlist requests
-              available for today.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Daily AI limit reached
-            </Button>
-          </div>
-        )}
-
-        {!shortlistGenerated && canGenerate && (
-          <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              Generate a shortlist of up to {requestedLimit}{" "}
-              {requestedLimit === 1 ? "applicant" : "applicants"}
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              {eligibleApplicationCount} complete{" "}
-              {eligibleApplicationCount === 1
-                ? "application is"
-                : "applications are"}{" "}
-              currently eligible.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled={!canGenerate}
-              onClick={handleGenerate}
-            >
-              {isGenerating
-                ? "Generating AI Suggested Shortlist..."
-                : "Generate AI Suggested Shortlist"}
-            </Button>
-          </div>
-        )}
-
-        {shortlistGenerated && (
-          <>
-            <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-              <p className="text-sm font-black text-slate-950">
-                Shortlist generated
-              </p>
-
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                A shortlist has already been generated for the current job and
-                eligible applicant set. Review the result below.
-              </p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  {candidates.length} of {shortlist.totalEligibleCandidates}{" "}
+                  eligible applicants returned.
+                </p>
+              </div>
 
               <Button
                 type="button"
-                variant="ai"
-                fullWidth
-                className="mt-4"
-                disabled
+                variant="secondary"
+                size="sm"
+                onClick={() => onResultVisibilityChange?.(false)}
               >
-                Shortlist generated
+                Hide shortlist
               </Button>
+            </header>
+
+            <div className="grid gap-4 p-4 sm:p-5">
+              {candidates.map((candidate, index) => (
+                <ShortlistedCandidateCard
+                  key={candidate.applicationId}
+                  candidate={candidate}
+                  position={index + 1}
+                  jobId={jobId}
+                />
+              ))}
+
+              {candidates.length === 0 && (
+                <p className="text-sm leading-6 text-slate-600">
+                  No candidates were returned.
+                </p>
+              )}
+
+              <p className="text-xs leading-5 text-slate-500">
+                This shortlist is a review aid only. Verify applicants using
+                consistent, role-related criteria.
+              </p>
             </div>
+          </section>,
 
-            <button
-              type="button"
-              aria-expanded={isResultOpen}
-              aria-controls="company-suggested-shortlist-results"
-              className="w-full rounded-2xl border border-white/80 bg-white/80 p-4 text-left transition hover:bg-white"
-              onClick={() => setIsResultOpen((currentValue) => !currentValue)}
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-violet-700">
-                    Suggested applicants
-                  </p>
-
-                  <p className="mt-1 text-sm font-bold text-slate-700">
-                    {candidates.length} of {shortlist.totalEligibleCandidates}{" "}
-                    eligible{" "}
-                    {shortlist.totalEligibleCandidates === 1
-                      ? "applicant"
-                      : "applicants"}
-                    {" · "}
-                    {isResultOpen ? "Hide details" : "Review details"}
-                  </p>
-                </div>
-
-                <span className="text-lg font-black text-violet-700">
-                  {isResultOpen ? "−" : "+"}
-                </span>
-              </div>
-            </button>
-
-            <div
-              id="company-suggested-shortlist-results"
-              className={[
-                "grid overflow-hidden",
-                "transition-[grid-template-rows,opacity]",
-                "duration-300 ease-in-out",
-
-                isResultOpen
-                  ? "grid-rows-[1fr] opacity-100"
-                  : "grid-rows-[0fr] opacity-0",
-              ].join(" ")}
-            >
-              <div className="min-h-0 overflow-hidden">
-                <div className="grid gap-4 pt-1">
-                  {candidates.map((candidate, index) => (
-                    <ShortlistedCandidateCard
-                      key={candidate.applicationId}
-                      candidate={candidate}
-                      position={index + 1}
-                      jobId={jobId}
-                    />
-                  ))}
-
-                  {candidates.length === 0 && (
-                    <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                      <p className="text-sm text-slate-600">
-                        No candidates were returned in this shortlist.
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-                    <p className="text-xs font-black uppercase tracking-wider text-slate-600">
-                      Human review required
-                    </p>
-
-                    <p className="mt-2 text-xs leading-5 text-slate-600">
-                      Review every candidate using interviews, work samples,
-                      references, accessibility needs, and role-specific
-                      context. This shortlist is only a review aid.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
+          resultsTarget,
         )}
-
-        {usage && <AiUsageStatus usage={usage} />}
-      </div>
-    </AiCard>
+    </>
   );
 };
 

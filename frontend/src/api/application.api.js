@@ -74,6 +74,12 @@ const viewManagedApplicationResume = async (applicationId) => {
   return response.data;
 };
 
+const getMyApplicationSummary = async () => {
+  const response = await apiClient.get("/applications/me/summary");
+
+  return response.data;
+};
+
 export {
   listMyApplications,
   applyToJob,
@@ -83,4 +89,5 @@ export {
   getManagedJobApplicationDetails,
   updateManagedApplicationStatus,
   viewManagedApplicationResume,
+  getMyApplicationSummary,
 };

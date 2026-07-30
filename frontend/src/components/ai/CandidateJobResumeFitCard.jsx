@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+import { ChevronDown, LoaderCircle } from "lucide-react";
 
 import { Link } from "react-router-dom";
 
@@ -57,8 +59,10 @@ const FitDetailList = ({
   const values = Array.isArray(items) ? items : [];
 
   return (
-    <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-      <p className="text-sm font-black text-slate-950">{title}</p>
+    <section className="rounded-xl bg-white/70 p-4">
+      <h3 className="text-sm font-semibold leading-5 text-slate-950">
+        {title}
+      </h3>
 
       {values.length === 0 ? (
         <p className="mt-2 text-sm leading-6 text-slate-500">{emptyMessage}</p>
@@ -70,19 +74,21 @@ const FitDetailList = ({
                 className={[
                   "mt-0.5 grid h-5 w-5 shrink-0",
                   "place-items-center rounded-full",
-                  "text-[10px] font-black",
+                  "text-xs font-semibold",
                   markerClassName,
                 ].join(" ")}
               >
                 {marker}
               </span>
 
-              <p className="text-sm leading-6 text-slate-700">{item}</p>
+              <p className="min-w-0 wrap-break-word text-sm leading-6 text-slate-700">
+                {item}
+              </p>
             </div>
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 };
 
@@ -90,58 +96,61 @@ const SkillCloud = ({ title, skills, variant = "blue", emptyMessage }) => {
   const values = Array.isArray(skills) ? skills : [];
 
   return (
-    <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-      <p className="text-sm font-black text-slate-950">{title}</p>
+    <section className="rounded-xl bg-white/70 p-4">
+      <h3 className="text-sm font-semibold leading-5 text-slate-950">
+        {title}
+      </h3>
 
       {values.length === 0 ? (
         <p className="mt-2 text-sm leading-6 text-slate-500">{emptyMessage}</p>
       ) : (
         <div className="mt-3 flex flex-wrap gap-2">
-          {values.map((skill) => (
-            <Pill key={skill} variant={variant}>
+          {values.map((skill, index) => (
+            <Pill key={`${skill}-${index}`} variant={variant} size="sm">
               {skill}
             </Pill>
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 };
 
 const FitScoreSummary = ({ fit }) => {
   const score = fit?.enhancedMatchScore ?? 0;
+
   const resumeBoost = fit?.resumeBoost ?? 0;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+    <div className="grid gap-3 sm:grid-cols-3">
       <div
         className={[
-          "rounded-2xl border p-4 text-center",
+          "rounded-xl border p-4 text-center",
           getScoreClasses(score),
         ].join(" ")}
       >
-        <p className="text-3xl font-black">{score}%</p>
+        <p className="text-2xl font-semibold leading-8">{score}%</p>
 
-        <p className="mt-1 text-[10px] font-black uppercase tracking-wider">
-          AI-enhanced fit
-        </p>
+        <p className="mt-1 text-xs font-medium leading-5">AI-enhanced fit</p>
       </div>
 
-      <div className="rounded-2xl border border-white/80 bg-white/80 p-4 text-center">
-        <p className="text-2xl font-black text-slate-950">
+      <div className="rounded-xl border border-violet-100 bg-white/70 p-4 text-center">
+        <p className="text-2xl font-semibold leading-8 text-slate-950">
           {fit.profileScore ?? 0}%
         </p>
 
-        <p className="mt-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
+        <p className="mt-1 text-xs font-medium leading-5 text-slate-500">
           Profile score
         </p>
       </div>
 
-      <div className="rounded-2xl border border-white/80 bg-white/80 p-4 text-center">
-        <p className="text-2xl font-black text-violet-700">+{resumeBoost}</p>
+      <div className="rounded-xl border border-violet-100 bg-white/70 p-4 text-center">
+        <p className="text-2xl font-semibold leading-8 text-violet-700">
+          +{resumeBoost}
+        </p>
 
-        <p className="mt-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
-          Resume evidence
+        <p className="mt-1 text-xs font-medium leading-5 text-slate-500">
+          Resume boost
         </p>
       </div>
     </div>
@@ -152,44 +161,42 @@ const FitResultToggle = ({ fit, isOpen, onToggle }) => {
   const generatedAt = formatDate(fit?.generatedAt);
 
   return (
-    <div className="rounded-2xl border border-violet-200 bg-white/85 p-4 shadow-sm shadow-violet-100">
-      <div className="grid gap-4">
-        <div className="flex items-start gap-3">
+    <div className="rounded-xl border border-violet-200 bg-white/80 p-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
           <div
             className={[
               "grid h-14 w-14 shrink-0",
-              "place-items-center rounded-2xl border text-center",
+              "place-items-center rounded-xl border text-center",
               getScoreClasses(fit.enhancedMatchScore),
             ].join(" ")}
           >
-            <div>
-              <p className="text-lg font-black leading-none">
-                {fit.enhancedMatchScore}
-              </p>
-
-              <p className="mt-1 text-[8px] font-black uppercase tracking-wider">
-                Fit
-              </p>
-            </div>
+            <p className="text-lg font-semibold leading-none">
+              {fit.enhancedMatchScore}%
+            </p>
           </div>
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <Pill variant="emerald">Review ready</Pill>
+              <Pill variant="emerald" size="sm">
+                Review ready
+              </Pill>
 
               {generatedAt && (
-                <span className="text-xs text-slate-500">
+                <span className="text-xs leading-5 text-slate-500">
                   Generated {generatedAt}
                 </span>
               )}
             </div>
 
-            <p className="mt-2 font-black text-slate-950">{fit.matchLabel}</p>
+            <p className="mt-2 font-semibold leading-6 text-slate-950">
+              {fit.matchLabel}
+            </p>
 
-            <p className="mt-1 text-xs leading-5 text-slate-600">
+            <p className="mt-1 text-sm leading-6 text-slate-600">
               {isOpen
-                ? "Hide the detailed review to keep this sidebar compact."
-                : "Open the review to see job requirements, missing areas, and improvements."}
+                ? "Hide the detailed job-specific resume review."
+                : "Open the review to see missing areas and practical improvements."}
             </p>
           </div>
         </div>
@@ -197,23 +204,21 @@ const FitResultToggle = ({ fit, isOpen, onToggle }) => {
         <Button
           type="button"
           variant="secondary"
-          fullWidth
           onClick={onToggle}
           aria-expanded={isOpen}
           aria-controls="candidate-job-resume-fit-result"
-          className="gap-2"
+          className="w-full shrink-0 md:w-auto"
         >
           {isOpen ? "Hide AI Resume Fit" : "View AI Resume Fit"}
 
-          <span
-            aria-hidden="true"
+          <ChevronDown
             className={[
+              "h-4 w-4",
               "transition-transform duration-300",
               isOpen ? "rotate-180" : "",
             ].join(" ")}
-          >
-            ↓
-          </span>
+            aria-hidden="true"
+          />
         </Button>
       </div>
     </div>
@@ -226,9 +231,13 @@ const CandidateJobResumeFitCard = ({
   availability,
   availabilityError = "",
 }) => {
-  const [fit, setFit] = useState(null);
+  const [generatedFit, setGeneratedFit] = useState(null);
 
-  const [usage, setUsage] = useState(null);
+  const [generatedUsage, setGeneratedUsage] = useState(null);
+
+  const fit = generatedFit ?? availability?.fit ?? null;
+
+  const usage = generatedUsage ?? availability?.usage ?? null;
 
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -240,18 +249,6 @@ const CandidateJobResumeFitCard = ({
 
   const [successMessage, setSuccessMessage] = useState("");
 
-  useEffect(() => {
-    setFit(availability?.fit || null);
-    setUsage(availability?.usage || null);
-
-    setRuntimeBlockReason(null);
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    // Cached results remain collapsed on normal visits.
-    setIsResultOpen(false);
-  }, [jobId, availability]);
-
   const handleGenerateFit = async () => {
     const isAllowed =
       availabilityStatus === "success" &&
@@ -260,8 +257,6 @@ const CandidateJobResumeFitCard = ({
       !fit &&
       !isGenerating;
 
-    // Prevent POST requests even if this handler is
-    // triggered programmatically.
     if (!isAllowed) {
       return;
     }
@@ -273,14 +268,15 @@ const CandidateJobResumeFitCard = ({
 
       const result = await generateCandidateJobResumeFit(jobId);
 
-      setFit(result.data.fit);
-      setUsage(result.data.usage);
-
+      setGeneratedFit(result.data.fit);
+      setGeneratedUsage(result.data.usage);
       setRuntimeBlockReason(null);
-
       setSuccessMessage(result.message);
 
-      // Open newly generated results immediately.
+      /*
+       * Newly generated results open
+       * immediately for the candidate.
+       */
       setIsResultOpen(true);
     } catch (error) {
       const normalizedError = getApiError(error);
@@ -340,122 +336,65 @@ const CandidateJobResumeFitCard = ({
     availabilityStatus === "success" &&
     availability?.canGenerate &&
     !fit &&
-    !blockReason &&
-    !isGenerating;
-
-  const statusLabel = (() => {
-    if (isChecking) {
-      return "Checking";
-    }
-
-    if (fit) {
-      return "Ready";
-    }
-
-    if (missingProfile) {
-      return "Profile required";
-    }
-
-    if (missingResume || missingResumeInsights) {
-      return "Insights required";
-    }
-
-    if (dailyLimitReached) {
-      return "Limit reached";
-    }
-
-    if (hasGenericAvailabilityError) {
-      return "Unavailable";
-    }
-
-    return "On demand";
-  })();
+    !blockReason;
 
   return (
     <AiCard>
-      <div className="border-b border-violet-200/80 bg-white/10 p-5">
-        <div className="grid gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <AiBadge>AI Resume Fit</AiBadge>
+      <div className="grid gap-5 p-4 sm:p-5">
+        <header className="min-w-0">
+          <AiBadge>AI Resume Fit</AiBadge>
 
-            <div className="rounded-xl border border-white/80 bg-white/70 px-3 py-2 text-right shadow-sm">
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-500">
-                Status
-              </p>
+          <h2 className="mt-3 text-lg font-semibold leading-7 text-slate-950">
+            How does your resume fit?
+          </h2>
 
-              <p className="mt-1 text-xs font-black text-violet-700">
-                {statusLabel}
-              </p>
-            </div>
-          </div>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Compare your analyzed resume with this specific job before applying.
+          </p>
+        </header>
 
-          <div>
-            <h2 className="text-lg font-black text-slate-950">
-              How does your resume fit?
-            </h2>
-
-            <p className="mt-2 text-sm leading-6 text-slate-700">
-              Compare your analyzed resume with this specific job before
-              applying.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 bg-transparent p-5">
         {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
 
         {successMessage && <Alert variant="success">{successMessage}</Alert>}
 
         {isChecking && (
-          <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              Checking availability...
-            </p>
+          <div
+            role="status"
+            className="flex items-start gap-3 rounded-xl bg-white/70 p-4"
+          >
+            <LoaderCircle
+              className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-violet-700"
+              aria-hidden="true"
+            />
 
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Checking your profile, Resume Insights, cached review, and
-              remaining usage.
-            </p>
+            <div>
+              <p className="text-sm font-semibold leading-5 text-slate-950">
+                Checking availability
+              </p>
 
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Checking availability...
-            </Button>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Checking your profile, Resume Insights, cached review, and
+                remaining usage.
+              </p>
+            </div>
           </div>
         )}
 
         {!isChecking && !fit && missingProfile && (
-          <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
+          <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+            <h3 className="text-sm font-semibold leading-5 text-slate-950">
               Candidate profile required
-            </p>
+            </h3>
 
             <p className="mt-2 text-sm leading-6 text-slate-600">
               Create your candidate profile before checking AI Resume Fit.
             </p>
 
             <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Candidate profile required
-            </Button>
-
-            <Button
               as={Link}
               to="/candidate/profile"
               variant="secondary"
-              fullWidth
-              className="mt-3"
+              className="mt-4"
             >
               Go to candidate profile
             </Button>
@@ -463,10 +402,10 @@ const CandidateJobResumeFitCard = ({
         )}
 
         {!isChecking && !fit && (missingResume || missingResumeInsights) && (
-          <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
+          <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+            <h3 className="text-sm font-semibold leading-5 text-slate-950">
               AI Resume Insights required
-            </p>
+            </h3>
 
             <p className="mt-2 text-sm leading-6 text-slate-600">
               {missingResume
@@ -478,7 +417,6 @@ const CandidateJobResumeFitCard = ({
               as={Link}
               to="/candidate/resume"
               variant="ai"
-              fullWidth
               className="mt-4"
             >
               {missingResume
@@ -489,62 +427,48 @@ const CandidateJobResumeFitCard = ({
         )}
 
         {!isChecking && !fit && dailyLimitReached && (
-          <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
+          <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+            <h3 className="text-sm font-semibold leading-5 text-slate-950">
               Daily AI limit reached
-            </p>
+            </h3>
 
             <p className="mt-2 text-sm leading-6 text-slate-600">
               You have used all AI Resume Fit checks available today.
             </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Daily AI limit reached
-            </Button>
           </div>
         )}
 
         {!isChecking && !fit && hasGenericAvailabilityError && (
-          <div className="rounded-2xl border border-red-200 bg-white/80 p-4">
-            <Alert variant="error">{availabilityError}</Alert>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              AI Resume Fit unavailable
-            </Button>
-          </div>
+          <Alert variant="error">{availabilityError}</Alert>
         )}
 
         {!isChecking && !fit && canGenerate && (
-          <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              Get a job-specific resume review
-            </p>
+          <div className="grid gap-4 rounded-xl bg-white/70 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+            <div>
+              <h3 className="text-sm font-semibold leading-5 text-slate-950">
+                Get a job-specific resume review
+              </h3>
 
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              AI adds resume evidence and practical suggestions while the
-              deterministic score remains the source of truth.
-            </p>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                AI adds resume evidence and practical suggestions while the
+                deterministic profile score remains the source of truth.
+              </p>
+            </div>
 
             <Button
               type="button"
               variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled={!canGenerate}
+              disabled={isGenerating}
               onClick={handleGenerateFit}
+              className="w-full shrink-0 md:w-auto"
             >
+              {isGenerating && (
+                <LoaderCircle
+                  className="h-4 w-4 animate-spin"
+                  aria-hidden="true"
+                />
+              )}
+
               {isGenerating
                 ? "Checking AI Resume Fit..."
                 : "Check AI Resume Fit"}
@@ -576,8 +500,8 @@ const CandidateJobResumeFitCard = ({
                 <div className="grid gap-4 pt-1">
                   <FitScoreSummary fit={fit} />
 
-                  <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                    <p className="text-xs font-black uppercase tracking-wider text-violet-700">
+                  <section className="rounded-xl bg-white/70 p-4">
+                    <p className="text-xs font-medium leading-5 text-violet-700">
                       AI summary
                     </p>
 
@@ -586,75 +510,81 @@ const CandidateJobResumeFitCard = ({
                     </p>
 
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <Pill variant="violet">
+                      <Pill variant="violet" size="sm">
                         {fit.confidenceLevel || "Confidence unavailable"}
                       </Pill>
 
-                      <Pill variant="blue">Profile + resume</Pill>
+                      <Pill variant="blue" size="sm">
+                        Profile + resume
+                      </Pill>
                     </div>
+                  </section>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <SkillCloud
+                      title="Matched skills"
+                      skills={fit.matchedSkills}
+                      variant="emerald"
+                      emptyMessage="No matched skills were returned."
+                    />
+
+                    <SkillCloud
+                      title="Missing skills"
+                      skills={fit.missingSkills}
+                      variant="amber"
+                      emptyMessage="No missing skills were returned."
+                    />
                   </div>
 
-                  <SkillCloud
-                    title="Matched skills"
-                    skills={fit.matchedSkills}
-                    variant="emerald"
-                    emptyMessage="No matched skills were returned."
-                  />
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <FitDetailList
+                      title="Matched requirements"
+                      items={fit.matchedRequirements}
+                      emptyMessage="No matched requirements were returned."
+                      marker="✓"
+                      markerClassName="bg-emerald-100 text-emerald-700"
+                    />
 
-                  <SkillCloud
-                    title="Missing skills"
-                    skills={fit.missingSkills}
-                    variant="amber"
-                    emptyMessage="No missing skills were returned."
-                  />
+                    <FitDetailList
+                      title="Missing or weak requirements"
+                      items={fit.missingRequirements}
+                      emptyMessage="No missing requirements were identified."
+                      marker="!"
+                      markerClassName="bg-amber-100 text-amber-700"
+                    />
 
-                  <FitDetailList
-                    title="Matched requirements"
-                    items={fit.matchedRequirements}
-                    emptyMessage="No matched requirements were returned."
-                    marker="✓"
-                    markerClassName="bg-emerald-100 text-emerald-700"
-                  />
+                    <FitDetailList
+                      title="Resume improvements"
+                      items={fit.resumeImprovements}
+                      emptyMessage="No resume improvements were returned."
+                      marker="↑"
+                      markerClassName="bg-blue-100 text-blue-700"
+                    />
 
-                  <FitDetailList
-                    title="Missing or weak requirements"
-                    items={fit.missingRequirements}
-                    emptyMessage="No missing requirements were identified."
-                    marker="!"
-                    markerClassName="bg-amber-100 text-amber-700"
-                  />
+                    <FitDetailList
+                      title="Profile improvements"
+                      items={fit.profileImprovements}
+                      emptyMessage="No profile improvements were returned."
+                      marker="↑"
+                      markerClassName="bg-violet-100 text-violet-700"
+                    />
 
-                  <FitDetailList
-                    title="Resume improvements"
-                    items={fit.resumeImprovements}
-                    emptyMessage="No resume improvements were returned."
-                    marker="↑"
-                    markerClassName="bg-blue-100 text-blue-700"
-                  />
+                    <FitDetailList
+                      title="Before applying"
+                      items={fit.beforeApplyingChecklist}
+                      emptyMessage="No additional checklist items were returned."
+                      marker="✓"
+                      markerClassName="bg-slate-200 text-slate-700"
+                    />
 
-                  <FitDetailList
-                    title="Profile improvements"
-                    items={fit.profileImprovements}
-                    emptyMessage="No profile improvements were returned."
-                    marker="↑"
-                    markerClassName="bg-violet-100 text-violet-700"
-                  />
-
-                  <FitDetailList
-                    title="Before applying"
-                    items={fit.beforeApplyingChecklist}
-                    emptyMessage="No additional checklist items were returned."
-                    marker="✓"
-                    markerClassName="bg-slate-200 text-slate-700"
-                  />
-
-                  <FitDetailList
-                    title="Resume evidence used"
-                    items={fit.resumeEvidence}
-                    emptyMessage="No additional resume evidence was returned."
-                    marker="✦"
-                    markerClassName="bg-indigo-100 text-indigo-700"
-                  />
+                    <FitDetailList
+                      title="Resume evidence used"
+                      items={fit.resumeEvidence}
+                      emptyMessage="No additional resume evidence was returned."
+                      marker="✦"
+                      markerClassName="bg-indigo-100 text-indigo-700"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

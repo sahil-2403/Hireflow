@@ -1,48 +1,116 @@
-const variantClasses = {
-  primary:
-    "bg-blue-600 text-white shadow-sm shadow-blue-200 hover:bg-blue-700 disabled:opacity-70",
-  secondary:
-    "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-70",
-  ghost: "text-slate-700 hover:bg-slate-100 disabled:opacity-70",
-  danger:
-    "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-70",
+import cn from "../../utils/cn";
+
+import { forwardRef } from "react";
+
+const VARIANT_CLASS_NAMES = {
+  primary: [
+    "bg-blue-600",
+    "text-white",
+    "hover:bg-blue-700",
+    "active:bg-blue-800",
+  ].join(" "),
+
+  secondary: [
+    "border border-slate-200",
+    "bg-white",
+    "text-slate-700",
+    "hover:border-slate-300",
+    "hover:bg-slate-50",
+    "active:bg-slate-100",
+  ].join(" "),
+
+  ghost: [
+    "bg-transparent",
+    "text-slate-700",
+    "hover:bg-slate-100",
+    "active:bg-slate-200/70",
+  ].join(" "),
+
+  danger: [
+    "border border-red-200",
+    "bg-red-50",
+    "text-red-700",
+    "hover:border-red-300",
+    "hover:bg-red-100",
+    "active:bg-red-200/60",
+  ].join(" "),
+
   ai: [
-    "bg-linear-to-r from-violet-600 via-indigo-600 to-blue-600",
-    "text-white shadow-sm shadow-violet-200",
-    "hover:from-violet-700 hover:via-indigo-700 hover:to-blue-700",
-    "disabled:opacity-60",
+    "bg-violet-600",
+    "text-white",
+    "hover:bg-violet-700",
+    "active:bg-violet-800",
   ].join(" "),
 };
 
-const sizeClasses = {
-  sm: "px-3 py-2 text-sm",
-  md: "px-4 py-2.5 text-sm",
-  lg: "px-5 py-3 text-sm",
+const SIZE_CLASS_NAMES = {
+  /*
+   * Small actions retain a 44px mobile
+   * touch target and become visually
+   * compact on larger screens.
+   */
+  xs: ["min-h-11", "px-2.5 py-2", "text-xs", "sm:min-h-8", "sm:py-1.5"].join(
+    " ",
+  ),
+
+  sm: ["min-h-11", "px-3 py-2", "text-sm", "sm:min-h-9"].join(" "),
+
+  md: ["min-h-11", "px-4 py-2.5", "text-sm"].join(" "),
+
+  lg: ["min-h-11", "px-5 py-2.5", "text-sm", "sm:min-h-12"].join(" "),
 };
 
-const Button = ({
-  as: Component = "button",
-  variant = "primary",
-  size = "md",
-  fullWidth = false,
-  className = "",
-  children,
-  ...props
-}) => {
-  return (
-    <Component
-      className={[
-        "inline-flex items-center justify-center rounded-xl font-bold transition disabled:cursor-not-allowed",
-        variantClasses[variant] || variantClasses.primary,
-        sizeClasses[size] || sizeClasses.md,
-        fullWidth ? "w-full" : "",
-        className,
-      ].join(" ")}
-      {...props}
-    >
-      {children}
-    </Component>
-  );
-};
+const Button = forwardRef(
+  (
+    {
+      as: Component = "button",
+      variant = "primary",
+      size = "md",
+      fullWidth = false,
+      className = "",
+      children,
+      ...props
+    },
+    ref,
+  ) => {
+    const resolvedVariant = VARIANT_CLASS_NAMES[variant] ? variant : "primary";
+
+    const resolvedSize = SIZE_CLASS_NAMES[size] ? size : "md";
+
+    return (
+      <Component
+        ref={ref}
+        className={cn(
+          [
+            "inline-flex min-w-0",
+            "items-center justify-center",
+            "gap-2 rounded-lg",
+            "font-medium leading-5",
+            "transition-colors",
+            "focus-visible:outline-none",
+            "focus-visible:ring-2",
+            "focus-visible:ring-blue-500",
+            "focus-visible:ring-offset-2",
+            "disabled:cursor-not-allowed",
+            "disabled:opacity-60",
+          ].join(" "),
+
+          VARIANT_CLASS_NAMES[resolvedVariant],
+
+          SIZE_CLASS_NAMES[resolvedSize],
+
+          fullWidth && "w-full",
+
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </Component>
+    );
+  },
+);
+
+Button.displayName = "Button";
 
 export default Button;

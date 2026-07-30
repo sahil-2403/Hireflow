@@ -1,3 +1,5 @@
+import { RotateCcw, X } from "lucide-react";
+
 import cn from "../../utils/cn";
 
 const FilterChips = ({
@@ -6,6 +8,7 @@ const FilterChips = ({
   onClear,
   label = "Active filters:",
   clearLabel = "Clear all",
+  showDivider = true,
   className = "",
 }) => {
   if (!chips.length) {
@@ -15,12 +18,13 @@ const FilterChips = ({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-2 border-t border-slate-100 pt-5",
+        "flex flex-wrap items-center gap-2",
+        showDivider && "border-t border-slate-100 pt-5",
         className,
       )}
     >
       {label && (
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <span className="mr-1 text-xs font-medium leading-5 text-slate-500">
           {label}
         </span>
       )}
@@ -30,9 +34,28 @@ const FilterChips = ({
           key={chip.key}
           type="button"
           onClick={() => onRemove?.(chip.key)}
-          className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100 transition hover:bg-blue-100"
+          aria-label={`Remove ${chip.label} filter`}
+          className={[
+            "inline-flex min-h-9",
+            "max-w-full items-center",
+            "gap-1.5 rounded-full",
+            "border border-blue-100",
+            "bg-blue-50",
+            "px-3 py-1.5",
+            "text-xs font-medium",
+            "text-blue-700",
+            "transition-colors",
+
+            "hover:bg-blue-100",
+
+            "focus-visible:outline-none",
+            "focus-visible:ring-2",
+            "focus-visible:ring-blue-500",
+          ].join(" ")}
         >
-          {chip.label} ×
+          <span className="min-w-0 wrap-break-word">{chip.label}</span>
+
+          <X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         </button>
       ))}
 
@@ -40,8 +63,25 @@ const FilterChips = ({
         <button
           type="button"
           onClick={onClear}
-          className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
+          className={[
+            "inline-flex min-h-9",
+            "items-center gap-1.5",
+            "rounded-full",
+            "px-3 py-1.5",
+            "text-xs font-medium",
+            "text-slate-600",
+            "transition-colors",
+
+            "hover:bg-slate-100",
+            "hover:text-slate-900",
+
+            "focus-visible:outline-none",
+            "focus-visible:ring-2",
+            "focus-visible:ring-blue-500",
+          ].join(" ")}
         >
+          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+
           {clearLabel}
         </button>
       )}

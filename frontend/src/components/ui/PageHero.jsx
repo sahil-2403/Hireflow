@@ -1,33 +1,98 @@
-const PageHero = ({ eyebrow, title, description, actions, meta }) => {
+import cn from "../../utils/cn";
+
+const PageHero = ({
+  as: Component = "header",
+  eyebrow,
+  title,
+  description,
+  actions,
+  meta,
+  className = "",
+}) => {
   return (
-    <section className="overflow-hidden rounded-3xl border border-blue-100 bg-linear-to-br from-blue-50 via-white to-slate-50 shadow-sm">
-      <div className="flex flex-col gap-5 p-6 sm:px-8 sm:py-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          {eyebrow && (
-            <p className="text-sm font-semibold uppercase tracking-tight text-blue-600 sm:tracking-wider">
-              {eyebrow}
-            </p>
+    <Component
+      className={cn(
+        [
+          "flex min-w-0",
+          "flex-col gap-4",
+          "border-b",
+          "border-slate-200",
+          "pb-5",
+
+          "sm:flex-row",
+          "sm:items-start",
+          "sm:justify-between",
+          "sm:gap-6",
+        ].join(" "),
+        className,
+      )}
+    >
+      <div className="min-w-0">
+        {eyebrow && (
+          <p className="text-xs font-medium leading-5 text-blue-600">
+            {eyebrow}
+          </p>
+        )}
+
+        <h1
+          className={cn(
+            [
+              "text-2xl",
+              "font-regular",
+              "leading-8",
+              "tracking-tight",
+
+              "sm:text-[23px]",
+              "sm:leading-9",
+            ].join(" "),
+
+            eyebrow && "mt-1",
           )}
+        >
+          {title}
+        </h1>
 
-          <h1 className="mt-3 text-xl font-black text-slate-950 sm:text-3xl">
-            {title}
-          </h1>
-
-          {description && (
-            <p className="mt-3 max-w-4xl text-xs leading-6 text-slate-600 sm:text-base">
-              {description}
-            </p>
-          )}
-        </div>
-
-        {(actions || meta) && (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            {meta}
-            {actions}
-          </div>
+        {description && (
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+            {description}
+          </p>
         )}
       </div>
-    </section>
+
+      {(meta || actions) && (
+        <div
+          className={[
+            "flex min-w-0",
+            "shrink-0 flex-col",
+            "gap-2",
+
+            "sm:items-end",
+          ].join(" ")}
+        >
+          {meta && (
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              {meta}
+            </div>
+          )}
+
+          {actions && (
+            <div
+              className={[
+                "flex min-w-0",
+                "flex-col gap-2",
+
+                "min-[420px]:flex-row",
+                "min-[420px]:flex-wrap",
+
+                "sm:justify-end",
+              ].join(" ")}
+            >
+              {actions}
+            </div>
+          )}
+        </div>
+      )}
+    </Component>
   );
 };
 

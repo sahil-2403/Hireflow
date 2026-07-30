@@ -8,7 +8,10 @@ vi.mock("../../src/shared/services/email.service.js", () => ({
 
 import User from "../../src/modules/auth/auth.model.js";
 import EmailVerificationToken from "../../src/modules/auth/emailVerificationToken.model.js";
-import RefreshToken from "../../src/modules/auth/refreshToken.model.js";
+
+import AuthSession from "../../src/modules/auth/authSession.model.js";
+
+import { hashToken } from "../../src/shared/utils/token.js";
 
 import { ROLES } from "../../src/config/constants.js";
 
@@ -274,18 +277,33 @@ describe("Authentication API", () => {
     const cookies = getSetCookies(response);
 
     const accessToken = getCookieValue(cookies, getAccessTokenCookieName());
+
     const refreshToken = getCookieValue(cookies, getRefreshTokenCookieName());
 
     expect(accessToken).toEqual(expect.any(String));
     expect(refreshToken).toEqual(expect.any(String));
 
-    const storedRefreshTokens = await RefreshToken.find({
+    const storedSessions = await AuthSession.find({
       userId: user._id,
-    });
+    }).select("+refreshTokenHash");
 
-    expect(storedRefreshTokens).toHaveLength(1);
+    expect(storedSessions).toHaveLength(1);
 
-    expect(storedRefreshTokens[0].tokenHash).not.toBe(refreshToken);
+    const storedSession = storedSessions[0];
+
+    expect(storedSession.sessionId).toEqual(expect.any(String));
+
+    expect(storedSession.userId.toString()).toBe(user._id.toString());
+
+    expect(storedSession.refreshTokenHash).toBe(hashToken(refreshToken));
+
+    expect(storedSession.refreshTokenHash).not.toBe(refreshToken);
+
+    expect(storedSession.revokedAt).toBeNull();
+    expect(storedSession.revokedReason).toBeNull();
+
+    expect(storedSession.expiresAt).toBeInstanceOf(Date);
+    expect(storedSession.lastUsedAt).toBeInstanceOf(Date);
   });
 
   test("rejects incorrect login credentials", async () => {

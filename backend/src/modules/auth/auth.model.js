@@ -46,6 +46,12 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
 
+    authVersion: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     profilePhotoUrl: {
       type: String,
       default: null,

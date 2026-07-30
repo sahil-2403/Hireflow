@@ -1,4 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+import { createPortal } from "react-dom";
+
+import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  ListChecks,
+  LoaderCircle,
+} from "lucide-react";
 
 import { generateApplicationInterviewKit } from "../../api/ai.api";
 
@@ -6,8 +16,8 @@ import getApiError from "../../utils/getApiError";
 
 import Alert from "../ui/Alert";
 import Button from "../ui/Button";
+import Pill from "../ui/Pill";
 
-import AiBadge from "./AiBadge";
 import AiCard from "./AiCard";
 import AiUsageStatus from "./AiUsageStatus";
 
@@ -21,33 +31,33 @@ const QuestionGroup = ({ title, description, questions }) => {
   const normalizedQuestions = normalizeQuestions(questions);
 
   return (
-    <section className="rounded-2xl border border-white/90 bg-white/85 p-5 shadow-sm">
-      <div>
-        <p className="text-sm font-black text-slate-950">{title}</p>
+    <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <h3 className="text-sm font-semibold leading-6 text-slate-950">
+        {title}
+      </h3>
 
-        <p className="mt-1 text-xs leading-5 text-slate-600">{description}</p>
-      </div>
+      <p className="mt-1 text-xs leading-5 text-slate-600">{description}</p>
 
       {normalizedQuestions.length > 0 ? (
         <div className="mt-4 grid gap-3">
           {normalizedQuestions.map((item, index) => (
             <article
               key={`${title}-${index}`}
-              className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4"
+              className="rounded-xl border border-slate-100 bg-slate-50/60 p-4"
             >
               <div className="flex gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-black text-violet-700">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-violet-100 text-xs font-semibold text-violet-700">
                   {index + 1}
                 </span>
 
                 <div className="min-w-0">
-                  <p className="text-sm font-bold leading-6 text-slate-900">
+                  <p className="text-sm font-medium leading-6 text-slate-900">
                     {item.question}
                   </p>
 
                   {item.whyAsk && (
-                    <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50/70 p-3">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-violet-700">
+                    <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50/50 p-3">
+                      <p className="text-xs font-medium leading-5 text-violet-700">
                         Why ask this
                       </p>
 
@@ -62,7 +72,7 @@ const QuestionGroup = ({ title, description, questions }) => {
           ))}
         </div>
       ) : (
-        <p className="mt-4 text-sm text-slate-500">
+        <p className="mt-3 text-sm leading-6 text-slate-500">
           No questions were generated for this category.
         </p>
       )}
@@ -74,14 +84,13 @@ const EvaluationChecklist = ({ items }) => {
   const normalizedItems = Array.isArray(items) ? items.filter(Boolean) : [];
 
   return (
-    <section className="rounded-2xl border border-white/90 bg-white/85 p-5 shadow-sm">
-      <p className="text-sm font-black text-slate-950">
+    <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <h3 className="text-sm font-semibold leading-6 text-slate-950">
         Interview evaluation checklist
-      </p>
+      </h3>
 
       <p className="mt-1 text-xs leading-5 text-slate-600">
-        Use this as a consistent review guide while recording interview
-        evidence.
+        Use consistent criteria while recording interview evidence.
       </p>
 
       {normalizedItems.length > 0 ? (
@@ -89,10 +98,10 @@ const EvaluationChecklist = ({ items }) => {
           {normalizedItems.map((item, index) => (
             <li
               key={`${item}-${index}`}
-              className="flex gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-4"
+              className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3"
             >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-700">
-                ✓
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+                <Check className="h-3 w-3" aria-hidden="true" />
               </span>
 
               <span className="text-sm leading-6 text-slate-700">{item}</span>
@@ -100,7 +109,7 @@ const EvaluationChecklist = ({ items }) => {
           ))}
         </ul>
       ) : (
-        <p className="mt-4 text-sm text-slate-500">
+        <p className="mt-3 text-sm leading-6 text-slate-500">
           No evaluation checklist was generated.
         </p>
       )}
@@ -111,37 +120,26 @@ const EvaluationChecklist = ({ items }) => {
 const CompanyApplicationInterviewKitCard = ({
   applicationId,
   availability,
+  isResultVisible = false,
+  resultsContainerId,
+  onResultVisibilityChange,
 }) => {
-  const [interviewKit, setInterviewKit] = useState(null);
+  const [generatedInterviewKit, setGeneratedInterviewKit] = useState(null);
 
-  const [usage, setUsage] = useState(null);
+  const [generatedUsage, setGeneratedUsage] = useState(null);
+
+  const interviewKit =
+    generatedInterviewKit ?? availability?.interviewKit ?? null;
+
+  const usage = generatedUsage ?? availability?.usage ?? null;
 
   const [runtimeBlockReason, setRuntimeBlockReason] = useState(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const [isResultOpen, setIsResultOpen] = useState(false);
-
   const [errorMessage, setErrorMessage] = useState("");
 
   const [successMessage, setSuccessMessage] = useState("");
-
-  useEffect(() => {
-    setInterviewKit(availability?.interviewKit || null);
-
-    setUsage(availability?.usage || null);
-
-    setRuntimeBlockReason(null);
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    /*
-     * Cached results start collapsed.
-     * Newly generated results open
-     * automatically in handleGenerate.
-     */
-    setIsResultOpen(false);
-  }, [applicationId, availability]);
 
   const interviewKitGenerated = Boolean(interviewKit);
 
@@ -170,10 +168,6 @@ const CompanyApplicationInterviewKitCard = ({
       !blockReason &&
       !isGenerating;
 
-    /*
-     * Prevent accidental double clicks
-     * and programmatic repeated calls.
-     */
     if (!isAllowed) {
       return;
     }
@@ -185,15 +179,13 @@ const CompanyApplicationInterviewKitCard = ({
 
       const result = await generateApplicationInterviewKit(applicationId);
 
-      setInterviewKit(result.data.interviewKit);
-
-      setUsage(result.data.usage);
-
+      setGeneratedInterviewKit(result.data.interviewKit);
+      setGeneratedUsage(result.data.usage);
       setRuntimeBlockReason(null);
 
       setSuccessMessage(result.message);
 
-      setIsResultOpen(true);
+      onResultVisibilityChange?.(true);
     } catch (error) {
       const normalizedError = getApiError(error);
 
@@ -227,7 +219,7 @@ const CompanyApplicationInterviewKitCard = ({
 
   const statusLabel = (() => {
     if (interviewKitGenerated) {
-      return "Interview kit generated";
+      return "Kit available";
     }
 
     if (missingResume) {
@@ -235,7 +227,7 @@ const CompanyApplicationInterviewKitCard = ({
     }
 
     if (incompleteApplication) {
-      return "Application incomplete";
+      return "Data incomplete";
     }
 
     if (dailyLimitReached) {
@@ -253,274 +245,212 @@ const CompanyApplicationInterviewKitCard = ({
     return "Unavailable";
   })();
 
+  const unavailableMessage = (() => {
+    if (missingResume) {
+      return "A submitted resume is required before an interview kit can be generated.";
+    }
+
+    if (incompleteApplication) {
+      return "Candidate or job information required for this kit is incomplete.";
+    }
+
+    if (dailyLimitReached) {
+      return "The company account has used all Interview Kit requests available today.";
+    }
+
+    if (featureUnavailable) {
+      return "The AI provider is not currently available for interview-kit generation.";
+    }
+
+    return null;
+  })();
+
+  const resultsTarget =
+    typeof document !== "undefined" && resultsContainerId
+      ? document.getElementById(resultsContainerId)
+      : null;
+
   return (
-    <AiCard>
-      <div className="border-b border-violet-200/80 bg-white/10 p-5">
-        <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-start">
-          <div>
-            <AiBadge>AI Interview Kit</AiBadge>
+    <>
+      <AiCard className="h-full">
+        <div className="flex h-full min-w-0 flex-col p-4 sm:p-5">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-700">
+              <ListChecks className="h-5 w-5" aria-hidden="true" />
+            </div>
 
-            <h2 className="mt-3 text-xl font-black text-slate-950">
-              Prepare a focused interview
-            </h2>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-semibold leading-6 text-slate-950">
+                AI Interview Kit
+              </h2>
 
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
-              Generate technical, project, skill-gap, and behavioral questions
-              using this job, candidate profile, and submitted resume.
-            </p>
-
-            <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
-              The kit is an interview preparation aid. It does not score the
-              interview, change application status, or make a hiring decision.
-            </p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Generate technical, project, skill-gap and behavioral interview
+                questions.
+              </p>
+            </div>
           </div>
 
-          <div className="rounded-xl border border-white/80 bg-white/70 px-4 py-3 text-center shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-              Status
-            </p>
+          {errorMessage && (
+            <Alert variant="error" className="mt-4">
+              {errorMessage}
+            </Alert>
+          )}
 
-            <p className="mt-1 text-sm font-black text-violet-700">
-              {statusLabel}
-            </p>
+          {successMessage && (
+            <Alert variant="success" className="mt-4">
+              {successMessage}
+            </Alert>
+          )}
+
+          <div className="mt-4 flex flex-1 flex-col justify-between gap-4">
+            <div>
+              <Pill variant="violet" size="xs" className="normal-case">
+                {statusLabel}
+              </Pill>
+
+              {unavailableMessage && (
+                <p className="mt-3 text-xs leading-5 text-slate-500">
+                  {unavailableMessage}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-end min-[420px]:justify-between">
+              <div className="min-w-0">
+                {usage ? (
+                  <AiUsageStatus usage={usage} />
+                ) : (
+                  <p className="text-xs leading-5 text-slate-500">
+                    The kit supports interview preparation and does not make a
+                    hiring decision.
+                  </p>
+                )}
+              </div>
+
+              {interviewKitGenerated ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  aria-expanded={isResultVisible}
+                  onClick={() => onResultVisibilityChange?.(!isResultVisible)}
+                  className="shrink-0"
+                >
+                  {isResultVisible ? "Hide kit" : "View kit"}
+
+                  {isResultVisible ? (
+                    <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ai"
+                  size="sm"
+                  disabled={!canGenerate}
+                  onClick={handleGenerate}
+                  className="shrink-0"
+                >
+                  {isGenerating ? (
+                    <>
+                      <LoaderCircle
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                      Generating
+                    </>
+                  ) : dailyLimitReached ? (
+                    "Limit reached"
+                  ) : missingResume ? (
+                    "Resume required"
+                  ) : incompleteApplication ? (
+                    "Unavailable"
+                  ) : featureUnavailable ? (
+                    "Unavailable"
+                  ) : (
+                    "Generate kit"
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </AiCard>
 
-      <div className="grid gap-4 p-5">
-        {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
+      {interviewKitGenerated &&
+        isResultVisible &&
+        resultsTarget &&
+        createPortal(
+          <section className="overflow-hidden rounded-2xl border border-violet-200 bg-white">
+            <header className="flex flex-col gap-3 border-b border-violet-100 bg-violet-50/40 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div>
+                <p className="text-xs font-medium leading-5 text-violet-700">
+                  AI Interview Kit
+                </p>
 
-        {successMessage && <Alert variant="success">{successMessage}</Alert>}
+                <h2 className="text-xl font-semibold leading-7 text-slate-950">
+                  Interview questions
+                </h2>
 
-        {!interviewKitGenerated && missingResume && (
-          <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              Submitted resume required
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              This application does not have a submitted resume available for
-              interview-kit generation.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Resume required
-            </Button>
-          </div>
-        )}
-
-        {!interviewKitGenerated && incompleteApplication && (
-          <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              Application data incomplete
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              The job or candidate data required for this interview kit is
-              unavailable.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Application data required
-            </Button>
-          </div>
-        )}
-
-        {!interviewKitGenerated && featureUnavailable && (
-          <div className="rounded-2xl border border-red-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              AI Interview Kit unavailable
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              The AI provider is not currently available for interview-kit
-              generation.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Feature unavailable
-            </Button>
-          </div>
-        )}
-
-        {!interviewKitGenerated && dailyLimitReached && (
-          <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              Daily AI limit reached
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Your company account has used all AI Interview Kit requests
-              available for today.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Daily AI limit reached
-            </Button>
-          </div>
-        )}
-
-        {!interviewKitGenerated && canGenerate && (
-          <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              Generate candidate-specific interview questions
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              The generated kit will use the current job requirements and the
-              resume submitted with this application.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled={!canGenerate}
-              onClick={handleGenerate}
-            >
-              {isGenerating
-                ? "Generating AI Interview Kit..."
-                : "Generate AI Interview Kit"}
-            </Button>
-          </div>
-        )}
-
-        {interviewKitGenerated && (
-          <>
-            <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-              <p className="text-sm font-black text-slate-950">
-                Interview kit generated
-              </p>
-
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                A current interview kit already exists for this job and
-                submitted resume. Review it below.
-              </p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Candidate-specific preparation based on the current job and
+                  submitted resume.
+                </p>
+              </div>
 
               <Button
                 type="button"
-                variant="ai"
-                fullWidth
-                className="mt-4"
-                disabled
+                variant="secondary"
+                size="sm"
+                onClick={() => onResultVisibilityChange?.(false)}
               >
-                Interview kit generated
+                Hide kit
               </Button>
-            </div>
+            </header>
 
-            <button
-              type="button"
-              aria-expanded={isResultOpen}
-              aria-controls="company-interview-kit-results"
-              className="w-full rounded-2xl border border-white/80 bg-white/80 p-4 text-left transition hover:bg-white"
-              onClick={() => setIsResultOpen((currentValue) => !currentValue)}
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-violet-700">
-                    Interview questions
-                  </p>
+            <div className="grid gap-4 p-4 sm:p-5">
+              <div className="grid gap-4 xl:grid-cols-2">
+                <QuestionGroup
+                  title="Technical questions"
+                  description="Explore role-related technical knowledge and implementation choices."
+                  questions={interviewKit.technicalQuestions}
+                />
 
-                  <p className="mt-1 text-sm font-bold text-slate-700">
-                    {isResultOpen
-                      ? "Hide interview kit"
-                      : "Review interview kit"}
-                  </p>
-                </div>
+                <QuestionGroup
+                  title="Project questions"
+                  description="Validate project ownership, architecture decisions and practical implementation."
+                  questions={interviewKit.projectQuestions}
+                />
 
-                <span className="text-lg font-black text-violet-700">
-                  {isResultOpen ? "−" : "+"}
-                </span>
+                <QuestionGroup
+                  title="Skill-gap questions"
+                  description="Clarify skills or experience that are missing, weak or unclear."
+                  questions={interviewKit.skillGapQuestions}
+                />
+
+                <QuestionGroup
+                  title="Behavioral questions"
+                  description="Understand communication, collaboration, ownership and problem-solving."
+                  questions={interviewKit.behavioralQuestions}
+                />
               </div>
-            </button>
 
-            <div
-              id="company-interview-kit-results"
-              className={[
-                "grid overflow-hidden",
-                "transition-[grid-template-rows,opacity]",
-                "duration-300 ease-in-out",
+              <EvaluationChecklist items={interviewKit.evaluationChecklist} />
 
-                isResultOpen
-                  ? "grid-rows-[1fr] opacity-100"
-                  : "grid-rows-[0fr] opacity-0",
-              ].join(" ")}
-            >
-              <div className="min-h-0 overflow-hidden">
-                <div className="grid gap-4 pt-1">
-                  <QuestionGroup
-                    title="Technical questions"
-                    description="Explore the candidate's role-related technical knowledge and implementation choices."
-                    questions={interviewKit.technicalQuestions}
-                  />
-
-                  <QuestionGroup
-                    title="Project questions"
-                    description="Validate project ownership, architecture decisions, and practical implementation experience."
-                    questions={interviewKit.projectQuestions}
-                  />
-
-                  <QuestionGroup
-                    title="Skill-gap questions"
-                    description="Clarify skills or experience that are missing, weak, or unclear in the available evidence."
-                    questions={interviewKit.skillGapQuestions}
-                  />
-
-                  <QuestionGroup
-                    title="Behavioral questions"
-                    description="Understand communication, collaboration, ownership, debugging, and problem-solving behavior."
-                    questions={interviewKit.behavioralQuestions}
-                  />
-
-                  <EvaluationChecklist
-                    items={interviewKit.evaluationChecklist}
-                  />
-
-                  <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-                    <p className="text-xs font-black uppercase tracking-wider text-slate-600">
-                      Interview guidance
-                    </p>
-
-                    <p className="mt-2 text-xs leading-5 text-slate-600">
-                      Ask consistent core questions across candidates, record
-                      evidence rather than impressions, and avoid questions
-                      involving protected personal characteristics.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <p className="text-xs leading-5 text-slate-500">
+                Ask consistent core questions across candidates, record evidence
+                rather than impressions and avoid questions involving protected
+                personal characteristics.
+              </p>
             </div>
-          </>
+          </section>,
+
+          resultsTarget,
         )}
-
-        {usage && <AiUsageStatus usage={usage} />}
-      </div>
-    </AiCard>
+    </>
   );
 };
 

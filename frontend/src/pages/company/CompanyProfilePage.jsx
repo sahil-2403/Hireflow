@@ -1,32 +1,46 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { Globe2, LoaderCircle, MapPin, Trash2, Upload } from "lucide-react";
 
 import { Link } from "react-router-dom";
 
 import { useForm, useWatch } from "react-hook-form";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
   createCompanyProfile,
+  deleteCompanyLogo,
   getMyCompany,
   updateCompanyProfile,
   uploadCompanyLogo,
-  deleteCompanyLogo,
 } from "../../api/company.api";
 
-import { companyProfileSchema } from "../../features/companies/company.schemas";
+import CompanyLogo from "../../components/common/CompanyLogo";
+
+import CompanyProfilePageSkeleton from "../../components/loading/CompanyProfilePageSkeleton";
+
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
+
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  CardHeader,
+} from "../../components/ui/Card";
+
+import PageHero from "../../components/ui/PageHero";
+import SectionError from "../../components/ui/SectionError";
+import SelectInput from "../../components/ui/SelectInput";
+import TextareaInput from "../../components/ui/TextareaInput";
+import TextInput from "../../components/ui/TextInput";
 
 import { COMPANY_SIZES } from "../../features/companies/company.constants";
+import { companyProfileSchema } from "../../features/companies/company.schemas";
 
 import getApiError from "../../utils/getApiError";
-
-import Button from "../../components/ui/Button";
-import { Card, CardBody, CardHeader } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Alert from "../../components/ui/Alert";
-import SelectInput from "../../components/ui/SelectInput";
-import TextInput from "../../components/ui/TextInput";
-import TextareaInput from "../../components/ui/TextareaInput";
-import PageHero from "../../components/ui/PageHero";
+import notify from "../../utils/notify";
 
 const MAX_LOGO_SIZE = 2 * 1024 * 1024;
 
@@ -54,102 +68,229 @@ const convertFormDataToPayload = (formData) => {
   };
 };
 
-const getCompanyInitial = (company) => {
-  return (company?.name || "H").slice(0, 1).toUpperCase();
+const validateLogoFile = (file) => {
+  if (!file) {
+    return "Please select a logo file first.";
+  }
+
+  if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
+    return "Only JPG, PNG, or WebP logo files are allowed.";
+  }
+
+  if (file.size > MAX_LOGO_SIZE) {
+    return "Logo file must be 2 MB or smaller.";
+  }
+
+  return "";
 };
 
-const CompanyPreviewCard = ({ company }) => {
+const CompanyIdentityAndLogoCard = ({
+  company,
+  previewCompany,
+  mode,
+  selectedLogo,
+  logoInputRef,
+  logoError,
+  isUploadingLogo,
+  isDeletingLogo,
+  onLogoChange,
+  onLogoUpload,
+  onDeleteLogo,
+}) => {
+  const companyDetails = [
+    previewCompany?.industry || "Industry",
+    previewCompany?.companySize
+      ? `${previewCompany.companySize} employees`
+      : "Company size",
+  ];
+
   return (
-    <Card>
-      <CardHeader>
-        <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-          Preview
-        </p>
+    <Card className="h-full">
+      <CardBody className="flex h-full flex-col">
+        <div className="flex min-w-0 items-start gap-4">
+          <CompanyLogo
+            company={company}
+            name={previewCompany?.name || "Company"}
+            size="xl"
+            fallbackClassName="bg-blue-600 text-white"
+          />
 
-        <h2 className="mt-1 text-xl font-black text-slate-950">
-          Public company identity
-        </h2>
+          <div className="min-w-0 flex-1">
+            <h2 className="wrap-break-word text-lg font-semibold leading-7 text-slate-950">
+              {previewCompany?.name || "Company name"}
+            </h2>
 
-        <p className="mt-1 text-sm leading-6 text-slate-600">
-          This is the information candidates will associate with your jobs.
-        </p>
-      </CardHeader>
-
-      <CardBody>
-        <div className="flex gap-4">
-          {company?.logoUrl ? (
-            <img
-              src={company.logoUrl}
-              alt={`${company.name} logo`}
-              className="h-16 w-16 rounded-2xl border border-slate-200 object-cover"
-            />
-          ) : (
-            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-blue-600 text-2xl font-black text-white shadow-sm shadow-blue-200">
-              {getCompanyInitial(company)}
-            </div>
-          )}
-
-          <div>
-            <p className="text-lg font-black text-slate-950">
-              {company?.name || "Company name"}
+            <p className="mt-1 wrap-break-word text-sm leading-5 text-slate-600">
+              {companyDetails.join(" · ")}
             </p>
 
-            <p className="mt-1 text-sm text-slate-600">
-              {company?.industry || "Industry"} ·{" "}
-              {company?.companySize || "Company size"}
-            </p>
+            <p className="mt-1 inline-flex min-w-0 items-center gap-1.5 text-sm leading-5 text-slate-500">
+              <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
 
-            <p className="mt-1 text-sm text-slate-500">
-              {company?.headquarters || "Headquarters"}
+              <span className="wrap-break-word">
+                {previewCompany?.headquarters || "Headquarters"}
+              </span>
             </p>
           </div>
         </div>
 
-        {company?.description ? (
-          <p className="mt-5 text-sm leading-6 text-slate-600">
-            {company.description}
-          </p>
-        ) : (
-          <p className="mt-5 rounded-xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-500">
-            Add a company description to help candidates understand your
-            company.
-          </p>
-        )}
+        <p className="mt-5 wrap-break-word text-sm leading-6 text-slate-600">
+          {previewCompany?.description ||
+            "Add a short company description to help candidates understand your company."}
+        </p>
 
-        {company?.websiteUrl && (
+        {previewCompany?.websiteUrl && (
           <Button
             as="a"
-            href={company.websiteUrl}
+            href={previewCompany.websiteUrl}
             target="_blank"
             rel="noreferrer"
             variant="secondary"
-            fullWidth
-            className="mt-5"
+            size="sm"
+            className="mt-4 self-start"
           >
+            <Globe2 className="h-4 w-4" aria-hidden="true" />
             Visit website
           </Button>
         )}
+
+        <div className="mt-5 border-t border-slate-100 pt-5">
+          <h3 className="text-sm font-semibold leading-6 text-slate-950">
+            Company logo
+          </h3>
+
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Upload a clear company logo candidates can recognise across jobs and
+            public listings.
+          </p>
+
+          <div className="mt-4">
+            <label
+              htmlFor="company-logo"
+              className="mb-2 block text-sm font-medium text-slate-700"
+            >
+              Choose logo
+            </label>
+
+            <input
+              id="company-logo"
+              ref={logoInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={isUploadingLogo || isDeletingLogo}
+              onChange={onLogoChange}
+              className={[
+                "block w-full min-w-0",
+                "rounded-xl border border-slate-200",
+                "bg-white px-3 py-2",
+                "text-sm text-slate-700",
+                "disabled:cursor-not-allowed",
+                "disabled:opacity-60",
+                "file:mr-3 file:rounded-lg file:border-0",
+                "file:bg-blue-50 file:px-3 file:py-2",
+                "file:text-sm file:font-medium file:text-blue-700",
+                "hover:file:bg-blue-100",
+              ].join(" ")}
+            />
+
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              JPG, PNG or WebP. Maximum 2 MB.
+            </p>
+
+            {selectedLogo && (
+              <p className="mt-2 wrap-break-word text-xs leading-5 text-slate-600">
+                Selected:{" "}
+                <span className="font-medium text-slate-900">
+                  {selectedLogo.name}
+                </span>
+              </p>
+            )}
+
+            {mode === "create" && (
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                The selected logo will be uploaded when you create the company
+                profile.
+              </p>
+            )}
+          </div>
+
+          {logoError && (
+            <Alert variant="error" className="mt-4">
+              {logoError}
+            </Alert>
+          )}
+
+          {mode === "edit" && (
+            <div className="mt-4 grid gap-2 min-[420px]:grid-cols-2">
+              <Button
+                type="button"
+                size="sm"
+                disabled={isUploadingLogo || isDeletingLogo || !selectedLogo}
+                onClick={onLogoUpload}
+                fullWidth
+              >
+                {isUploadingLogo ? (
+                  <>
+                    <LoaderCircle
+                      className="h-4 w-4 animate-spin "
+                      aria-hidden="true"
+                    />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" aria-hidden="true" />
+                    {company?.logoUrl ? "Change logo" : "Upload logo"}
+                  </>
+                )}
+              </Button>
+
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                disabled={
+                  isUploadingLogo || isDeletingLogo || !company?.logoUrl
+                }
+                onClick={onDeleteLogo}
+                fullWidth
+              >
+                {isDeletingLogo ? (
+                  <>
+                    <LoaderCircle
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
+                    Removing...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    Remove logo
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
       </CardBody>
     </Card>
   );
 };
 
 const CompanyProfilePage = () => {
+  const logoInputRef = useRef(null);
+
   const [pageStatus, setPageStatus] = useState("loading");
-
-  const [mode, setMode] = useState("create");
-
+  const [mode, setMode] = useState("edit");
   const [company, setCompany] = useState(null);
-
-  const [apiError, setApiError] = useState("");
-
-  const [successMessage, setSuccessMessage] = useState("");
-
+  const [loadError, setLoadError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [logoError, setLogoError] = useState("");
   const [selectedLogo, setSelectedLogo] = useState(null);
-
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
-
   const [isDeletingLogo, setIsDeletingLogo] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   const {
     register,
@@ -169,6 +310,14 @@ const CompanyProfilePage = () => {
     ...watchedValues,
   };
 
+  const clearSelectedLogo = () => {
+    setSelectedLogo(null);
+
+    if (logoInputRef.current) {
+      logoInputRef.current.value = "";
+    }
+  };
+
   useEffect(() => {
     let shouldIgnore = false;
 
@@ -182,6 +331,7 @@ const CompanyProfilePage = () => {
 
         setCompany(result.data);
         setMode("edit");
+        setLoadError("");
         reset(getDefaultValues(result.data));
         setPageStatus("ready");
       } catch (error) {
@@ -194,12 +344,13 @@ const CompanyProfilePage = () => {
         if (normalizedError.statusCode === 404) {
           setCompany(null);
           setMode("create");
+          setLoadError("");
           reset(getDefaultValues());
           setPageStatus("ready");
           return;
         }
 
-        setApiError(normalizedError.message);
+        setLoadError(normalizedError.message);
         setPageStatus("error");
       }
     };
@@ -209,11 +360,16 @@ const CompanyProfilePage = () => {
     return () => {
       shouldIgnore = true;
     };
-  }, [reset]);
+  }, [loadAttempt, reset]);
+
+  const handleRetryLoad = () => {
+    setLoadError("");
+    setPageStatus("loading");
+    setLoadAttempt((currentAttempt) => currentAttempt + 1);
+  };
 
   const onSubmit = async (formData) => {
-    setApiError("");
-    setSuccessMessage("");
+    setFormError("");
 
     const payload = convertFormDataToPayload(formData);
 
@@ -225,37 +381,37 @@ const CompanyProfilePage = () => {
 
       setCompany(result.data);
       setMode("edit");
-      setSuccessMessage(result.message);
-      setSelectedLogo(null);
-
       reset(getDefaultValues(result.data));
+      clearSelectedLogo();
+
+      notify.success(
+        result.message ||
+          (mode === "edit"
+            ? "Company profile updated successfully."
+            : "Company profile created successfully."),
+      );
     } catch (error) {
       const normalizedError = getApiError(error);
 
-      setApiError(normalizedError.message);
+      setFormError(normalizedError.message);
     }
   };
 
   const handleLogoChange = (event) => {
-    const file = event.target.files?.[0];
+    const file = event.target.files?.[0] || null;
 
-    setApiError("");
-    setSuccessMessage("");
+    setLogoError("");
 
     if (!file) {
-      setSelectedLogo(null);
+      clearSelectedLogo();
       return;
     }
 
-    if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
-      setSelectedLogo(null);
-      setApiError("Only JPG, PNG, or WebP logo files are allowed.");
-      return;
-    }
+    const validationError = validateLogoFile(file);
 
-    if (file.size > MAX_LOGO_SIZE) {
-      setSelectedLogo(null);
-      setApiError("Logo file must be 2 MB or smaller.");
+    if (validationError) {
+      clearSelectedLogo();
+      setLogoError(validationError);
       return;
     }
 
@@ -263,26 +419,27 @@ const CompanyProfilePage = () => {
   };
 
   const handleLogoUpload = async () => {
-    setApiError("");
-    setSuccessMessage("");
+    const validationError = validateLogoFile(selectedLogo);
 
-    if (!selectedLogo) {
-      setApiError("Please select a logo file first.");
+    if (validationError) {
+      setLogoError(validationError);
       return;
     }
 
     try {
       setIsUploadingLogo(true);
+      setLogoError("");
 
       const result = await uploadCompanyLogo(selectedLogo);
 
       setCompany(result.data);
-      setSelectedLogo(null);
-      setSuccessMessage(result.message);
+      clearSelectedLogo();
+
+      notify.success(result.message || "Company logo updated successfully.");
     } catch (error) {
       const normalizedError = getApiError(error);
 
-      setApiError(normalizedError.message);
+      setLogoError(normalizedError.message);
     } finally {
       setIsUploadingLogo(false);
     }
@@ -299,172 +456,73 @@ const CompanyProfilePage = () => {
 
     try {
       setIsDeletingLogo(true);
-      setApiError("");
-      setSuccessMessage("");
+      setLogoError("");
 
       const result = await deleteCompanyLogo();
 
       setCompany(result.data);
-      setSelectedLogo(null);
-      setSuccessMessage(result.message);
+      clearSelectedLogo();
+
+      notify.success(result.message || "Company logo removed successfully.");
     } catch (error) {
       const normalizedError = getApiError(error);
 
-      setApiError(normalizedError.message);
+      setLogoError(normalizedError.message);
     } finally {
       setIsDeletingLogo(false);
     }
   };
 
-  if (pageStatus === "loading") {
-    return (
-      <Card>
-        <CardBody>
-          <p className="text-sm text-slate-600">Loading company profile...</p>
-        </CardBody>
-      </Card>
-    );
-  }
+  const isLoading = pageStatus === "loading";
+  const hasLoadError = pageStatus === "error";
+  const isReady = pageStatus === "ready";
 
-  if (pageStatus === "error") {
-    return (
-      <EmptyState
-        icon="⚠️"
-        title="Could not load company profile"
-        description={apiError}
-      />
-    );
-  }
+  const pageTitle =
+    mode === "edit" ? "Edit company profile" : "Create company profile";
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <PageHero
-        eyebrow="Company profile"
-        title={
-          mode === "edit" ? "Edit company profile" : "Create company profile"
-        }
+        title={pageTitle}
         description="Set up your company information so jobs, dashboards, and public listings show accurate details."
-        actions={
-          <Button as={Link} to="/company/dashboard" variant="secondary">
-            Back to dashboard
-          </Button>
-        }
       />
 
-      {apiError && <Alert variant="error">{apiError}</Alert>}
+      {isLoading && <CompanyProfilePageSkeleton />}
 
-      {successMessage && <Alert variant="success">{successMessage}</Alert>}
+      {hasLoadError && (
+        <SectionError
+          title="Could not load company profile"
+          message={loadError}
+          onRetry={handleRetryLoad}
+        />
+      )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-        <div className="grid gap-6">
-          <Card>
-            <CardHeader>
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Logo
-              </p>
+      {isReady && (
+        <div className="grid min-w-0 gap-5 xl:grid-cols-[400px_minmax(0,1fr)] xl:items-stretch">
+          <CompanyIdentityAndLogoCard
+            company={company}
+            previewCompany={previewCompany}
+            mode={mode}
+            selectedLogo={selectedLogo}
+            logoInputRef={logoInputRef}
+            logoError={logoError}
+            isUploadingLogo={isUploadingLogo}
+            isDeletingLogo={isDeletingLogo}
+            onLogoChange={handleLogoChange}
+            onLogoUpload={handleLogoUpload}
+            onDeleteLogo={handleDeleteLogo}
+          />
 
-              <h2 className="mt-1 text-xl font-black text-slate-950">
-                Company logo
-              </h2>
-
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                Upload a JPG, PNG, or WebP logo. Maximum size is 2 MB.
-              </p>
-            </CardHeader>
-
-            <CardBody>
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                {company?.logoUrl ? (
-                  <img
-                    src={company.logoUrl}
-                    alt={`${company.name} logo`}
-                    className="h-24 w-24 rounded-2xl border border-slate-200 object-cover"
-                  />
-                ) : (
-                  <div className="flex h-24 w-24 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-sm font-bold text-slate-500">
-                    No logo
-                  </div>
-                )}
-
-                <div className="flex-1">
-                  <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-                    <div>
-                      <label
-                        htmlFor="logo"
-                        className="mb-2 block text-sm font-bold text-slate-700"
-                      >
-                        Logo file
-                      </label>
-
-                      <input
-                        id="logo"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={handleLogoChange}
-                        className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-blue-700 hover:file:bg-blue-100"
-                      />
-
-                      {selectedLogo && (
-                        <p className="mt-2 text-sm text-slate-600">
-                          Selected file:{" "}
-                          <span className="font-bold text-slate-900">
-                            {selectedLogo.name}
-                          </span>
-                        </p>
-                      )}
-
-                      {mode === "create" && (
-                        <p className="mt-2 text-sm leading-6 text-slate-500">
-                          Optional. The selected logo will be uploaded when you
-                          create the company profile.
-                        </p>
-                      )}
-                    </div>
-
-                    {mode === "edit" && (
-                      <div className="flex flex-col gap-3 sm:flex-row">
-                        <Button
-                          type="button"
-                          disabled={
-                            isUploadingLogo || isDeletingLogo || !selectedLogo
-                          }
-                          onClick={handleLogoUpload}
-                        >
-                          {isUploadingLogo
-                            ? "Uploading..."
-                            : company?.logoUrl
-                              ? "Change logo"
-                              : "Upload logo"}
-                        </Button>
-
-                        <Button
-                          type="button"
-                          variant="danger"
-                          disabled={
-                            isUploadingLogo ||
-                            isDeletingLogo ||
-                            !company?.logoUrl
-                          }
-                          onClick={handleDeleteLogo}
-                        >
-                          {isDeletingLogo ? "Removing..." : "Remove logo"}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
-            <Card>
+          <form
+            onSubmit={(e) => {
+              // Avoid calling handleSubmit during render to prevent accessing refs during render
+              return handleSubmit(onSubmit)(e);
+            }}
+            className="h-full"
+          >
+            <Card className="flex h-full flex-col">
               <CardHeader>
-                <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                  Details
-                </p>
-
-                <h2 className="mt-1 text-xl font-black text-slate-950">
+                <h2 className="text-lg font-semibold leading-7 text-slate-950">
                   Company information
                 </h2>
 
@@ -473,106 +531,105 @@ const CompanyProfilePage = () => {
                 </p>
               </CardHeader>
 
-              <CardBody className="grid gap-5">
-                <TextInput
-                  id="name"
-                  type="text"
-                  label="Company name"
-                  placeholder="Example: HireFlow Technologies"
-                  error={errors.name?.message}
-                  {...register("name")}
-                />
+              <CardBody className="flex-1">
+                {formError && (
+                  <Alert variant="error" className="mb-5">
+                    {formError}
+                  </Alert>
+                )}
 
-                <div className="grid gap-5 lg:grid-cols-2">
+                <div className="grid gap-5">
                   <TextInput
-                    id="industry"
+                    id="name"
                     type="text"
-                    label="Industry"
-                    placeholder="Example: Software Development"
-                    error={errors.industry?.message}
-                    {...register("industry")}
+                    label="Company name"
+                    placeholder="Example: HireFlow Technologies"
+                    error={errors.name?.message}
+                    {...register("name")}
                   />
 
-                  <SelectInput
-                    id="companySize"
-                    label="Company size"
-                    placeholder="Select company size"
-                    options={COMPANY_SIZES}
-                    error={errors.companySize?.message}
-                    {...register("companySize")}
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <TextInput
+                      id="industry"
+                      type="text"
+                      label="Industry"
+                      placeholder="Example: Software Development"
+                      error={errors.industry?.message}
+                      {...register("industry")}
+                    />
+
+                    <SelectInput
+                      id="companySize"
+                      label="Company size"
+                      placeholder="Select company size"
+                      options={COMPANY_SIZES}
+                      error={errors.companySize?.message}
+                      {...register("companySize")}
+                    />
+                  </div>
+
+                  <TextInput
+                    id="headquarters"
+                    type="text"
+                    label="Headquarters"
+                    placeholder="Example: Pune, Maharashtra"
+                    error={errors.headquarters?.message}
+                    {...register("headquarters")}
+                  />
+
+                  <TextInput
+                    id="websiteUrl"
+                    type="url"
+                    label="Website URL"
+                    placeholder="https://example.com"
+                    hint="Optional. Example: https://example.com"
+                    error={errors.websiteUrl?.message}
+                    {...register("websiteUrl")}
+                  />
+
+                  <TextareaInput
+                    id="description"
+                    label="Description"
+                    rows={6}
+                    placeholder="Write a short company description."
+                    hint="Optional. Keep it short and candidate-friendly."
+                    error={errors.description?.message}
+                    {...register("description")}
                   />
                 </div>
-
-                <TextInput
-                  id="headquarters"
-                  type="text"
-                  label="Headquarters"
-                  placeholder="Example: Pune, Maharashtra"
-                  error={errors.headquarters?.message}
-                  {...register("headquarters")}
-                />
-
-                <TextInput
-                  id="websiteUrl"
-                  type="url"
-                  label="Website URL"
-                  placeholder="https://example.com"
-                  hint="Optional. Example: https://example.com"
-                  error={errors.websiteUrl?.message}
-                  {...register("websiteUrl")}
-                />
-
-                <TextareaInput
-                  id="description"
-                  label="Description"
-                  rows={6}
-                  placeholder="Write a short company description."
-                  hint="Optional. Keep it short and candidate-friendly."
-                  error={errors.description?.message}
-                  {...register("description")}
-                />
               </CardBody>
-            </Card>
 
-            <Card>
-              <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-bold text-slate-900">
-                    {mode === "edit"
-                      ? "Ready to update company profile?"
-                      : "Ready to create company profile?"}
-                  </p>
+              <CardFooter className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <Button
+                  as={Link}
+                  to="/company/dashboard"
+                  type="button"
+                  variant="secondary"
+                >
+                  Cancel
+                </Button>
 
-                  <p className="mt-1 text-sm text-slate-500">
-                    These details will be visible wherever company information
-                    is displayed.
-                  </p>
-                </div>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && (
+                    <LoaderCircle
+                      className="h-4 w-4 animate-spin"
+                      aria-hidden="true"
+                    />
+                  )}
 
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button as={Link} to="/company/dashboard" variant="secondary">
-                    Cancel
-                  </Button>
-
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting
-                      ? mode === "edit"
-                        ? "Updating..."
-                        : "Creating..."
-                      : mode === "edit"
-                        ? "Update profile"
-                        : "Create profile"}
-                  </Button>
-                </div>
-              </CardBody>
+                  {isSubmitting
+                    ? mode === "edit"
+                      ? "Updating..."
+                      : "Creating..."
+                    : mode === "edit"
+                      ? "Update profile"
+                      : "Create profile"}
+                </Button>
+              </CardFooter>
             </Card>
           </form>
         </div>
-
-        <aside className="self-start xl:sticky xl:top-24">
-          <CompanyPreviewCard company={previewCompany} mode={mode} />
-        </aside>
-      </div>
+      )}
     </div>
   );
 };

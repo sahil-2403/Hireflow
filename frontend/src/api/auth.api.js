@@ -80,6 +80,12 @@ const logout = async () => {
   return response.data;
 };
 
+const logoutAllDevices = async () => {
+  const response = await apiClient.post("/auth/logout-all");
+
+  return response.data;
+};
+
 export {
   login,
   registerUser,
@@ -92,4 +98,5 @@ export {
   uploadProfilePhoto,
   deleteProfilePhoto,
   logout,
+  logoutAllDevices,
 };

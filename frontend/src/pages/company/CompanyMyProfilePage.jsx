@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  AtSign,
+  Building2,
+  LoaderCircle,
+  Mail,
+  ShieldCheck,
+} from "lucide-react";
+
 import { Link } from "react-router-dom";
 
 import { useForm, useWatch } from "react-hook-form";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
@@ -10,33 +19,37 @@ import {
   updateMyCompanyMemberProfile,
 } from "../../api/companyMember.api";
 
-import { companyMemberProfileSchema } from "../../features/companies/companyMember.schemas";
+import ProfileIdentityCard from "../../components/account/ProfileIdentityCard";
 
-import getApiError from "../../utils/getApiError";
-import getRoleDisplayName from "../../utils/getRoleDisplayName";
-import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
-import isCompanyOwnerProfileMissingError from "../../utils/isCompanyOwnerProfileMissingError";
-
-import useAuth from "../../hooks/useAuth";
-
-import ProfileAvatar from "../../components/common/ProfileAvatar";
 import CompanyLogo from "../../components/common/CompanyLogo";
 
-import ProfilePhotoManager from "../../components/account/ProfilePhotoManager";
+import CompanySetupRequired from "../../components/company/CompanySetupRequired";
 
+import CompanyMyProfilePageSkeleton from "../../components/loading/CompanyMyProfilePageSkeleton";
+
+import Alert from "../../components/ui/Alert";
 import Button from "../../components/ui/Button";
+
 import {
   Card,
   CardBody,
   CardFooter,
   CardHeader,
 } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Alert from "../../components/ui/Alert";
-import TextInput from "../../components/ui/TextInput";
-import PageHero from "../../components/ui/PageHero";
 
-import CompanySetupRequired from "../../components/company/CompanySetupRequired";
+import PageHero from "../../components/ui/PageHero";
+import SectionError from "../../components/ui/SectionError";
+import TextInput from "../../components/ui/TextInput";
+
+import { companyMemberProfileSchema } from "../../features/companies/companyMember.schemas";
+
+import useAuth from "../../hooks/useAuth";
+
+import getApiError from "../../utils/getApiError";
+import getRoleDisplayName from "../../utils/getRoleDisplayName";
+import isCompanyOwnerProfileMissingError from "../../utils/isCompanyOwnerProfileMissingError";
+import isCompanyProfileMissingError from "../../utils/isCompanyProfileMissingError";
+import notify from "../../utils/notify";
 
 const getDefaultValues = (profile = null) => {
   return {
@@ -62,75 +75,78 @@ const getFullName = (values, user) => {
   return name || user?.username || user?.email || "Your profile";
 };
 
-const ProfilePreviewCard = ({ values, user, profile }) => {
-  const fullName = getFullName(values, user);
-
+const AccountInformationItem = ({ icon: Icon, label, value, company }) => {
   return (
-    <Card>
-      <CardBody>
-        <div className="flex items-start gap-4">
-          <ProfileAvatar user={user} name={fullName} size="lg" />
-
-          <div className="min-w-0">
-            <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-              Preview
-            </p>
-
-            <h2 className="mt-2 truncate text-2xl font-black text-slate-950">
-              {fullName}
-            </h2>
-
-            <p className="mt-1 text-sm font-medium text-slate-600">
-              {values.jobTitle || "Add your job title"}
-            </p>
-
-            <p className="mt-3 text-sm text-slate-500">
-              {profile?.company?.name
-                ? `${profile.company.name} workspace`
-                : "Company workspace"}
-            </p>
-          </div>
+    <div className="flex min-w-0 items-center gap-3 bg-white p-4">
+      {company ? (
+        <CompanyLogo
+          company={company}
+          size="sm"
+          fallbackClassName="bg-blue-600 text-white"
+        />
+      ) : (
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
+          <Icon className="h-4 w-4" aria-hidden="true" />
         </div>
-      </CardBody>
+      )}
 
-      <CardFooter>
-        <Button as={Link} to="/company/dashboard" variant="secondary" fullWidth>
-          Back to dashboard
-        </Button>
-      </CardFooter>
-    </Card>
+      <div className="min-w-0">
+        <p className="text-xs font-medium leading-5 text-slate-500">{label}</p>
+
+        <p className="mt-0.5 wrap-break-word text-sm font-semibold leading-6 text-slate-900">
+          {value || "Unavailable"}
+        </p>
+      </div>
+    </div>
   );
 };
 
 const AccountInfoCard = ({ user, profile }) => {
-  const rows = [
+  const companyName = profile?.company?.name || "Company profile required";
+
+  const items = [
     {
+      key: "workspace",
+      label: "Company workspace",
+      value: companyName,
+      company: profile?.company || null,
+    },
+    {
+      key: "username",
       label: "Username",
       value: user?.username || "Unavailable",
+      icon: AtSign,
     },
     {
+      key: "email",
       label: "Email",
       value: user?.email || "Unavailable",
+      icon: Mail,
     },
     {
-      label: "Role",
+      key: "role",
+      label: "Your role",
       value: getRoleDisplayName(user?.role),
-    },
-    {
-      label: "Company",
-      value: profile?.company?.name || "Company profile required",
+      icon: ShieldCheck,
     },
   ];
 
   return (
     <Card>
       <CardHeader>
-        <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-          Account
-        </p>
+        <div className="flex items-center gap-2">
+          <Building2
+            className="h-4 w-4 shrink-0 text-blue-600"
+            aria-hidden="true"
+          />
 
-        <h2 className="mt-2 text-xl font-black text-slate-950">
-          Account information
+          <p className="text-xs font-medium text-blue-600">
+            Account information
+          </p>
+        </div>
+
+        <h2 className="mt-1 text-lg font-semibold leading-7 text-slate-950">
+          Your account and workspace details
         </h2>
 
         <p className="mt-1 text-sm leading-6 text-slate-600">
@@ -139,40 +155,15 @@ const AccountInfoCard = ({ user, profile }) => {
       </CardHeader>
 
       <CardBody>
-        {profile?.company && (
-          <div className="mb-5 flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            <CompanyLogo
-              company={profile.company}
-              size="md"
-              fallbackClassName="bg-slate-900 text-white"
+        <div className="items-stretch grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+          {items.map((item) => (
+            <AccountInformationItem
+              key={item.key}
+              icon={item.icon || Building2}
+              label={item.label}
+              value={item.value}
+              company={item.company}
             />
-
-            <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Company workspace
-              </p>
-
-              <p className="mt-1 truncate text-sm font-black text-slate-950">
-                {profile.company.name}
-              </p>
-            </div>
-          </div>
-        )}
-
-        <div className="grid gap-3">
-          {rows.map((row) => (
-            <div
-              key={row.label}
-              className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
-            >
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                {row.label}
-              </p>
-
-              <p className="mt-1 wrap-break-word text-sm font-bold text-slate-900">
-                {row.value}
-              </p>
-            </div>
           ))}
         </div>
       </CardBody>
@@ -187,7 +178,7 @@ const CompanyMyProfilePage = () => {
   const [mode, setMode] = useState("edit");
   const [profile, setProfile] = useState(null);
   const [apiError, setApiError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   const {
     register,
@@ -211,9 +202,6 @@ const CompanyMyProfilePage = () => {
 
     const loadProfile = async () => {
       try {
-        setPageStatus("loading");
-        setApiError("");
-
         const result = await getMyCompanyMemberProfile();
 
         if (shouldIgnore) {
@@ -222,6 +210,7 @@ const CompanyMyProfilePage = () => {
 
         setProfile(result.data);
         setMode("edit");
+        setApiError("");
         reset(getDefaultValues(result.data));
         setPageStatus("ready");
       } catch (error) {
@@ -233,14 +222,15 @@ const CompanyMyProfilePage = () => {
 
         if (isCompanyProfileMissingError(normalizedError)) {
           setProfile(null);
-          setPageStatus("company-missing");
           setApiError(normalizedError.message);
+          setPageStatus("company-missing");
           return;
         }
 
         if (isCompanyOwnerProfileMissingError(normalizedError)) {
           setProfile(null);
           setMode("create");
+          setApiError("");
           reset(getDefaultValues());
           setPageStatus("ready");
           return;
@@ -256,11 +246,16 @@ const CompanyMyProfilePage = () => {
     return () => {
       shouldIgnore = true;
     };
-  }, [reset]);
+  }, [loadAttempt, reset]);
+
+  const handleRetryLoad = () => {
+    setApiError("");
+    setPageStatus("loading");
+    setLoadAttempt((currentAttempt) => currentAttempt + 1);
+  };
 
   const onSubmit = async (formData) => {
     setApiError("");
-    setSuccessMessage("");
 
     const payload = convertFormDataToPayload(formData);
 
@@ -270,7 +265,8 @@ const CompanyMyProfilePage = () => {
       setProfile(result.data);
       setMode("edit");
       reset(getDefaultValues(result.data));
-      setSuccessMessage(result.message);
+
+      notify.success(result.message || "Profile updated successfully.");
     } catch (error) {
       const normalizedError = getApiError(error);
 
@@ -278,150 +274,150 @@ const CompanyMyProfilePage = () => {
     }
   };
 
-  if (pageStatus === "loading") {
-    return (
-      <Card>
-        <CardBody>
-          <p className="text-sm text-slate-600">Loading your profile...</p>
-        </CardBody>
-      </Card>
-    );
-  }
+  const isLoading = pageStatus === "loading";
+  const isCompanyMissing = pageStatus === "company-missing";
+  const hasLoadError = pageStatus === "error";
+  const isReady = pageStatus === "ready";
 
-  if (pageStatus === "company-missing") {
-    return (
-      <CompanySetupRequired description="Create your company profile before completing your personal company profile." />
-    );
-  }
-
-  if (pageStatus === "error") {
-    return (
-      <EmptyState
-        icon="⚠️"
-        title="Could not load your profile"
-        description={apiError}
-      />
-    );
-  }
+  const pageTitle =
+    mode === "create"
+      ? "Complete your personal profile"
+      : "Manage your profile";
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <PageHero
-        eyebrow="My profile"
-        title={
-          mode === "create"
-            ? "Complete your personal profile"
-            : "Manage your profile"
-        }
+        title={pageTitle}
         description="Keep your personal company workspace details and profile photo up to date."
-        actions={
-          <Button as={Link} to="/company/dashboard" variant="secondary">
-            Back to dashboard
-          </Button>
-        }
       />
 
-      {apiError && <Alert variant="error">{apiError}</Alert>}
+      {isCompanyMissing && (
+        <CompanySetupRequired description="Create your company profile before completing your personal company profile." />
+      )}
 
-      {successMessage && <Alert variant="success">{successMessage}</Alert>}
+      {isLoading && <CompanyMyProfilePageSkeleton />}
 
-      <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
-        <aside className="grid gap-6">
-          <ProfilePreviewCard
-            values={watchedValues}
-            user={user}
-            profile={profile}
-          />
+      {hasLoadError && (
+        <SectionError
+          title="Could not load your profile"
+          message={apiError}
+          onRetry={handleRetryLoad}
+        />
+      )}
 
-          <ProfilePhotoManager
-            user={user}
-            updateUser={updateUser}
-            name={fullName}
-            description="Upload a clear photo so teammates and candidates can recognize your account."
-          />
+      {isReady && (
+        <>
+          <div className="grid min-w-0 gap-5 xl:grid-cols-[400px_minmax(0,1fr)]">
+            <ProfileIdentityCard
+              user={user}
+              updateUser={updateUser}
+              name={fullName}
+              subtitle={watchedValues.jobTitle || "Add your job title"}
+              description={
+                profile?.company?.name
+                  ? `${profile.company.name} workspace`
+                  : "Company workspace"
+              }
+            />
+
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <Card>
+                <CardHeader>
+                  <p className="text-xs font-medium text-blue-600">
+                    Personal details
+                  </p>
+
+                  <h2 className="mt-1 text-lg font-semibold leading-7 text-slate-950">
+                    Your company workspace profile
+                  </h2>
+
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    These details help identify you inside your company hiring
+                    workspace.
+                  </p>
+                </CardHeader>
+
+                <CardBody>
+                  {apiError && (
+                    <Alert variant="error" className="mb-5">
+                      {apiError}
+                    </Alert>
+                  )}
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <TextInput
+                      id="firstName"
+                      type="text"
+                      label="First name"
+                      placeholder="Sahil"
+                      error={errors.firstName?.message}
+                      {...register("firstName")}
+                    />
+
+                    <TextInput
+                      id="lastName"
+                      type="text"
+                      label="Last name"
+                      placeholder="Pawar"
+                      error={errors.lastName?.message}
+                      {...register("lastName")}
+                    />
+
+                    <TextInput
+                      id="jobTitle"
+                      type="text"
+                      label="Job title"
+                      placeholder="Founder, HR Manager, Technical Recruiter"
+                      error={errors.jobTitle?.message}
+                      {...register("jobTitle")}
+                    />
+
+                    <TextInput
+                      id="phone"
+                      type="text"
+                      label="Phone"
+                      placeholder="+91 98765 43210"
+                      hint="Optional. Maximum 20 characters."
+                      error={errors.phone?.message}
+                      {...register("phone")}
+                    />
+                  </div>
+                </CardBody>
+
+                <CardFooter className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                  <Button
+                    as={Link}
+                    to="/company/dashboard"
+                    type="button"
+                    variant="secondary"
+                  >
+                    Cancel
+                  </Button>
+
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && (
+                      <LoaderCircle
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                    )}
+
+                    {isSubmitting
+                      ? mode === "create"
+                        ? "Creating..."
+                        : "Saving..."
+                      : mode === "create"
+                        ? "Create profile"
+                        : "Save changes"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </form>
+          </div>
 
           <AccountInfoCard user={user} profile={profile} />
-        </aside>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6">
-          <Card>
-            <CardHeader>
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Personal details
-              </p>
-
-              <h2 className="mt-2 text-xl font-black text-slate-950">
-                Your company workspace profile
-              </h2>
-
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                These details help identify you inside your company hiring
-                workspace.
-              </p>
-            </CardHeader>
-
-            <CardBody>
-              <div className="grid gap-4 md:grid-cols-2">
-                <TextInput
-                  id="firstName"
-                  type="text"
-                  label="First name"
-                  placeholder="Sahil"
-                  error={errors.firstName?.message}
-                  {...register("firstName")}
-                />
-
-                <TextInput
-                  id="lastName"
-                  type="text"
-                  label="Last name"
-                  placeholder="Pawar"
-                  error={errors.lastName?.message}
-                  {...register("lastName")}
-                />
-
-                <TextInput
-                  id="jobTitle"
-                  type="text"
-                  label="Job title"
-                  placeholder="Founder, HR Manager, Technical Recruiter"
-                  error={errors.jobTitle?.message}
-                  {...register("jobTitle")}
-                />
-
-                <TextInput
-                  id="phone"
-                  type="text"
-                  label="Phone"
-                  placeholder="+91 98765 43210"
-                  hint="Optional. Maximum 20 characters."
-                  error={errors.phone?.message}
-                  {...register("phone")}
-                />
-              </div>
-            </CardBody>
-
-            <CardFooter className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <Button
-                as={Link}
-                to="/company/dashboard"
-                type="button"
-                variant="secondary"
-              >
-                Cancel
-              </Button>
-
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting
-                  ? "Saving..."
-                  : mode === "create"
-                    ? "Create profile"
-                    : "Save changes"}
-              </Button>
-            </CardFooter>
-          </Card>
-        </form>
-      </div>
+        </>
+      )}
     </div>
   );
 };

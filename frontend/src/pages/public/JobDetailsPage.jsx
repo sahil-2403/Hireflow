@@ -1,117 +1,323 @@
 import { useEffect, useState } from "react";
 
-import { Link, NavLink, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  BriefcaseBusiness,
+  Building2,
+  Check,
+  CheckCircle2,
+  ExternalLink,
+  GraduationCap,
+  Laptop,
+  LoaderCircle,
+  LogIn,
+  MapPin,
+  Search,
+  Send,
+} from "lucide-react";
 
-import { getPublicJobById } from "../../api/job.api";
+import { Link, useParams } from "react-router-dom";
+
 import { applyToJob } from "../../api/application.api";
+import { getPublicJobById } from "../../api/job.api";
 import { getRecommendedJobMatch } from "../../api/recommendation.api";
 
-import { ROLES } from "../../features/auth/auth.constants";
-
-import getApiError from "../../utils/getApiError";
-import formatSalary from "../../utils/formatSalary";
-
-import useAuth from "../../hooks/useAuth";
-
-import Button from "../../components/ui/Button";
-import { Card, CardBody, CardHeader } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import Alert from "../../components/ui/Alert";
-import Pill from "../../components/ui/Pill";
-import TextareaInput from "../../components/ui/TextareaInput";
-
-import MatchScoreBadge from "../../components/application/MatchScoreBadge";
-import SkillMatchList from "../../components/application/SkillMatchList";
+import CandidateJobResumeFitCard from "../../components/ai/CandidateJobResumeFitCard";
 
 import CompanyLogo from "../../components/common/CompanyLogo";
 
-import CandidateJobResumeFitCard from "../../components/ai/CandidateJobResumeFitCard";
+import CandidateJobMatchCard from "../../components/jobs/CandidateJobMatchCard";
+
+import PublicJobDetailsSkeleton from "../../components/loading/PublicJobDetailsSkeleton";
+
+import Alert from "../../components/ui/Alert";
+import Button from "../../components/ui/Button";
+
+import { Card, CardBody } from "../../components/ui/Card";
+
+import Pill from "../../components/ui/Pill";
+import SectionError from "../../components/ui/SectionError";
+import TextareaInput from "../../components/ui/TextareaInput";
+
+import { ROLES } from "../../features/auth/auth.constants";
+
+import useAuth from "../../hooks/useAuth";
+
+import { formatRelativePostedDate } from "../../utils/formatDate";
+import formatJobMetadata from "../../utils/formatJobMetadata";
+
+import getApiError from "../../utils/getApiError";
+import formatSalary from "../../utils/formatSalary";
+import notify from "../../utils/notify";
+
+const JobMetadataPill = ({ icon: Icon, children }) => {
+  return (
+    <Pill variant="slate" size="sm" className="normal-case ring-0">
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+
+      {children}
+    </Pill>
+  );
+};
 
 const SectionList = ({ items }) => {
   return (
     <ul className="grid gap-3">
-      {items.map((item) => (
-        <li key={item} className="flex gap-3 text-sm leading-6 text-slate-700">
-          <span className="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-blue-50 text-xs font-black text-blue-700">
-            ✓
+      {items.map((item, index) => (
+        <li key={`${item}-${index}`} className="flex min-w-0 items-start gap-3">
+          <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-700">
+            <Check className="h-3 w-3" aria-hidden="true" />
           </span>
 
-          <span>{item}</span>
+          <span className="min-w-0 wrap-break-word text-sm leading-6 text-slate-700">
+            {item}
+          </span>
         </li>
       ))}
     </ul>
   );
 };
 
-const CandidateMatchCard = ({ status, matchData, errorMessage }) => {
-  const match = matchData?.match;
+const ContentSection = ({
+  title,
+  description,
+  children,
+  showBorder = true,
+}) => {
+  return (
+    <section className={showBorder ? "border-t border-slate-100 pt-6" : ""}>
+      <h2 className="text-lg font-semibold leading-7 text-slate-950">
+        {title}
+      </h2>
+
+      {description && (
+        <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
+      )}
+
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+};
+
+const JobApplicationCard = ({
+  isAuthenticated,
+  canApply,
+  isCompanyUser,
+  coverLetter,
+  applyStatus,
+  applyError,
+  onCoverLetterChange,
+  onSubmit,
+}) => {
+  const coverLetterLength = coverLetter.length;
+
+  const isCoverLetterTooLong = coverLetterLength > 5000;
+
+  return (
+    <Card id="job-application" className="scroll-mt-24">
+      <CardBody className="p-4 sm:p-5">
+        <header className="flex items-center gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
+            <Send className="h-5 w-5" aria-hidden="true" />
+          </div>
+
+          <h2 className="text-lg font-semibold leading-7 text-slate-950">
+            Apply for this job
+          </h2>
+        </header>
+
+        {!isAuthenticated && (
+          <div className="mt-5">
+            <p className="text-sm leading-6 text-slate-600">
+              Sign in as a candidate to apply and view your profile-based job
+              match.
+            </p>
+
+            <div className="mt-5 grid gap-3 min-[420px]:grid-cols-2 lg:grid-cols-1">
+              <Button as={Link} to="/login" fullWidth>
+                <LogIn className="h-4 w-4" aria-hidden="true" />
+                Sign in
+              </Button>
+
+              <Button as={Link} to="/register" variant="secondary" fullWidth>
+                Create candidate account
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {isCompanyUser && (
+          <div className="mt-5">
+            <Alert variant="warning">
+              Company accounts cannot apply to jobs. Candidate accounts can
+              submit applications.
+            </Alert>
+
+            <Button
+              as={Link}
+              to="/jobs"
+              variant="secondary"
+              fullWidth
+              className="mt-4"
+            >
+              <Search className="h-4 w-4" aria-hidden="true" />
+              Browse other jobs
+            </Button>
+          </div>
+        )}
+
+        {canApply && applyStatus === "success" && (
+          <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2
+                className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700"
+                aria-hidden="true"
+              />
+
+              <div>
+                <h3 className="text-sm font-semibold text-emerald-950">
+                  Application submitted
+                </h3>
+
+                <p className="mt-1 text-sm leading-6 text-emerald-800">
+                  You can follow its progress from your candidate workspace.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              as={Link}
+              to="/candidate/applications"
+              variant="secondary"
+              fullWidth
+              className="mt-4"
+            >
+              View my applications
+            </Button>
+          </div>
+        )}
+
+        {canApply && applyStatus !== "success" && (
+          <form onSubmit={onSubmit} className="mt-5" noValidate>
+            {applyError && (
+              <Alert variant="error" className="mb-4">
+                {applyError}
+              </Alert>
+            )}
+
+            <TextareaInput
+              id="coverLetter"
+              label="Cover letter"
+              hint="Optional. Add a short role-specific introduction."
+              rows={6}
+              value={coverLetter}
+              onChange={onCoverLetterChange}
+              placeholder="Explain briefly why you are interested in this role..."
+              error={
+                isCoverLetterTooLong
+                  ? "Cover letter cannot exceed 5000 characters."
+                  : ""
+              }
+            />
+
+            <p
+              className={[
+                "mt-1 text-right",
+                "text-xs leading-5",
+
+                isCoverLetterTooLong ? "text-red-600" : "text-slate-500",
+              ].join(" ")}
+            >
+              {coverLetterLength}/5000
+            </p>
+
+            <Button
+              type="submit"
+              disabled={applyStatus === "submitting" || isCoverLetterTooLong}
+              fullWidth
+              className="mt-5"
+            >
+              {applyStatus === "submitting" ? (
+                <>
+                  <LoaderCircle
+                    className="h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" aria-hidden="true" />
+                  Apply now
+                </>
+              )}
+            </Button>
+          </form>
+        )}
+      </CardBody>
+    </Card>
+  );
+};
+
+const CompanyInformationCard = ({ company }) => {
+  const companyName = company?.name || "Company unavailable";
 
   return (
     <Card>
-      <CardHeader>
-        <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-          Your match
-        </p>
+      <CardBody className="p-4 sm:p-5">
+        <header className="flex items-center gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
+            <Building2 className="h-5 w-5" aria-hidden="true" />
+          </div>
 
-        <h2 className="mt-1 text-xl font-black text-slate-950">
-          Profile fit for this role
-        </h2>
-      </CardHeader>
+          <h2 className="text-lg font-semibold leading-7 text-slate-950">
+            Company profile
+          </h2>
+        </header>
 
-      <CardBody>
-        {status === "loading" && (
-          <p className="text-sm text-slate-600">Calculating match...</p>
-        )}
+        <div className="mt-5 flex min-w-0 items-start gap-3">
+          <CompanyLogo company={company} name={companyName} size="md" />
 
-        {status === "error" && <Alert variant="error">{errorMessage}</Alert>}
+          <div className="min-w-0">
+            <h3 className="wrap-break-word text-base font-semibold leading-6 text-slate-950">
+              {companyName}
+            </h3>
 
-        {status === "success" && match && (
-          <div className="grid gap-5">
-            <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-                Match score
+            {company?.industry && (
+              <p className="mt-1 wrap-break-word text-sm leading-5 text-slate-500">
+                {company.industry}
               </p>
-
-              <MatchScoreBadge match={match} size="lg" />
-
-              <p className="mt-2 text-xs font-semibold text-slate-500">
-                Confidence:{" "}
-                <span className="text-slate-800">
-                  {match.confidenceLevel || "Not available"}
-                </span>
-              </p>
-            </div>
-
-            <SkillMatchList
-              title="Matched skills"
-              skills={match.matchedSkills || []}
-              emptyMessage="No matched skills yet."
-              variant="matched"
-              limit={5}
-            />
-
-            <SkillMatchList
-              title="Missing skills"
-              skills={match.missingSkills || []}
-              emptyMessage="No missing skills listed."
-              variant="missing"
-              limit={5}
-            />
-
-            {match.reasons?.length > 0 && (
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Why this score
-                </p>
-
-                <ul className="mt-3 grid gap-2 text-sm leading-6 text-slate-700">
-                  {match.reasons.slice(0, 3).map((reason) => (
-                    <li key={reason}>• {reason}</li>
-                  ))}
-                </ul>
-              </div>
             )}
           </div>
+        </div>
+
+        {company?.headquarters && (
+          <p className="mt-4 inline-flex items-start gap-2 text-sm leading-6 text-slate-600">
+            <MapPin className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
+
+            <span className="wrap-break-word">{company.headquarters}</span>
+          </p>
+        )}
+
+        {company?.description && (
+          <p className="mt-4 whitespace-pre-line wrap-break-word text-sm leading-6 text-slate-600">
+            {company.description}
+          </p>
+        )}
+
+        {company?.websiteUrl && (
+          <Button
+            as="a"
+            href={company.websiteUrl}
+            target="_blank"
+            rel="noreferrer"
+            variant="secondary"
+            fullWidth
+            className="mt-5"
+          >
+            Visit website
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+          </Button>
         )}
       </CardBody>
     </Card>
@@ -127,21 +333,28 @@ const JobDetailsPage = () => {
 
   const [job, setJob] = useState(null);
 
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const [jobLoadAttempt, setJobLoadAttempt] = useState(0);
+
+  const [matchAttempt, setMatchAttempt] = useState(0);
+
   const [matchState, setMatchState] = useState({
     status: "idle",
     data: null,
     errorMessage: "",
   });
 
-  const [errorMessage, setErrorMessage] = useState("");
-
   const [coverLetter, setCoverLetter] = useState("");
 
   const [applyStatus, setApplyStatus] = useState("idle");
 
-  const [applyMessage, setApplyMessage] = useState("");
-
   const [applyError, setApplyError] = useState("");
+
+  const canApply = isAuthenticated && user?.role === ROLES.CANDIDATE;
+
+  const isCompanyUser =
+    user?.role === ROLES.OWNER || user?.role === ROLES.RECRUITER;
 
   useEffect(() => {
     let shouldIgnore = false;
@@ -166,9 +379,8 @@ const JobDetailsPage = () => {
 
         const normalizedError = getApiError(error);
 
-        setErrorMessage(normalizedError.message);
-
         setJob(null);
+        setErrorMessage(normalizedError.message);
         setStatus("error");
       }
     };
@@ -178,13 +390,13 @@ const JobDetailsPage = () => {
     return () => {
       shouldIgnore = true;
     };
-  }, [jobId]);
+  }, [jobId, jobLoadAttempt]);
 
   useEffect(() => {
     let shouldIgnore = false;
 
     const fetchMatch = async () => {
-      if (!isAuthenticated || user?.role !== ROLES.CANDIDATE) {
+      if (!canApply) {
         setMatchState({
           status: "idle",
           data: null,
@@ -232,16 +444,16 @@ const JobDetailsPage = () => {
     return () => {
       shouldIgnore = true;
     };
-  }, [jobId, isAuthenticated, user?.role]);
+  }, [jobId, canApply, matchAttempt]);
 
   const handleApply = async (event) => {
     event.preventDefault();
 
     setApplyError("");
-    setApplyMessage("");
 
     if (coverLetter.length > 5000) {
       setApplyError("Cover letter cannot exceed 5000 characters.");
+
       return;
     }
 
@@ -252,431 +464,198 @@ const JobDetailsPage = () => {
         coverLetter: coverLetter.trim() || null,
       });
 
-      setApplyMessage(result.message);
       setApplyStatus("success");
+
+      notify.success(result.message || "Application submitted successfully.");
     } catch (error) {
       const normalizedError = getApiError(error);
 
       setApplyError(normalizedError.message);
-
       setApplyStatus("error");
     }
   };
 
-  const canApply = isAuthenticated && user?.role === ROLES.CANDIDATE;
-
-  const isCompanyUser =
-    user?.role === ROLES.OWNER || user?.role === ROLES.RECRUITER;
-
   if (status === "loading") {
+    return <PublicJobDetailsSkeleton />;
+  }
+
+  if (status === "error" || !job) {
     return (
-      <Card>
-        <CardBody>
-          <p className="text-sm text-slate-600">Loading job details...</p>
-        </CardBody>
-      </Card>
+      <div className="grid gap-5">
+        <Button as={Link} to="/jobs" variant="ghost" className="w-fit">
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to jobs
+        </Button>
+
+        <SectionError
+          title="Could not load job"
+          message={errorMessage}
+          onRetry={() =>
+            setJobLoadAttempt((currentAttempt) => currentAttempt + 1)
+          }
+        />
+      </div>
     );
   }
 
-  if (status === "error") {
-    return (
-      <main className="bg-slate-50">
-        <section className="mx-auto max-w-8xl px-4 py-10 sm:px-6 lg:px-8">
-          <EmptyState
-            icon="⚠️"
-            title="Could not load job"
-            description={errorMessage}
-            action={
-              <Button as={Link} to="/jobs">
-                Back to jobs
-              </Button>
-            }
-          />
-        </section>
-      </main>
-    );
-  }
+  const companyName = job.companyId?.name || "Company unavailable";
 
   return (
-    <main className="bg-slate-50">
-      <NavLink to="/jobs" className="text-blue-700 text-sm font-bold ml-2">
-        ← Back to jobs
-      </NavLink>
+    <div className="grid gap-5">
+      <Button as={Link} to="/jobs" variant="ghost" className="w-fit">
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        Back to jobs
+      </Button>
 
-      <section className="overflow-hidden rounded-3xl border mt-3 border-blue-100 bg-linear-to-br from-blue-50 via-white to-slate-50">
-        <div className="mx-auto max-w-8xl px-6 py-2">
-          <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex gap-6">
-              <CompanyLogo
-                company={job.companyId}
-                name={job.companyId?.name || job.title}
-                size="xl"
-                fallbackClassName="bg-blue-600 text-white shadow-sm shadow-blue-200"
-              />
+      <section className="border-b border-slate-200 pb-5 sm:pb-6">
+        <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+          <div className="flex min-w-0 flex-col gap-4 min-[420px]:flex-row">
+            <CompanyLogo
+              company={job.companyId}
+              name={companyName}
+              size="xl"
+              fallbackClassName="bg-blue-600 text-white"
+            />
 
-              <div>
-                <p className="px-1 text-sm font-bold text-blue-700">
-                  {job.companyId?.name || "Company unavailable"}
-                </p>
+            <div className="min-w-0">
+              <p className="wrap-break-word text-sm font-medium leading-6 text-blue-700">
+                {companyName}
+              </p>
 
-                <h1 className="mt-2 max-w-3xl text-2xl font-black tracking-tight text-slate-950 sm:text-4xl">
-                  {job.title}
-                </h1>
+              <h1 className="mt-1 max-w-4xl wrap-break-word text-2xl font-semibold leading-8 tracking-tight text-slate-950 sm:text-3xl sm:leading-9">
+                {job.title}
+              </h1>
 
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Pill variant="slate" className="ring-0">
-                    📍 {job.location || "Location unavailable"}
-                  </Pill>
-                  <Pill variant="slate" className="ring-0">
-                    🏢 {job.workplaceType}
-                  </Pill>
-                  <Pill variant="slate" className="ring-0">
-                    💼 {job.employmentType}
-                  </Pill>
-                  <Pill variant="slate" className="ring-0">
-                    ⭐ {job.experienceLevel}
-                  </Pill>
-                </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <JobMetadataPill icon={MapPin}>
+                  {job.location || "Location unavailable"}
+                </JobMetadataPill>
+
+                <JobMetadataPill icon={Laptop}>
+                  {formatJobMetadata(
+                    job.workplaceType,
+                    "Workplace unavailable",
+                  )}
+                </JobMetadataPill>
+
+                <JobMetadataPill icon={BriefcaseBusiness}>
+                  {formatJobMetadata(
+                    job.employmentType,
+                    "Employment unavailable",
+                  )}
+                </JobMetadataPill>
+
+                <JobMetadataPill icon={GraduationCap}>
+                  {formatJobMetadata(job.experienceLevel, "Level unavailable")}
+                </JobMetadataPill>
               </div>
-            </div>
 
-            <div className="rounded-2xl border border-white/80 bg-white/90 px-5 py-4 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Salary
-              </p>
-
-              <p className="mt-1 text-lg font-black text-slate-950">
-                {formatSalary(job)}
-              </p>
+              {job.createdAt && (
+                <p className="mt-4 text-xs leading-5 text-slate-500">
+                  Posted {formatRelativePostedDate(job.createdAt)}
+                </p>
+              )}
             </div>
+          </div>
+
+          <div className="min-w-0 lg:max-w-xs lg:text-right">
+            <p className="text-xs font-medium leading-5 text-slate-500">
+              Salary
+            </p>
+
+            <p className="mt-1 wrap-break-word text-lg font-semibold leading-7 text-slate-950">
+              {formatSalary(job)}
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-8xl gap-6 px-0 py-8 sm:px-0 lg:grid-cols-[1fr_360px] ">
-        <div className="grid gap-6">
+      <section className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+        <div className="min-w-0">
           <Card>
-            <CardHeader>
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Overview
-              </p>
+            <CardBody className="grid gap-6 p-5 sm:p-6">
+              <ContentSection title="Job description" showBorder={false}>
+                <p className="whitespace-pre-line wrap-break-word text-sm leading-7 text-slate-700">
+                  {job.description || "No job description was provided."}
+                </p>
+              </ContentSection>
 
-              <h2 className="mt-1 text-xl font-black text-slate-950">
-                Job description
-              </h2>
-            </CardHeader>
+              {job.responsibilities?.length > 0 && (
+                <ContentSection
+                  title="Responsibilities"
+                  description="What you will be expected to handle in this role."
+                >
+                  <SectionList items={job.responsibilities} />
+                </ContentSection>
+              )}
 
-            <CardBody>
-              <p className="whitespace-pre-line text-sm leading-7 text-slate-700">
-                {job.description}
-              </p>
+              {job.requirements?.length > 0 && (
+                <ContentSection
+                  title="Requirements"
+                  description="Experience and qualifications the company is looking for."
+                >
+                  <SectionList items={job.requirements} />
+                </ContentSection>
+              )}
+
+              {job.skills?.length > 0 && (
+                <ContentSection
+                  title="Skills for this role"
+                  description="Technologies and abilities associated with the position."
+                >
+                  <div className="flex flex-wrap gap-2">
+                    {job.skills.map((skill) => (
+                      <Pill key={skill} variant="blue" size="sm">
+                        {skill}
+                      </Pill>
+                    ))}
+                  </div>
+                </ContentSection>
+              )}
             </CardBody>
           </Card>
-
-          {job.responsibilities?.length > 0 && (
-            <Card>
-              <CardHeader>
-                <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-                  Role
-                </p>
-
-                <h2 className="mt-1 text-xl font-black text-slate-950">
-                  Responsibilities
-                </h2>
-              </CardHeader>
-
-              <CardBody>
-                <SectionList items={job.responsibilities} />
-              </CardBody>
-            </Card>
-          )}
-
-          {job.requirements?.length > 0 && (
-            <Card>
-              <CardHeader>
-                <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
-                  Requirements
-                </p>
-
-                <h2 className="mt-1 text-xl font-black text-slate-950">
-                  What you need
-                </h2>
-              </CardHeader>
-
-              <CardBody>
-                <SectionList items={job.requirements} />
-              </CardBody>
-            </Card>
-          )}
-
-          {job.skills?.length > 0 && (
-            <Card>
-              <CardHeader>
-                <p className="text-sm font-semibold uppercase tracking-wider text-amber-600">
-                  Skills
-                </p>
-
-                <h2 className="mt-1 text-xl font-black text-slate-950">
-                  Skills required for this role
-                </h2>
-              </CardHeader>
-
-              <CardBody>
-                <div className="flex flex-wrap gap-2">
-                  {job.skills.map((skill) => (
-                    <span
-                      key={skill}
-                      className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </CardBody>
-            </Card>
-          )}
         </div>
 
-        <aside className="grid gap-6 self-start lg:sticky lg:top-24">
-          {canApply && (
-            <>
-              <CandidateMatchCard
-                status={matchState.status}
-                matchData={matchState.data}
-                errorMessage={matchState.errorMessage}
-              />
+        <aside className="grid min-w-0 gap-5">
+          <JobApplicationCard
+            isAuthenticated={isAuthenticated}
+            canApply={canApply}
+            isCompanyUser={isCompanyUser}
+            coverLetter={coverLetter}
+            applyStatus={applyStatus}
+            applyError={applyError}
+            onCoverLetterChange={(event) => setCoverLetter(event.target.value)}
+            onSubmit={handleApply}
+          />
 
-              <CandidateJobResumeFitCard
-                jobId={jobId}
-                availabilityStatus={matchState.status}
-                availability={matchState.data?.aiResumeFit || null}
-                availabilityError={matchState.errorMessage}
-              />
-            </>
-          )}
-
-          {!isAuthenticated && (
-            <Card>
-              <CardBody>
-                <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                  Your match
-                </p>
-
-                <h2 className="mt-2 text-lg font-black text-slate-950">
-                  See how this role fits you
-                </h2>
-
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Login as a candidate to view your match score for this job.
-                </p>
-
-                <Button as={Link} to="/login" className="mt-5" fullWidth>
-                  Login
-                </Button>
-              </CardBody>
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader>
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Application
-              </p>
-
-              <h2 className="mt-1 text-xl font-black text-slate-950">
-                Apply for this job
-              </h2>
-            </CardHeader>
-
-            <CardBody>
-              {!isAuthenticated && (
-                <div>
-                  <p className="text-sm leading-6 text-slate-600">
-                    Login as a candidate to apply for this job.
-                  </p>
-
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                    <Button as={Link} to="/login" fullWidth>
-                      Login
-                    </Button>
-
-                    <Button
-                      as={Link}
-                      to="/register"
-                      variant="secondary"
-                      fullWidth
-                    >
-                      Register
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {isCompanyUser && (
-                <Alert variant="warning">
-                  Company users cannot apply to jobs. Login as a candidate to
-                  apply.
-                </Alert>
-              )}
-
-              {canApply && (
-                <form onSubmit={handleApply}>
-                  {applyMessage && (
-                    <Alert variant="success" className="mb-4">
-                      {applyMessage}
-                    </Alert>
-                  )}
-
-                  {applyError && (
-                    <Alert variant="error" className="mb-4">
-                      {applyError}
-                    </Alert>
-                  )}
-
-                  <TextareaInput
-                    id="coverLetter"
-                    label="Cover letter"
-                    rows={7}
-                    value={coverLetter}
-                    onChange={(event) => setCoverLetter(event.target.value)}
-                    placeholder="Optional cover letter..."
-                  />
-
-                  <p className="mt-1 text-xs text-slate-500">
-                    {coverLetter.length}/5000 characters
-                  </p>
-
-                  <Button
-                    type="submit"
-                    disabled={
-                      applyStatus === "submitting" || applyStatus === "success"
-                    }
-                    fullWidth
-                    className="mt-5"
-                  >
-                    {applyStatus === "submitting"
-                      ? "Applying..."
-                      : applyStatus === "success"
-                        ? "Applied"
-                        : "Apply now"}
-                  </Button>
-
-                  {applyStatus === "success" && (
-                    <Button
-                      as={Link}
-                      to="/candidate/applications"
-                      variant="secondary"
-                      fullWidth
-                      className="mt-3"
-                    >
-                      View my applications
-                    </Button>
-                  )}
-                </form>
-              )}
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-                Company
-              </p>
-
-              <h2 className="mt-1 text-xl font-black text-slate-950">
-                About the company
-              </h2>
-            </CardHeader>
-
-            <CardBody>
-              <div className="flex gap-3">
-                <CompanyLogo
-                  company={job.companyId}
-                  name={job.companyId?.name || job.title}
-                  size="md"
-                  fallbackClassName="bg-slate-900 text-white"
-                />
-
-                <div>
-                  <p className="font-black text-slate-950">
-                    {job.companyId?.name || "Company unavailable"}
-                  </p>
-
-                  {job.companyId?.industry && (
-                    <p className="mt-1 text-sm text-slate-600">
-                      {job.companyId.industry}
-                    </p>
-                  )}
-
-                  {job.companyId?.headquarters && (
-                    <p className="mt-1 text-sm text-slate-600">
-                      {job.companyId.headquarters}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {job.companyId?.description && (
-                <p className="mt-4 text-sm leading-6 text-slate-600">
-                  {job.companyId.description}
-                </p>
-              )}
-
-              {job.companyId?.websiteUrl && (
-                <Button
-                  as="a"
-                  href={job.companyId.websiteUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  variant="secondary"
-                  fullWidth
-                  className="mt-5"
-                >
-                  Visit website
-                </Button>
-              )}
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardBody>
-              <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
-                Candidate tip
-              </p>
-
-              <h2 className="mt-2 text-lg font-black text-slate-950">
-                Apply with a ready profile
-              </h2>
-
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Before applying, make sure your profile and resume are updated
-                so recruiters can review your application properly.
-              </p>
-
-              <div className="mt-5 grid gap-3">
-                <Button
-                  as={Link}
-                  to="/candidate/profile"
-                  variant="secondary"
-                  fullWidth
-                >
-                  Complete profile
-                </Button>
-
-                <Button
-                  as={Link}
-                  to="/candidate/resume"
-                  variant="secondary"
-                  fullWidth
-                >
-                  Upload resume
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
+          <CompanyInformationCard company={job.companyId} />
         </aside>
       </section>
-    </main>
+
+      {canApply && (
+        <section
+          className="grid min-w-0 gap-5"
+          aria-label="Candidate job insights"
+        >
+          <CandidateJobMatchCard
+            status={matchState.status}
+            matchData={matchState.data}
+            errorMessage={matchState.errorMessage}
+            onRetry={() =>
+              setMatchAttempt((currentAttempt) => currentAttempt + 1)
+            }
+          />
+
+          <CandidateJobResumeFitCard
+            key={`resume-fit-${jobId}`}
+            jobId={jobId}
+            availabilityStatus={matchState.status}
+            availability={matchState.data?.aiResumeFit || null}
+            availabilityError={matchState.errorMessage}
+          />
+        </section>
+      )}
+    </div>
   );
 };
 

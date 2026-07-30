@@ -1,4 +1,5 @@
 import request from "supertest";
+import mongoose from "mongoose";
 
 import app from "../../src/app.js";
 
@@ -699,5 +700,90 @@ describe("Application workflow API", () => {
       .expect(404);
 
     expect(response.body.message).toBe("Resume not found");
+  });
+
+  test("candidate application summary returns exact counts beyond the list limit", async () => {
+    const { candidateUser, candidateProfile, company, candidateSession } =
+      await setupApplicationFlow("summarycounts");
+
+    const applicationStatuses = [
+      APPLICATION_STATUS.APPLIED,
+      APPLICATION_STATUS.SCREENING,
+      APPLICATION_STATUS.INTERVIEW,
+      APPLICATION_STATUS.OFFER,
+      APPLICATION_STATUS.HIRED,
+      APPLICATION_STATUS.REJECTED,
+    ];
+
+    const applications = Array.from(
+      {
+        length: 55,
+      },
+      (_, index) => ({
+        jobId: new mongoose.Types.ObjectId(),
+        candidateId: candidateProfile._id,
+        candidateUserId: candidateUser._id,
+        companyId: company._id,
+        resumeUrl: candidateProfile.resumeUrl,
+        status: applicationStatuses[index % applicationStatuses.length],
+        appliedAt: new Date(Date.now() - index * 1000),
+      }),
+    );
+
+    await Application.insertMany(applications);
+
+    const response = await candidateSession.agent
+      .get("/api/v1/applications/me/summary")
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+
+    expect(response.body.message).toBe(
+      "Application summary fetched successfully",
+    );
+
+    expect(response.body.data).toEqual({
+      totalApplications: 55,
+      statusCounts: {
+        [APPLICATION_STATUS.APPLIED]: 10,
+        [APPLICATION_STATUS.SCREENING]: 9,
+        [APPLICATION_STATUS.INTERVIEW]: 9,
+        [APPLICATION_STATUS.OFFER]: 9,
+        [APPLICATION_STATUS.HIRED]: 9,
+        [APPLICATION_STATUS.REJECTED]: 9,
+      },
+    });
+  });
+
+  test("candidate application summary returns zero counts when empty", async () => {
+    const { candidateSession } = await setupApplicationFlow("summaryempty");
+
+    const response = await candidateSession.agent
+      .get("/api/v1/applications/me/summary")
+      .expect(200);
+
+    expect(response.body.data).toEqual({
+      totalApplications: 0,
+      statusCounts: {
+        [APPLICATION_STATUS.APPLIED]: 0,
+        [APPLICATION_STATUS.SCREENING]: 0,
+        [APPLICATION_STATUS.INTERVIEW]: 0,
+        [APPLICATION_STATUS.OFFER]: 0,
+        [APPLICATION_STATUS.HIRED]: 0,
+        [APPLICATION_STATUS.REJECTED]: 0,
+      },
+    });
+  });
+
+  test("company user cannot access candidate application summary", async () => {
+    const { ownerSession } = await setupApplicationFlow("summaryrole");
+
+    const response = await ownerSession.agent
+      .get("/api/v1/applications/me/summary")
+      .expect(403);
+
+    expect(response.body.message).toBe(
+      "You are not allowed to perform this action",
+    );
   });
 });

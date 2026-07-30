@@ -1,6 +1,6 @@
 const getStatusClassName = (status) => {
   const baseClassName =
-    "inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize";
+    "inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize h-fit";
 
   const statusClassNames = {
     applied: "bg-slate-100 text-slate-700",

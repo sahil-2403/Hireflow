@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
+import {
+  Eye,
+  FileText,
+  LoaderCircle,
+  Upload,
+  UserRoundPlus,
+} from "lucide-react";
+
 import { Link } from "react-router-dom";
 
 import {
@@ -8,18 +16,22 @@ import {
   viewCandidateResume,
 } from "../../api/candidate.api";
 
-import getApiError from "../../utils/getApiError";
-import openPdfBlob from "../../utils/openPdfBlob";
+import CandidateResumeInsightsCard from "../../components/ai/CandidateResumeInsightsCard";
+
+import CandidateResumePageSkeleton from "../../components/loading/CandidateResumePageSkeleton";
 
 import Button from "../../components/ui/Button";
-import { Card, CardBody, CardHeader } from "../../components/ui/Card";
-import EmptyState from "../../components/ui/EmptyState";
-import FormField from "../../components/ui/FormField";
-import PageHero from "../../components/ui/PageHero";
-import Alert from "../../components/ui/Alert";
-import Pill from "../../components/ui/Pill";
 
-import CandidateResumeInsightsCard from "../../components/ai/CandidateResumeInsightsCard";
+import { Card, CardBody, CardHeader } from "../../components/ui/Card";
+
+import EmptyState from "../../components/ui/EmptyState";
+import PageHero from "../../components/ui/PageHero";
+import Pill from "../../components/ui/Pill";
+import SectionError from "../../components/ui/SectionError";
+
+import getApiError from "../../utils/getApiError";
+import notify from "../../utils/notify";
+import openPdfBlob from "../../utils/openPdfBlob";
 
 const MAX_RESUME_SIZE = 5 * 1024 * 1024;
 
@@ -37,75 +49,58 @@ const formatFileSize = (bytes) => {
   return `${(sizeInKb / 1024).toFixed(2)} MB`;
 };
 
-const getReadinessItems = (profile, hasResume) => {
-  return [
-    {
-      label: "Candidate profile",
-      isComplete: Boolean(profile),
-      description: "Your profile is required before resume upload.",
-    },
-    {
-      label: "Resume PDF",
-      isComplete: hasResume,
-      description: "Upload a PDF resume to apply to jobs.",
-    },
-    {
-      label: "Skills added",
-      isComplete: Array.isArray(profile?.skills) && profile.skills.length > 0,
-      description: "Skills help recruiters understand your fit.",
-    },
-    {
-      label: "Location added",
-      isComplete: Boolean(profile?.location),
-      description: "Location helps match you with relevant jobs.",
-    },
-  ];
-};
+const ResumeFileManager = ({
+  hasResume,
+  selectedFile,
+  fileError,
+  fileInputRef,
+  isUploading,
+  isOpeningResume,
+  onFileChange,
+  onViewResume,
+  onSubmit,
+}) => {
+  const descriptionId = "resume-file-description";
 
-const getFileInputClassName = () => {
-  return [
-    "block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition",
-    "file:mr-4 file:rounded-xl file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-blue-700",
-    "hover:file:bg-blue-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50",
-  ].join(" ");
-};
+  const errorId = "resume-file-error";
 
-const ResumeStatusPanel = ({ hasResume, onViewResume, isOpeningResume }) => {
   return (
-    <div
-      className={[
-        "rounded-2xl border p-5",
-        hasResume
-          ? "border-emerald-200 bg-emerald-50/70"
-          : "border-amber-200 bg-amber-50/70",
-      ].join(" ")}
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex gap-4">
+    <Card>
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
           <div
             className={[
-              "grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-2xl",
-              hasResume ? "bg-emerald-100" : "bg-amber-100",
+              "grid h-11 w-11",
+              "shrink-0 place-items-center",
+              "rounded-xl",
+
+              hasResume
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-amber-50 text-amber-700",
             ].join(" ")}
           >
-            📄
+            <FileText className="h-5 w-5" aria-hidden="true" />
           </div>
 
-          <div>
-            <Pill variant={hasResume ? "emerald" : "amber"}>
-              {hasResume ? "Uploaded" : "Not uploaded"}
-            </Pill>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold leading-7 text-slate-950">
+                Current resume
+              </h2>
 
-            <h3 className="mt-3 text-lg font-black text-slate-950">
-              {hasResume
-                ? "Resume uploaded successfully"
-                : "No resume uploaded yet"}
-            </h3>
+              <Pill
+                variant={hasResume ? "emerald" : "amber"}
+                size="xs"
+                className="normal-case"
+              >
+                {hasResume ? "Uploaded" : "Not uploaded"}
+              </Pill>
+            </div>
 
-            <p className="mt-2 text-sm leading-6 text-slate-600">
+            <p className="mt-1 text-sm leading-6 text-slate-600">
               {hasResume
-                ? "Your resume is ready and can be used while applying to jobs."
-                : "Upload your resume before applying to jobs from your candidate account."}
+                ? "Your PDF is available for job applications and AI Resume Insights."
+                : "Upload a PDF before applying or generating Resume Insights."}
             </p>
           </div>
         </div>
@@ -114,196 +109,150 @@ const ResumeStatusPanel = ({ hasResume, onViewResume, isOpeningResume }) => {
           <Button
             type="button"
             variant="secondary"
-            onClick={onViewResume}
+            className="w-full shrink-0 sm:w-auto"
             disabled={isOpeningResume}
+            onClick={onViewResume}
           >
+            {isOpeningResume ? (
+              <LoaderCircle
+                className="h-4 w-4 animate-spin"
+                aria-hidden="true"
+              />
+            ) : (
+              <Eye className="h-4 w-4" aria-hidden="true" />
+            )}
+
             {isOpeningResume ? "Opening..." : "View resume"}
           </Button>
         )}
-      </div>
-    </div>
-  );
-};
+      </CardHeader>
 
-const UploadResumeForm = ({
-  hasResume,
-  selectedFile,
-  fileInputRef,
-  onFileChange,
-  onSubmit,
-  isUploading,
-}) => {
-  return (
-    <form onSubmit={onSubmit} className="rounded-2xl bg-slate-50 p-5">
-      <h3 className="text-lg font-black text-slate-950">
-        {hasResume ? "Replace resume" : "Upload resume"}
-      </h3>
+      <CardBody>
+        <form onSubmit={onSubmit} noValidate>
+          <div>
+            <h3 className="text-base font-semibold leading-6 text-slate-950">
+              {hasResume ? "Replace resume" : "Upload resume"}
+            </h3>
 
-      <p className="mt-2 text-sm leading-6 text-slate-600">
-        Select a PDF file from your device. Your old resume will be replaced
-        after successful upload.
-      </p>
+            <p
+              id={descriptionId}
+              className="mt-1 text-sm leading-6 text-slate-600"
+            >
+              Select one PDF file up to 5 MB.
+              {hasResume
+                ? " A successful upload replaces the current file."
+                : ""}
+            </p>
+          </div>
 
-      <div className="mt-5">
-        <FormField
-          label="Resume PDF"
-          htmlFor="resume"
-          hint="PDF only. Maximum size: 5 MB."
-        >
           <input
             ref={fileInputRef}
             id="resume"
             type="file"
-            accept="application/pdf"
+            accept=".pdf,application/pdf"
+            disabled={isUploading}
+            aria-invalid={Boolean(fileError)}
+            aria-describedby={[descriptionId, fileError ? errorId : ""]
+              .filter(Boolean)
+              .join(" ")}
             onChange={onFileChange}
-            className={getFileInputClassName()}
+            className="sr-only"
           />
-        </FormField>
-      </div>
 
-      {selectedFile && (
-        <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
-            Selected file
-          </p>
+          <label
+            htmlFor="resume"
+            aria-disabled={isUploading}
+            className={[
+              "mt-4 flex min-w-0",
+              "cursor-pointer items-center gap-3",
+              "rounded-2xl border border-dashed p-4",
+              "transition-colors",
 
-          <p className="mt-2 font-bold text-slate-950">{selectedFile.name}</p>
+              fileError
+                ? "border-red-300 bg-red-50/40"
+                : "border-blue-200 bg-blue-50/40 hover:bg-blue-50",
 
-          <p className="mt-1 text-sm text-slate-600">
-            {formatFileSize(selectedFile.size)} · PDF
-          </p>
-        </div>
-      )}
+              isUploading ? "pointer-events-none opacity-60" : "",
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <Button as={Link} to="/candidate/dashboard" variant="secondary">
-          Back to dashboard
-        </Button>
-
-        <Button type="submit" disabled={isUploading || !selectedFile}>
-          {isUploading
-            ? "Uploading..."
-            : hasResume
-              ? "Replace resume"
-              : "Upload resume"}
-        </Button>
-      </div>
-    </form>
-  );
-};
-
-const ReadinessCard = ({ readinessItems, readinessPercentage }) => {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">
-              Readiness
-            </p>
-
-            <h2 className="mt-2 text-xl font-black text-slate-950">
-              Application readiness
-            </h2>
-          </div>
-
-          <div
-            className="grid h-20 w-20 place-items-center rounded-full text-sm font-black text-blue-700"
-            style={{
-              background: `conic-gradient(#2563eb ${
-                readinessPercentage * 3.6
-              }deg, #e2e8f0 0deg)`,
-            }}
+              "focus-within:outline-none",
+              "focus-within:ring-2",
+              "focus-within:ring-blue-500",
+            ].join(" ")}
           >
-            <div className="grid h-14 w-14 place-items-center rounded-full bg-white">
-              {readinessPercentage}%
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-blue-700 shadow-sm">
+              <Upload className="h-5 w-5" aria-hidden="true" />
             </div>
-          </div>
-        </div>
-      </CardHeader>
 
-      <CardBody>
-        <div className="grid gap-3">
-          {readinessItems.map((item) => (
-            <div
-              key={item.label}
-              className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+            <div className="min-w-0 flex-1">
+              <p
+                title={selectedFile?.name || undefined}
+                className={[
+                  "truncate text-sm font-medium",
+
+                  selectedFile ? "text-slate-950" : "text-blue-700",
+                ].join(" ")}
+              >
+                {selectedFile ? selectedFile.name : "Choose a PDF resume"}
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                {selectedFile
+                  ? `${formatFileSize(selectedFile.size)} · PDF`
+                  : "PDF only · Maximum 5 MB"}
+              </p>
+            </div>
+          </label>
+
+          {fileError && (
+            <p
+              id={errorId}
+              role="alert"
+              className="mt-2 text-xs leading-5 text-red-600"
             >
-              <div className="flex items-start gap-3">
-                <span
-                  className={[
-                    "grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-black",
-                    item.isComplete
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-slate-200 text-slate-500",
-                  ].join(" ")}
-                >
-                  {item.isComplete ? "✓" : "!"}
-                </span>
+              {fileError}
+            </p>
+          )}
 
-                <div>
-                  <p className="text-sm font-black text-slate-950">
-                    {item.label}
-                  </p>
+          <div className="mt-5 flex justify-end">
+            <Button
+              type="submit"
+              disabled={isUploading || !selectedFile}
+              className="w-full sm:w-auto"
+            >
+              {isUploading ? (
+                <LoaderCircle
+                  className="h-4 w-4 animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Upload className="h-4 w-4" aria-hidden="true" />
+              )}
 
-                  <p className="mt-1 text-xs leading-5 text-slate-600">
-                    {item.description}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              {isUploading
+                ? "Uploading..."
+                : hasResume
+                  ? "Replace resume"
+                  : "Upload resume"}
+            </Button>
+          </div>
+        </form>
       </CardBody>
     </Card>
   );
 };
 
-const ResumeTipsCard = () => {
+const MissingProfileState = () => {
   return (
-    <Card>
-      <CardHeader>
-        <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
-          Resume tips
-        </p>
-
-        <h2 className="mt-2 text-xl font-black text-slate-950">
-          Keep it recruiter-friendly
-        </h2>
-      </CardHeader>
-
-      <CardBody>
-        <div className="grid gap-3">
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-bold text-slate-900">Use a clear file</p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              Upload a clean PDF resume with readable formatting.
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-bold text-slate-900">
-              Add project impact
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              Mention what you built, the stack used, and the result.
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-bold text-slate-900">
-              Match job keywords
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              Keep important skills visible and easy to scan.
-            </p>
-          </div>
-        </div>
-      </CardBody>
-    </Card>
+    <EmptyState
+      icon={UserRoundPlus}
+      title="Create your candidate profile"
+      description="Your candidate profile is required before you can upload and manage a resume."
+      action={
+        <Button as={Link} to="/candidate/profile">
+          Create profile
+        </Button>
+      }
+    />
   );
 };
 
@@ -314,21 +263,27 @@ const CandidateResumePage = () => {
 
   const [profile, setProfile] = useState(null);
 
+  const [pageErrorMessage, setPageErrorMessage] = useState("");
+
   const [selectedFile, setSelectedFile] = useState(null);
 
-  const [apiError, setApiError] = useState("");
-
-  const [successMessage, setSuccessMessage] = useState("");
+  const [fileError, setFileError] = useState("");
 
   const [isUploading, setIsUploading] = useState(false);
 
   const [isOpeningResume, setIsOpeningResume] = useState(false);
+
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     let shouldIgnore = false;
 
     const loadProfile = async () => {
       try {
+        setPageStatus("loading");
+
+        setPageErrorMessage("");
+
         const result = await getMyCandidateProfile();
 
         if (shouldIgnore) {
@@ -345,11 +300,15 @@ const CandidateResumePage = () => {
         const normalizedError = getApiError(error);
 
         if (normalizedError.statusCode === 404) {
+          setProfile(null);
+
           setPageStatus("missing-profile");
+
           return;
         }
 
-        setApiError(normalizedError.message);
+        setPageErrorMessage(normalizedError.message);
+
         setPageStatus("error");
       }
     };
@@ -359,13 +318,19 @@ const CandidateResumePage = () => {
     return () => {
       shouldIgnore = true;
     };
-  }, []);
+  }, [loadAttempt]);
+
+  const handleRetryLoad = () => {
+    setPageErrorMessage("");
+    setPageStatus("loading");
+
+    setLoadAttempt((currentAttempt) => currentAttempt + 1);
+  };
 
   const handleFileChange = (event) => {
-    const file = event.target.files?.[0];
+    const file = event.target.files?.[0] || null;
 
-    setApiError("");
-    setSuccessMessage("");
+    setFileError("");
 
     if (!file) {
       setSelectedFile(null);
@@ -374,13 +339,21 @@ const CandidateResumePage = () => {
 
     if (file.type !== "application/pdf") {
       setSelectedFile(null);
-      setApiError("Only PDF resume files are allowed.");
+
+      setFileError("Only PDF resume files are allowed.");
+
+      event.target.value = "";
+
       return;
     }
 
     if (file.size > MAX_RESUME_SIZE) {
       setSelectedFile(null);
-      setApiError("Resume file must be 5 MB or smaller.");
+
+      setFileError("Resume file must be 5 MB or smaller.");
+
+      event.target.value = "";
+
       return;
     }
 
@@ -390,11 +363,11 @@ const CandidateResumePage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    setApiError("");
-    setSuccessMessage("");
+    setFileError("");
 
     if (!selectedFile) {
-      setApiError("Please select a PDF resume before uploading.");
+      setFileError("Select a PDF resume before uploading.");
+
       return;
     }
 
@@ -405,15 +378,18 @@ const CandidateResumePage = () => {
 
       setProfile(result.data);
       setSelectedFile(null);
-      setSuccessMessage(result.message);
 
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+
+      notify.success(result.message || "Resume uploaded successfully.");
     } catch (error) {
       const normalizedError = getApiError(error);
 
-      setApiError(normalizedError.message);
+      notify.error("Could not upload resume", {
+        description: normalizedError.message,
+      });
     } finally {
       setIsUploading(false);
     }
@@ -421,7 +397,6 @@ const CandidateResumePage = () => {
 
   const handleViewResume = async () => {
     try {
-      setApiError("");
       setIsOpeningResume(true);
 
       const resumeBlob = await viewCandidateResume();
@@ -430,129 +405,63 @@ const CandidateResumePage = () => {
     } catch (error) {
       const normalizedError = getApiError(error);
 
-      setApiError(normalizedError.message);
+      notify.error("Could not open resume", {
+        description: normalizedError.message,
+      });
     } finally {
       setIsOpeningResume(false);
     }
   };
 
-  if (pageStatus === "loading") {
-    return (
-      <Card>
-        <CardBody>
-          <p className="text-sm text-slate-600">Loading resume details...</p>
-        </CardBody>
-      </Card>
-    );
-  }
+  const isLoading = pageStatus === "loading";
 
-  if (pageStatus === "missing-profile") {
-    return (
-      <EmptyState
-        icon="👤"
-        title="Create your candidate profile first"
-        description="You need to create your candidate profile before uploading a resume."
-        action={
-          <Button as={Link} to="/candidate/profile">
-            Create profile
-          </Button>
-        }
-      />
-    );
-  }
+  const isMissingProfile = pageStatus === "missing-profile";
 
-  if (pageStatus === "error") {
-    return (
-      <EmptyState
-        icon="⚠️"
-        title="Could not load resume page"
-        description={apiError}
-        action={
-          <Button as={Link} to="/candidate/dashboard">
-            Back to dashboard
-          </Button>
-        }
-      />
-    );
-  }
+  const hasLoadError = pageStatus === "error";
+
+  const isReady = pageStatus === "ready";
 
   const hasResume = Boolean(profile?.resumeUrl);
 
-  const readinessItems = getReadinessItems(profile, hasResume);
-
-  const completedReadinessItems = readinessItems.filter(
-    (item) => item.isComplete,
-  ).length;
-
-  const readinessPercentage = Math.round(
-    (completedReadinessItems / readinessItems.length) * 100,
-  );
-
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <PageHero
-        eyebrow="Candidate resume"
         title="Manage your resume"
-        description="Upload a PDF resume and keep it ready for job applications."
-        meta={
-          <Pill variant={hasResume ? "emerald" : "amber"}>
-            {hasResume ? "Uploaded" : "Not uploaded"}
-          </Pill>
-        }
+        description="Upload the PDF used for applications and generate structured AI Resume Insights."
       />
 
-      {apiError && <Alert variant="error">{apiError}</Alert>}
+      {isLoading && <CandidateResumePageSkeleton />}
 
-      {successMessage && <Alert variant="success">{successMessage}</Alert>}
+      {isMissingProfile && <MissingProfileState />}
 
-      <CandidateResumeInsightsCard
-        hasResume={hasResume}
-        resumeUrl={profile?.resumeUrl}
-      />
+      {hasLoadError && (
+        <SectionError
+          title="Could not load resume details"
+          message={pageErrorMessage}
+          onRetry={handleRetryLoad}
+        />
+      )}
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
-          <CardHeader>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
-              Resume file
-            </p>
-
-            <h2 className="mt-2 text-xl font-black text-slate-950">
-              Current resume status
-            </h2>
-
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              HireFlow currently accepts PDF resumes up to 5 MB.
-            </p>
-          </CardHeader>
-
-          <CardBody className="grid gap-5">
-            <ResumeStatusPanel
-              hasResume={hasResume}
-              onViewResume={handleViewResume}
-              isOpeningResume={isOpeningResume}
-            />
-
-            <UploadResumeForm
-              hasResume={hasResume}
-              selectedFile={selectedFile}
-              fileInputRef={fileInputRef}
-              onFileChange={handleFileChange}
-              onSubmit={handleSubmit}
-              isUploading={isUploading}
-            />
-          </CardBody>
-        </Card>
-
-        <aside className="grid gap-6">
-          <ReadinessCard
-            readinessItems={readinessItems}
-            readinessPercentage={readinessPercentage}
+      {isReady && (
+        <>
+          <ResumeFileManager
+            hasResume={hasResume}
+            selectedFile={selectedFile}
+            fileError={fileError}
+            fileInputRef={fileInputRef}
+            isUploading={isUploading}
+            isOpeningResume={isOpeningResume}
+            onFileChange={handleFileChange}
+            onViewResume={handleViewResume}
+            onSubmit={handleSubmit}
           />
 
-          <ResumeTipsCard />
-        </aside>
-      </div>
+          <CandidateResumeInsightsCard
+            hasResume={hasResume}
+            resumeUrl={profile?.resumeUrl}
+          />
+        </>
+      )}
     </div>
   );
 };

@@ -1,4 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+import { createPortal } from "react-dom";
+
+import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  CircleHelp,
+  FileSearch,
+  LoaderCircle,
+  TriangleAlert,
+} from "lucide-react";
 
 import { generateApplicationResumeReview } from "../../api/ai.api";
 
@@ -11,40 +23,76 @@ import Alert from "../ui/Alert";
 import Button from "../ui/Button";
 import Pill from "../ui/Pill";
 
-import AiBadge from "./AiBadge";
 import AiCard from "./AiCard";
 import AiUsageStatus from "./AiUsageStatus";
 
-const ReviewList = ({
-  title,
-  items,
-  emptyMessage,
-  marker = "•",
-  markerClassName = "bg-violet-100 text-violet-700",
-}) => {
-  const normalizedItems = Array.isArray(items) ? items.filter(Boolean) : [];
+const normalizeItems = (items) => {
+  return Array.isArray(items) ? items.filter(Boolean) : [];
+};
+
+const ReviewList = ({ title, items, emptyMessage, variant = "default" }) => {
+  const normalizedItems = normalizeItems(items);
+
+  const variants = {
+    default: {
+      icon: Check,
+
+      className: "bg-violet-100 text-violet-700",
+    },
+
+    strength: {
+      icon: Check,
+
+      className: "bg-emerald-100 text-emerald-700",
+    },
+
+    warning: {
+      icon: TriangleAlert,
+
+      className: "bg-amber-100 text-amber-700",
+    },
+
+    risk: {
+      icon: TriangleAlert,
+
+      className: "bg-red-100 text-red-700",
+    },
+
+    focus: {
+      icon: CircleHelp,
+
+      className: "bg-blue-100 text-blue-700",
+    },
+  };
+
+  const config = variants[variant] || variants.default;
+
+  const MarkerIcon = config.icon;
 
   return (
-    <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-      <p className="text-xs font-black uppercase tracking-wider text-slate-600">
+    <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <h3 className="text-sm font-semibold leading-6 text-slate-950">
         {title}
-      </p>
+      </h3>
 
       {normalizedItems.length > 0 ? (
-        <ul className="mt-3 grid gap-3">
+        <ul className="mt-3 grid gap-2.5">
           {normalizedItems.map((item, index) => (
             <li
               key={`${title}-${index}`}
-              className="flex gap-3 text-sm leading-6 text-slate-700"
+              className="flex gap-2.5 text-sm leading-6 text-slate-700"
             >
               <span
                 className={[
-                  "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center",
-                  "rounded-full text-xs font-black",
-                  markerClassName,
+                  "mt-0.5 grid h-5 w-5",
+                  "shrink-0",
+                  "place-items-center",
+                  "rounded-full",
+
+                  config.className,
                 ].join(" ")}
               >
-                {marker}
+                <MarkerIcon className="h-3 w-3" aria-hidden="true" />
               </span>
 
               <span>{item}</span>
@@ -52,9 +100,9 @@ const ReviewList = ({
           ))}
         </ul>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">{emptyMessage}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-500">{emptyMessage}</p>
       )}
-    </div>
+    </section>
   );
 };
 
@@ -64,20 +112,20 @@ const MatchedEvidenceList = ({ evidence }) => {
     : [];
 
   return (
-    <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-      <p className="text-xs font-black uppercase tracking-wider text-emerald-700">
+    <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <h3 className="text-sm font-semibold leading-6 text-slate-950">
         Matched resume evidence
-      </p>
+      </h3>
 
       {normalizedEvidence.length > 0 ? (
         <div className="mt-3 grid gap-3">
           {normalizedEvidence.map((item, index) => (
-            <div
+            <article
               key={`${item.requirement || "evidence"}-${index}`}
-              className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-3"
+              className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3"
             >
               {item.requirement && (
-                <p className="text-xs font-black text-emerald-800">
+                <p className="text-xs font-medium leading-5 text-emerald-800">
                   {item.requirement}
                 </p>
               )}
@@ -85,13 +133,41 @@ const MatchedEvidenceList = ({ evidence }) => {
               <p className="mt-1 text-sm leading-6 text-slate-700">
                 {item.evidence}
               </p>
-            </div>
+            </article>
           ))}
         </div>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">
+        <p className="mt-2 text-sm leading-6 text-slate-500">
           No specific resume evidence was returned.
         </p>
+      )}
+    </section>
+  );
+};
+
+const ResumeReviewMetric = ({
+  label,
+  value,
+  valueClassName = "text-slate-950",
+  helper,
+}) => {
+  return (
+    <div className="min-w-0 bg-white px-4 py-3">
+      <p className="text-xs font-medium leading-5 text-slate-500">{label}</p>
+
+      <p
+        className={[
+          "mt-1 text-xl",
+          "font-semibold",
+          "leading-7",
+          valueClassName,
+        ].join(" ")}
+      >
+        {value}
+      </p>
+
+      {helper && (
+        <p className="mt-0.5 text-xs leading-5 text-slate-500">{helper}</p>
       )}
     </div>
   );
@@ -100,37 +176,41 @@ const MatchedEvidenceList = ({ evidence }) => {
 const CompanyApplicationResumeReviewCard = ({
   applicationId,
   availability,
+  isResultVisible = false,
+  resultsContainerId,
+  onResultVisibilityChange,
 }) => {
-  const [review, setReview] = useState(null);
+  const [generatedReview, setGeneratedReview] = useState(null);
 
-  const [usage, setUsage] = useState(null);
+  const [generatedUsage, setGeneratedUsage] = useState(null);
+
+  const review = generatedReview ?? availability?.review ?? null;
+
+  const usage = generatedUsage ?? availability?.usage ?? null;
 
   const [runtimeBlockReason, setRuntimeBlockReason] = useState(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const [isResultOpen, setIsResultOpen] = useState(false);
-
   const [errorMessage, setErrorMessage] = useState("");
 
   const [successMessage, setSuccessMessage] = useState("");
 
-  useEffect(() => {
-    setReview(availability?.review || null);
+  const blockReason = runtimeBlockReason || availability?.blockReason || null;
 
-    setUsage(availability?.usage || null);
+  const missingResume = blockReason === "missing_resume";
 
-    setRuntimeBlockReason(null);
-    setErrorMessage("");
-    setSuccessMessage("");
+  const incompleteApplication = blockReason === "incomplete_application_data";
 
-    /*
-     * Cached results begin collapsed.
-     * Newly generated results open
-     * automatically.
-     */
-    setIsResultOpen(false);
-  }, [applicationId, availability]);
+  const dailyLimitReached =
+    blockReason === "daily_limit" ||
+    Boolean(usage && usage.remaining <= 0 && !review);
+
+  const canGenerate =
+    availability?.canGenerate === true &&
+    !review &&
+    !blockReason &&
+    !isGenerating;
 
   const handleGenerateReview = async () => {
     const isAllowed =
@@ -139,10 +219,6 @@ const CompanyApplicationResumeReviewCard = ({
       !runtimeBlockReason &&
       !isGenerating;
 
-    /*
-     * Guard against programmatic calls
-     * when the UI is not eligible.
-     */
     if (!isAllowed) {
       return;
     }
@@ -154,15 +230,13 @@ const CompanyApplicationResumeReviewCard = ({
 
       const result = await generateApplicationResumeReview(applicationId);
 
-      setReview(result.data.review);
-
-      setUsage(result.data.usage);
-
+      setGeneratedReview(result.data.review);
+      setGeneratedUsage(result.data.usage);
       setRuntimeBlockReason(null);
 
       setSuccessMessage(result.message);
 
-      setIsResultOpen(true);
+      onResultVisibilityChange?.(true);
     } catch (error) {
       const normalizedError = getApiError(error);
 
@@ -183,29 +257,13 @@ const CompanyApplicationResumeReviewCard = ({
     }
   };
 
-  const blockReason = runtimeBlockReason || availability?.blockReason || null;
-
-  const missingResume = blockReason === "missing_resume";
-
-  const incompleteApplication = blockReason === "incomplete_application_data";
-
-  const dailyLimitReached =
-    blockReason === "daily_limit" ||
-    Boolean(usage && usage.remaining <= 0 && !review);
-
-  const canGenerate =
-    availability?.canGenerate === true &&
-    !review &&
-    !blockReason &&
-    !isGenerating;
-
   const statusLabel = (() => {
     if (review) {
-      return "Ready";
+      return "Review available";
     }
 
     if (missingResume) {
-      return "Resume unavailable";
+      return "Resume required";
     }
 
     if (incompleteApplication) {
@@ -217,165 +275,74 @@ const CompanyApplicationResumeReviewCard = ({
     }
 
     if (canGenerate) {
-      return "On demand";
+      return "Ready";
     }
 
     return "Unavailable";
   })();
 
+  const unavailableMessage = (() => {
+    if (missingResume) {
+      return "A submitted resume is required before this review can be generated.";
+    }
+
+    if (incompleteApplication) {
+      return "Candidate or job information required for this review is incomplete.";
+    }
+
+    if (dailyLimitReached) {
+      return "The company account has used all Resume Match Review requests available today.";
+    }
+
+    return null;
+  })();
+
+  const resultsTarget =
+    typeof document !== "undefined" && resultsContainerId
+      ? document.getElementById(resultsContainerId)
+      : null;
+
   return (
-    <AiCard>
-      <div className="border-b border-violet-200/80 bg-white/10 p-5">
-        <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-start">
-          <div>
-            <AiBadge>AI Resume Match Review</AiBadge>
+    <>
+      <AiCard className="h-full">
+        <div className="flex h-full min-w-0 flex-col p-4 sm:p-5">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-700">
+              <FileSearch className="h-5 w-5" aria-hidden="true" />
+            </div>
 
-            <h2 className="mt-3 text-xl font-black text-slate-950">
-              Review the submitted resume against this job
-            </h2>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-semibold leading-6 text-slate-950">
+                AI Resume Match Review
+              </h2>
 
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700">
-              AI summarizes resume evidence, strengths, gaps, risks, and
-              interview focus areas. The deterministic match score remains the
-              structured comparison.
-            </p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Review resume evidence, strengths, gaps, risks and interview
+                focus areas.
+              </p>
+            </div>
           </div>
 
-          <div className="rounded-xl border border-white/80 bg-white/70 px-4 py-3 text-center shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-              Status
-            </p>
+          {errorMessage && (
+            <Alert variant="error" className="mt-4">
+              {errorMessage}
+            </Alert>
+          )}
 
-            <p className="mt-1 text-sm font-black text-violet-700">
-              {statusLabel}
-            </p>
-          </div>
-        </div>
-      </div>
+          {successMessage && (
+            <Alert variant="success" className="mt-4">
+              {successMessage}
+            </Alert>
+          )}
 
-      <div className="grid gap-4 p-5">
-        {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
+          <div className="mt-4 flex flex-1 flex-col justify-between gap-4">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill variant="violet" size="xs" className="normal-case">
+                  {statusLabel}
+                </Pill>
 
-        {successMessage && <Alert variant="success">{successMessage}</Alert>}
-
-        {!review && missingResume && (
-          <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              Submitted resume unavailable
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              This application does not have a submitted resume, so an AI Resume
-              Match Review cannot be generated.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Resume required
-            </Button>
-          </div>
-        )}
-
-        {!review && incompleteApplication && (
-          <div className="rounded-2xl border border-red-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              Application data incomplete
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              The candidate or job record is unavailable. The review cannot be
-              generated safely.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Review unavailable
-            </Button>
-          </div>
-        )}
-
-        {!review && dailyLimitReached && (
-          <div className="rounded-2xl border border-amber-200 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              Daily AI limit reached
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Your company account has used all AI Resume Match Reviews
-              available for today.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled
-            >
-              Daily AI limit reached
-            </Button>
-          </div>
-        )}
-
-        {!review && canGenerate && (
-          <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-            <p className="text-sm font-black text-slate-950">
-              Generate a resume-based review
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              The submitted resume will be analyzed against this job. This
-              assists review and does not make hiring or rejection decisions.
-            </p>
-
-            <Button
-              type="button"
-              variant="ai"
-              fullWidth
-              className="mt-4"
-              disabled={!canGenerate}
-              onClick={handleGenerateReview}
-            >
-              {isGenerating
-                ? "Generating AI Resume Match Review..."
-                : "Generate AI Resume Match Review"}
-            </Button>
-          </div>
-        )}
-
-        {review && (
-          <>
-            <button
-              type="button"
-              aria-expanded={isResultOpen}
-              aria-controls="company-application-resume-review-result"
-              className="w-full rounded-2xl border border-white/80 bg-white/80 p-4 text-left transition hover:bg-white"
-              onClick={() => setIsResultOpen((currentValue) => !currentValue)}
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-violet-700">
-                    Review available
-                  </p>
-
-                  <p className="mt-1 text-sm font-bold text-slate-700">
-                    {isResultOpen
-                      ? "Hide detailed review"
-                      : "Show detailed review"}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
+                {review && (
                   <MatchScoreBadge
                     size="sm"
                     match={{
@@ -384,159 +351,207 @@ const CompanyApplicationResumeReviewCard = ({
                       matchLabel: review.alignmentLevel,
                     }}
                   />
-
-                  {Number(review.resumeBoost) > 0 && (
-                    <Pill variant="violet">
-                      +{review.resumeBoost} resume boost
-                    </Pill>
-                  )}
-
-                  <span className="text-lg font-black text-violet-700">
-                    {isResultOpen ? "−" : "+"}
-                  </span>
-                </div>
+                )}
               </div>
-            </button>
 
-            <div
-              id="company-application-resume-review-result"
-              className={[
-                "grid overflow-hidden",
-                "transition-[grid-template-rows,opacity]",
-                "duration-300 ease-in-out",
-
-                isResultOpen
-                  ? "grid-rows-[1fr] opacity-100"
-                  : "grid-rows-[0fr] opacity-0",
-              ].join(" ")}
-            >
-              <div className="min-h-0 overflow-hidden">
-                <div className="grid gap-4 pt-1">
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                        Profile score
-                      </p>
-
-                      <p className="mt-1 text-2xl font-black text-slate-950">
-                        {review.profileScore}%
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                        Resume-enhanced score
-                      </p>
-
-                      <p className="mt-1 text-2xl font-black text-violet-700">
-                        {review.enhancedMatchScore}%
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                        Confidence
-                      </p>
-
-                      <p className="mt-1 text-2xl font-black text-slate-950">
-                        {review.confidenceScore}%
-                      </p>
-
-                      <p className="mt-1 text-xs font-bold text-slate-500">
-                        {review.confidenceLevel}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-                    <p className="text-xs font-black uppercase tracking-wider text-violet-700">
-                      AI summary
-                    </p>
-
-                    <p className="mt-2 text-sm leading-6 text-slate-700">
-                      {review.summary}
-                    </p>
-                  </div>
-
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    <SkillMatchList
-                      title="Matched skills"
-                      skills={review.matchedSkills || []}
-                      emptyMessage="No matched skills were returned."
-                      variant="matched"
-                    />
-
-                    <SkillMatchList
-                      title="Missing skills"
-                      skills={review.missingSkills || []}
-                      emptyMessage="No missing skills were returned."
-                      variant="missing"
-                    />
-                  </div>
-
-                  <MatchedEvidenceList evidence={review.matchedEvidence} />
-
-                  <ReviewList
-                    title="Resume strengths"
-                    items={review.resumeStrengths}
-                    emptyMessage="No specific resume strengths were returned."
-                    marker="✓"
-                    markerClassName="bg-emerald-100 text-emerald-700"
-                  />
-
-                  <ReviewList
-                    title="Missing or weak areas"
-                    items={review.missingOrWeakAreas}
-                    emptyMessage="No missing or weak areas were identified."
-                    marker="!"
-                    markerClassName="bg-amber-100 text-amber-700"
-                  />
-
-                  <ReviewList
-                    title="Interview focus"
-                    items={review.interviewFocus}
-                    emptyMessage="No interview focus areas were returned."
-                    marker="?"
-                    markerClassName="bg-blue-100 text-blue-700"
-                  />
-
-                  <ReviewList
-                    title="Risk notes"
-                    items={review.riskNotes}
-                    emptyMessage="No specific risk notes were returned."
-                    marker="!"
-                    markerClassName="bg-red-100 text-red-700"
-                  />
-
-                  <ReviewList
-                    title="Resume evidence used"
-                    items={review.resumeEvidence}
-                    emptyMessage="No additional resume evidence was returned."
-                    marker="✦"
-                    markerClassName="bg-indigo-100 text-indigo-700"
-                  />
-
-                  <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-                    <p className="text-xs font-black uppercase tracking-wider text-slate-600">
-                      Review guidance
-                    </p>
-
-                    <p className="mt-2 text-xs leading-5 text-slate-600">
-                      Use this review as supporting evidence alongside
-                      interviews, work samples, references, and human judgment.
-                      Do not treat it as an automatic hiring or rejection
-                      decision.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              {unavailableMessage && (
+                <p className="mt-3 text-xs leading-5 text-slate-500">
+                  {unavailableMessage}
+                </p>
+              )}
             </div>
-          </>
-        )}
 
-        {usage && <AiUsageStatus usage={usage} />}
-      </div>
-    </AiCard>
+            <div className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-end min-[420px]:justify-between">
+              <div className="min-w-0">
+                {usage ? (
+                  <AiUsageStatus usage={usage} />
+                ) : (
+                  <p className="text-xs leading-5 text-slate-500">
+                    Human review remains required.
+                  </p>
+                )}
+              </div>
+
+              {review ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  aria-expanded={isResultVisible}
+                  onClick={() => onResultVisibilityChange?.(!isResultVisible)}
+                  className="shrink-0"
+                >
+                  {isResultVisible ? "Hide review" : "View review"}
+
+                  {isResultVisible ? (
+                    <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ai"
+                  size="sm"
+                  disabled={!canGenerate}
+                  onClick={handleGenerateReview}
+                  className="shrink-0"
+                >
+                  {isGenerating ? (
+                    <>
+                      <LoaderCircle
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                      Generating
+                    </>
+                  ) : dailyLimitReached ? (
+                    "Limit reached"
+                  ) : missingResume ? (
+                    "Resume required"
+                  ) : incompleteApplication ? (
+                    "Unavailable"
+                  ) : (
+                    "Generate review"
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </AiCard>
+
+      {review &&
+        isResultVisible &&
+        resultsTarget &&
+        createPortal(
+          <section className="overflow-hidden rounded-2xl border border-violet-200 bg-white">
+            <header className="flex flex-col gap-3 border-b border-violet-100 bg-violet-50/40 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div>
+                <p className="text-xs font-medium leading-5 text-violet-700">
+                  AI Resume Match Review
+                </p>
+
+                <h2 className="text-xl font-semibold leading-7 text-slate-950">
+                  Resume review results
+                </h2>
+
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Supporting resume evidence for human review.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => onResultVisibilityChange?.(false)}
+              >
+                Hide review
+              </Button>
+            </header>
+
+            <div className="grid gap-4 p-4 sm:p-5">
+              <div className="grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-3">
+                <ResumeReviewMetric
+                  label="Profile score"
+                  value={`${review.profileScore}%`}
+                />
+
+                <ResumeReviewMetric
+                  label="Resume-enhanced score"
+                  value={`${review.enhancedMatchScore}%`}
+                  valueClassName="text-violet-700"
+                  helper={
+                    Number(review.resumeBoost) > 0
+                      ? `+${review.resumeBoost} resume boost`
+                      : null
+                  }
+                />
+
+                <ResumeReviewMetric
+                  label="Confidence"
+                  value={`${review.confidenceScore}%`}
+                  helper={review.confidenceLevel}
+                />
+              </div>
+
+              <section className="rounded-xl border border-violet-100 bg-violet-50/30 p-4">
+                <p className="text-xs font-medium leading-5 text-violet-700">
+                  Review summary
+                </p>
+
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  {review.summary || "No review summary was returned."}
+                </p>
+              </section>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <SkillMatchList
+                  title="Matched skills"
+                  skills={review.matchedSkills || []}
+                  emptyMessage="No matched skills were returned."
+                  variant="matched"
+                />
+
+                <SkillMatchList
+                  title="Missing skills"
+                  skills={review.missingSkills || []}
+                  emptyMessage="No missing skills were returned."
+                  variant="missing"
+                />
+              </div>
+
+              <MatchedEvidenceList evidence={review.matchedEvidence} />
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <ReviewList
+                  title="Resume strengths"
+                  items={review.resumeStrengths}
+                  emptyMessage="No specific resume strengths were returned."
+                  variant="strength"
+                />
+
+                <ReviewList
+                  title="Missing or weak areas"
+                  items={review.missingOrWeakAreas}
+                  emptyMessage="No missing or weak areas were identified."
+                  variant="warning"
+                />
+
+                <ReviewList
+                  title="Interview focus"
+                  items={review.interviewFocus}
+                  emptyMessage="No interview focus areas were returned."
+                  variant="focus"
+                />
+
+                <ReviewList
+                  title="Risk notes"
+                  items={review.riskNotes}
+                  emptyMessage="No specific risk notes were returned."
+                  variant="risk"
+                />
+              </div>
+
+              <ReviewList
+                title="Resume evidence used"
+                items={review.resumeEvidence}
+                emptyMessage="No additional resume evidence was returned."
+              />
+
+              <p className="text-xs leading-5 text-slate-500">
+                Use this review as supporting evidence alongside interviews,
+                work samples, references and human judgment. It must not be
+                treated as an automatic hiring or rejection decision.
+              </p>
+            </div>
+          </section>,
+
+          resultsTarget,
+        )}
+    </>
   );
 };
 

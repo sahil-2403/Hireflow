@@ -1,21 +1,58 @@
 import { useEffect, useState } from "react";
 
 import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  FileText,
+  LoaderCircle,
+  Search,
+  Sparkles,
+  Tags,
+  TrendingUp,
+  TriangleAlert,
+  UserRound,
+} from "lucide-react";
+
+import {
   generateCandidateResumeInsights,
   getCandidateResumeInsights,
 } from "../../api/ai.api";
 
 import getApiError from "../../utils/getApiError";
+import notify from "../../utils/notify";
 
-import Alert from "../ui/Alert";
 import Button from "../ui/Button";
-import Pill from "../ui/Pill";
+import SectionError from "../ui/SectionError";
+import Skeleton from "../ui/Skeleton";
 
-import AiBadge from "./AiBadge";
-import AiCard from "./AiCard";
-import AiUsageStatus from "./AiUsageStatus";
+const INSIGHT_TONES = {
+  emerald: {
+    icon: "bg-emerald-50 text-emerald-700",
 
-const formatDate = (value) => {
+    dot: "bg-emerald-500",
+  },
+
+  blue: {
+    icon: "bg-blue-50 text-blue-700",
+
+    dot: "bg-blue-500",
+  },
+
+  amber: {
+    icon: "bg-amber-50 text-amber-700",
+
+    dot: "bg-amber-500",
+  },
+
+  violet: {
+    icon: "bg-violet-50 text-violet-700",
+
+    dot: "bg-violet-500",
+  },
+};
+
+const formatDateTime = (value) => {
   if (!value) {
     return null;
   }
@@ -32,92 +69,156 @@ const formatDate = (value) => {
   });
 };
 
+const normalizeItems = (items) => {
+  return Array.isArray(items) ? items.filter(Boolean) : [];
+};
+
 const getScoreClasses = (score) => {
   if (score >= 80) {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    return ["border-emerald-200", "bg-emerald-50", "text-emerald-700"].join(
+      " ",
+    );
   }
 
   if (score >= 60) {
-    return "border-blue-200 bg-blue-50 text-blue-700";
+    return ["border-blue-200", "bg-blue-50", "text-blue-700"].join(" ");
   }
 
   if (score >= 40) {
-    return "border-amber-200 bg-amber-50 text-amber-700";
+    return ["border-amber-200", "bg-amber-50", "text-amber-700"].join(" ");
   }
 
-  return "border-red-200 bg-red-50 text-red-700";
+  return ["border-red-200", "bg-red-50", "text-red-700"].join(" ");
 };
 
-const InsightList = ({
-  title,
-  items,
-  emptyMessage,
-  marker = "✓",
-  markerClassName = "bg-violet-100 text-violet-700",
-}) => {
-  const values = Array.isArray(items) ? items : [];
+const UsageStatus = ({ usage }) => {
+  if (!usage) {
+    return null;
+  }
+
+  const resetAt = formatDateTime(usage.resetAt);
 
   return (
-    <div className="rounded-2xl border border-white/80 bg-white/75 p-4">
-      <h4 className="text-sm font-black text-slate-950">{title}</h4>
+    <p className="text-xs leading-5 text-slate-500">
+      <span className="font-medium text-violet-700">
+        {usage.remaining} of {usage.limit} AI uses remaining today
+      </span>
 
-      {values.length === 0 ? (
-        <p className="mt-2 text-sm leading-6 text-slate-500">{emptyMessage}</p>
-      ) : (
-        <div className="mt-3 grid gap-2.5">
-          {values.map((item, index) => (
-            <div key={`${item}-${index}`} className="flex items-start gap-2.5">
-              <span
-                className={[
-                  "mt-0.5 grid h-5 w-5 shrink-0",
-                  "place-items-center rounded-full text-[10px] font-black",
-                  markerClassName,
-                ].join(" ")}
-              >
-                {marker}
-              </span>
+      {resetAt && (
+        <>
+          <span className="mx-1.5" aria-hidden="true">
+            ·
+          </span>
 
-              <p className="text-sm leading-6 text-slate-700">{item}</p>
-            </div>
-          ))}
-        </div>
+          <span>Resets {resetAt}</span>
+        </>
       )}
-    </div>
+    </p>
   );
 };
 
-const SkillCloud = ({ skills }) => {
-  const values = Array.isArray(skills) ? skills : [];
+const SkillChips = ({
+  skills,
+  emptyMessage = "No structured skills were extracted.",
+  variant = "blue",
+}) => {
+  const values = normalizeItems(skills);
 
   if (values.length === 0) {
-    return (
-      <p className="mt-3 text-sm text-slate-500">
-        No structured skills were extracted.
-      </p>
-    );
+    return <p className="mt-3 text-sm text-slate-500">{emptyMessage}</p>;
   }
+
+  const variantClasses =
+    variant === "violet"
+      ? ["border-violet-100", "bg-violet-50", "text-violet-700"].join(" ")
+      : ["border-blue-100", "bg-blue-50", "text-blue-700"].join(" ");
 
   return (
     <div className="mt-3 flex flex-wrap gap-2">
       {values.map((skill) => (
-        <Pill key={skill} variant="blue">
+        <span
+          key={skill}
+          className={[
+            "inline-flex items-center",
+            "rounded-full border",
+            "px-2.5 py-1",
+            "text-xs font-medium",
+            variantClasses,
+          ].join(" ")}
+        >
           {skill}
-        </Pill>
+        </span>
       ))}
     </div>
   );
 };
 
-const RecommendedProfileUpdates = ({ updates }) => {
+const InsightSection = ({
+  icon: Icon,
+  title,
+  items,
+  emptyMessage,
+  tone = "violet",
+}) => {
+  const values = normalizeItems(items);
+
+  const toneClasses = INSIGHT_TONES[tone] || INSIGHT_TONES.violet;
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="flex items-center gap-2.5">
+        <div
+          className={[
+            "grid h-8 w-8",
+            "shrink-0 place-items-center",
+            "rounded-lg",
+            toneClasses.icon,
+          ].join(" ")}
+        >
+          <Icon className="h-4 w-4" aria-hidden="true" />
+        </div>
+
+        <h4 className="text-sm font-semibold text-slate-950">{title}</h4>
+      </div>
+
+      {values.length > 0 ? (
+        <ul className="mt-4 grid gap-2.5">
+          {values.map((item, index) => (
+            <li key={`${title}-${index}`} className="flex items-start gap-2.5">
+              <span
+                aria-hidden="true"
+                className={[
+                  "mt-2 h-1.5 w-1.5",
+                  "shrink-0 rounded-full",
+                  toneClasses.dot,
+                ].join(" ")}
+              />
+
+              <span className="text-sm leading-6 text-slate-700">{item}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-sm leading-6 text-slate-500">{emptyMessage}</p>
+      )}
+    </section>
+  );
+};
+
+const ProfileSuggestions = ({ updates }) => {
   if (!updates) {
     return null;
   }
 
+  const skills = normalizeItems(updates.skills);
+
+  const targetJobTitles = normalizeItems(updates.targetJobTitles);
+
   const hasUpdates = Boolean(
     updates.headline ||
     updates.summary ||
-    updates.skills?.length > 0 ||
-    updates.targetJobTitles?.length > 0,
+    skills.length > 0 ||
+    targetJobTitles.length > 0,
   );
 
   if (!hasUpdates) {
@@ -125,17 +226,23 @@ const RecommendedProfileUpdates = ({ updates }) => {
   }
 
   return (
-    <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
-      <p className="text-xs font-black uppercase tracking-wider text-blue-700">
-        Suggested profile updates
-      </p>
+    <section className="rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+      <div className="flex items-center gap-2.5">
+        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-blue-100 text-blue-700">
+          <UserRound className="h-4 w-4" aria-hidden="true" />
+        </div>
 
-      <div className="mt-3 grid gap-3">
+        <h4 className="text-sm font-semibold text-slate-950">
+          Suggested profile updates
+        </h4>
+      </div>
+
+      <div className="mt-4 grid gap-4">
         {updates.headline && (
           <div>
-            <p className="text-xs font-bold text-slate-500">Headline</p>
+            <p className="text-xs font-medium text-slate-500">Headline</p>
 
-            <p className="mt-1 text-sm font-bold text-slate-900">
+            <p className="mt-1 text-sm font-medium leading-6 text-slate-900">
               {updates.headline}
             </p>
           </div>
@@ -143,7 +250,7 @@ const RecommendedProfileUpdates = ({ updates }) => {
 
         {updates.summary && (
           <div>
-            <p className="text-xs font-bold text-slate-500">Summary</p>
+            <p className="text-xs font-medium text-slate-500">Summary</p>
 
             <p className="mt-1 text-sm leading-6 text-slate-700">
               {updates.summary}
@@ -151,201 +258,189 @@ const RecommendedProfileUpdates = ({ updates }) => {
           </div>
         )}
 
-        {updates.skills?.length > 0 && (
+        {skills.length > 0 && (
           <div>
-            <p className="text-xs font-bold text-slate-500">
+            <p className="text-xs font-medium text-slate-500">
               Skills to consider adding
             </p>
 
-            <SkillCloud skills={updates.skills} />
+            <SkillChips skills={skills} />
           </div>
         )}
 
-        {updates.targetJobTitles?.length > 0 && (
+        {targetJobTitles.length > 0 && (
           <div>
-            <p className="text-xs font-bold text-slate-500">
+            <p className="text-xs font-medium text-slate-500">
               Suggested target roles
             </p>
 
-            <div className="mt-2 flex flex-wrap gap-2">
-              {updates.targetJobTitles.map((title) => (
-                <Pill key={title} variant="violet">
-                  {title}
-                </Pill>
-              ))}
-            </div>
+            <SkillChips skills={targetJobTitles} variant="violet" />
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 };
 
 const ResumeInsightsResult = ({ analysis }) => {
   const evaluation = analysis?.evaluation || {};
+
   const extracted = analysis?.extracted || {};
-
-  const score =
-    typeof evaluation.resumeScore === "number" ? evaluation.resumeScore : null;
-
-  const analyzedAt = formatDate(analysis?.analyzedAt);
 
   const extractedSkills = [
     ...(extracted.skills || []),
+
     ...(extracted.programmingLanguages || []),
+
     ...(extracted.frameworks || []),
+
     ...(extracted.databases || []),
+
     ...(extracted.tools || []),
   ].filter((skill, index, values) => skill && values.indexOf(skill) === index);
 
   return (
-    <div className="grid gap-5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Pill variant="emerald">Analysis ready</Pill>
-
-            {analyzedAt && (
-              <span className="text-xs text-slate-500">
-                Generated {analyzedAt}
-              </span>
-            )}
+    <div className="grid gap-4">
+      <section className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="flex items-center gap-2.5">
+          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-700">
+            <Tags className="h-4 w-4" aria-hidden="true" />
           </div>
 
-          <h3 className="mt-3 text-xl font-black text-slate-950">
-            Your resume insights
-          </h3>
-
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Review the extracted skills, strengths, and practical improvements
-            before applying to jobs.
-          </p>
+          <h4 className="text-sm font-semibold text-slate-950">
+            Skills found in your resume
+          </h4>
         </div>
 
-        {score !== null && (
-          <div
-            className={[
-              "grid h-24 w-24 shrink-0 place-items-center",
-              "rounded-3xl border text-center",
-              getScoreClasses(score),
-            ].join(" ")}
-          >
-            <div>
-              <p className="text-2xl font-black">{score}</p>
-
-              <p className="text-[10px] font-black uppercase tracking-wider">
-                Resume score
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="rounded-2xl border border-white/80 bg-white/75 p-4">
-        <p className="text-sm font-black text-slate-950">
-          Skills found in your resume
-        </p>
-
-        <SkillCloud skills={extractedSkills} />
-      </div>
+        <SkillChips skills={extractedSkills} />
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <InsightList
+        <InsightSection
+          icon={CheckCircle2}
           title="Resume strengths"
           items={evaluation.strengths}
           emptyMessage="No specific strengths were returned."
-          marker="✓"
-          markerClassName="bg-emerald-100 text-emerald-700"
+          tone="emerald"
         />
 
-        <InsightList
-          title="Improvement suggestions"
+        <InsightSection
+          icon={TrendingUp}
+          title="Improvements"
           items={evaluation.improvementSuggestions}
           emptyMessage="No improvement suggestions were returned."
-          marker="↑"
-          markerClassName="bg-blue-100 text-blue-700"
+          tone="blue"
         />
 
-        <InsightList
+        <InsightSection
+          icon={Search}
           title="Missing keywords"
           items={evaluation.missingKeywords}
           emptyMessage="No missing keywords were identified."
-          marker="!"
-          markerClassName="bg-amber-100 text-amber-700"
+          tone="amber"
         />
 
-        <InsightList
-          title="ATS formatting concerns"
+        <InsightSection
+          icon={FileText}
+          title="ATS concerns"
           items={evaluation.atsIssues}
-          emptyMessage="No ATS concerns were identified."
-          marker="!"
-          markerClassName="bg-violet-100 text-violet-700"
+          emptyMessage="No ATS formatting concerns were identified."
+          tone="violet"
         />
       </div>
 
-      <RecommendedProfileUpdates
-        updates={evaluation.recommendedProfileUpdates}
-      />
+      <ProfileSuggestions updates={evaluation.recommendedProfileUpdates} />
     </div>
   );
 };
 
 const ResumeInsightsToggle = ({ analysis, isOpen, onToggle }) => {
-  const analyzedAt = formatDate(analysis?.analyzedAt);
+  const evaluation = analysis?.evaluation || {};
+
+  const score =
+    typeof evaluation.resumeScore === "number" ? evaluation.resumeScore : null;
+
+  const analyzedAt = formatDateTime(analysis?.analyzedAt);
 
   return (
-    <div
-      className={[
-        "rounded-2xl border border-violet-200",
-        "bg-white/85 p-4 shadow-sm shadow-violet-100",
-      ].join(" ")}
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Pill variant="emerald">Analysis ready</Pill>
-
-              {analyzedAt && (
-                <span className="text-xs text-slate-500">
-                  Generated {analyzedAt}
-                </span>
-              )}
-            </div>
-
-            <p className="mt-2 text-sm font-black text-slate-950">
-              Your AI resume analysis is available
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              {isOpen
-                ? "Hide the detailed analysis to keep this page compact."
-                : "Open the analysis to review your skills, strengths, ATS concerns, and improvements."}
-            </p>
-          </div>
+    <div className="flex flex-col gap-4 rounded-xl border border-violet-100 bg-violet-50/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-violet-100 text-violet-700">
+          <CheckCircle2 className="h-4.5 w-4.5" aria-hidden="true" />
         </div>
 
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onToggle}
-          aria-expanded={isOpen}
-          aria-controls="candidate-resume-insights-result"
-          className="shrink-0 gap-2"
-        >
-          {isOpen ? "Hide full analysis" : "View full analysis"}
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-slate-950">
+              Resume analysis ready
+            </p>
 
-          <span
-            aria-hidden="true"
-            className={[
-              "text-sm transition-transform duration-300",
-              isOpen ? "rotate-180" : "",
-            ].join(" ")}
-          >
-            ↓
-          </span>
-        </Button>
+            {score !== null && (
+              <span
+                className={[
+                  "inline-flex",
+                  "items-baseline gap-1",
+                  "rounded-lg border",
+                  "px-2 py-1",
+                  "text-xs font-semibold",
+                  getScoreClasses(score),
+                ].join(" ")}
+              >
+                {score}
+
+                <span className="text-[10px] font-medium opacity-75">/100</span>
+              </span>
+            )}
+          </div>
+
+          {analyzedAt && (
+            <p className="mt-1 text-xs text-slate-500">
+              Generated {analyzedAt}
+            </p>
+          )}
+        </div>
       </div>
+
+      <Button
+        type="button"
+        variant="secondary"
+        aria-expanded={isOpen}
+        aria-controls="candidate-resume-insights-result"
+        onClick={onToggle}
+        className="w-full shrink-0 sm:w-auto"
+      >
+        {isOpen ? "Hide insights" : "View insights"}
+
+        <ChevronDown
+          aria-hidden="true"
+          className={[
+            "h-4 w-4",
+            "transition-transform",
+            "duration-200",
+
+            isOpen ? "rotate-180" : "",
+          ].join(" ")}
+        />
+      </Button>
+    </div>
+  );
+};
+
+const InsightsLoading = () => {
+  return (
+    <div className="grid gap-4" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading AI Resume Insights</span>
+
+      <div className="flex items-start gap-3">
+        <Skeleton className="h-9 w-9 shrink-0 rounded-lg bg-violet-200/70" />
+
+        <div className="grid flex-1 gap-2">
+          <Skeleton className="h-4 w-44" />
+          <Skeleton className="h-4 w-full max-w-lg" />
+        </div>
+      </div>
+
+      <Skeleton className="h-14 w-full bg-violet-100/70" />
     </div>
   );
 };
@@ -361,11 +456,11 @@ const CandidateResumeInsightsCard = ({ hasResume, resumeUrl }) => {
 
   const [errorMessage, setErrorMessage] = useState("");
 
-  const [successMessage, setSuccessMessage] = useState("");
-
   const [isGenerating, setIsGenerating] = useState(false);
 
   const [isResultOpen, setIsResultOpen] = useState(false);
+
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     let shouldIgnore = false;
@@ -374,10 +469,12 @@ const CandidateResumeInsightsCard = ({ hasResume, resumeUrl }) => {
       try {
         setPageStatus("loading");
         setErrorMessage("");
-        setSuccessMessage("");
 
-        // Existing analysis stays collapsed on normal page visits
-        // and whenever the resume file changes.
+        /*
+         * Cached results remain collapsed
+         * during normal page visits and
+         * when the resume changes.
+         */
         setIsResultOpen(false);
 
         const result = await getCandidateResumeInsights();
@@ -387,8 +484,11 @@ const CandidateResumeInsightsCard = ({ hasResume, resumeUrl }) => {
         }
 
         setAnalysis(result.data.analysis);
+
         setIsFresh(result.data.isFresh);
+
         setUsage(result.data.usage);
+
         setPageStatus("ready");
       } catch (error) {
         if (shouldIgnore) {
@@ -398,6 +498,7 @@ const CandidateResumeInsightsCard = ({ hasResume, resumeUrl }) => {
         const normalizedError = getApiError(error);
 
         setErrorMessage(normalizedError.message);
+
         setPageStatus("error");
       }
     };
@@ -407,205 +508,203 @@ const CandidateResumeInsightsCard = ({ hasResume, resumeUrl }) => {
     return () => {
       shouldIgnore = true;
     };
-  }, [resumeUrl]);
+  }, [resumeUrl, loadAttempt]);
+
+  const handleRetry = () => {
+    setLoadAttempt((currentAttempt) => currentAttempt + 1);
+  };
 
   const handleGenerateInsights = async () => {
+    const hasUsageRemaining = !usage || usage.remaining > 0;
+
+    if (!hasResume || !hasUsageRemaining || isGenerating) {
+      return;
+    }
+
     try {
-      setErrorMessage("");
-      setSuccessMessage("");
       setIsGenerating(true);
 
       const result = await generateCandidateResumeInsights();
 
       setAnalysis(result.data.analysis);
-      setIsFresh(true);
-      setUsage(result.data.usage);
-      setSuccessMessage(result.message);
-      setPageStatus("ready");
 
-      // Newly generated results open immediately.
+      setIsFresh(true);
+
+      setUsage(result.data.usage);
+
+      setPageStatus("ready");
       setIsResultOpen(true);
+
+      notify.success(result.message || "AI Resume Insights generated.");
     } catch (error) {
       const normalizedError = getApiError(error);
 
-      setErrorMessage(normalizedError.message);
+      if (normalizedError.statusCode === 429) {
+        setUsage((currentUsage) => {
+          if (!currentUsage) {
+            return currentUsage;
+          }
+
+          return {
+            ...currentUsage,
+            remaining: 0,
+          };
+        });
+      }
+
+      notify.error("Could not generate resume insights", {
+        description: normalizedError.message,
+      });
     } finally {
       setIsGenerating(false);
     }
-  };
-
-  const handleToggleResult = () => {
-    setIsResultOpen((currentValue) => !currentValue);
   };
 
   const hasUsageRemaining = !usage || usage.remaining > 0;
 
   const canGenerate = hasResume && hasUsageRemaining && !isGenerating;
 
+  const hasCurrentAnalysis = Boolean(hasResume && analysis && isFresh);
+
   return (
-    <AiCard
+    <section
+      aria-busy={pageStatus === "loading" || isGenerating}
       className={[
-        "border-violet-300",
-        "shadow-lg shadow-violet-200/50",
-        "ring-1 ring-violet-100",
+        "overflow-hidden",
+        "rounded-2xl border",
+        "border-violet-200",
+        "bg-white",
       ].join(" ")}
     >
       <div
         className={[
-          "relative overflow-hidden",
-          "border-b border-violet-200/80",
-          "bg-white/10 p-5",
-          "backdrop-blur-[1px]",
+          "border-b",
+          "border-violet-100",
+          "bg-linear-to-r",
+          "from-violet-50/90",
+          "via-white",
+          "to-blue-50/70",
+          "p-4 sm:p-5",
         ].join(" ")}
       >
-        <div
-          aria-hidden="true"
-          className={[
-            "pointer-events-none absolute -left-12 -top-16",
-            "h-44 w-44 rounded-full",
-            "bg-violet-400/25 blur-3xl",
-          ].join(" ")}
-        />
-
-        <div
-          aria-hidden="true"
-          className={[
-            "pointer-events-none absolute -right-10 -top-16",
-            "h-44 w-44 rounded-full",
-            "bg-blue-400/25 blur-3xl",
-          ].join(" ")}
-        />
-
-        <div
-          aria-hidden="true"
-          className={[
-            "pointer-events-none absolute inset-x-0 top-0",
-            " bg-linear-to-r",
-            "from-violet-600 via-indigo-500 to-blue-600",
-          ].join(" ")}
-        />
-
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <AiBadge className="border-violet-300 bg-white/70 shadow-sm">
-              AI Resume Insights
-            </AiBadge>
-
-            <h2 className="mt-3 text-xl font-black text-slate-950">
-              Understand and improve your resume
-            </h2>
-
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
-              AI extracts your resume information and highlights strengths,
-              missing keywords, ATS concerns, and practical improvements.
-            </p>
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-700">
+            <Sparkles className="h-5 w-5" aria-hidden="true" />
           </div>
 
-          <div
-            className={[
-              "rounded-2xl border border-white/80",
-              "bg-white/75 px-4 py-3",
-              "shadow-sm shadow-violet-200/50",
-              "backdrop-blur-sm",
-            ].join(" ")}
-          >
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Current status
-            </p>
+          <div className="min-w-0">
+            <span
+              className={[
+                "inline-flex",
+                "items-center gap-1.5",
+                "rounded-full",
+                "border",
+                "border-violet-100",
+                "bg-white/80",
+                "px-2.5 py-1",
+                "text-xs font-medium",
+                "text-violet-700",
+              ].join(" ")}
+            >
+              <Sparkles className="h-3 w-3" aria-hidden="true" />
+              AI Resume Insights
+            </span>
 
-            <p className="mt-1 text-sm font-black text-violet-700">
-              {!hasResume
-                ? "Resume required"
-                : isFresh
-                  ? "Insights ready"
-                  : analysis
-                    ? "Resume changed"
-                    : "Not generated"}
+            <h2 className="mt-2.5 text-lg font-semibold text-slate-950">
+              Improve your resume with AI
+            </h2>
+
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+              Review extracted skills, strengths, missing keywords, and
+              practical improvements.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-5 bg-transparent p-5">
-        {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
-
-        {successMessage && <Alert variant="success">{successMessage}</Alert>}
-
-        {pageStatus === "loading" && (
-          <div className="rounded-2xl border border-white/80 bg-white/70 p-5">
-            <p className="text-sm font-bold text-slate-700">
-              Loading AI Resume Insights...
-            </p>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Checking whether your current resume already has an analysis.
-            </p>
-          </div>
-        )}
+      <div className="p-4 sm:p-5">
+        {pageStatus === "loading" && <InsightsLoading />}
 
         {pageStatus === "error" && (
-          <div className="flex justify-start">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => window.location.reload()}
-            >
-              Reload insights
-            </Button>
-          </div>
+          <SectionError
+            compact
+            title="Could not load AI Resume Insights"
+            message={errorMessage}
+            onRetry={handleRetry}
+          />
         )}
 
         {pageStatus === "ready" && !hasResume && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-5">
-            <p className="font-black text-amber-900">
-              Upload your resume first
-            </p>
+          <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-700">
+              <AlertCircle className="h-4.5 w-4.5" aria-hidden="true" />
+            </div>
 
-            <p className="mt-2 text-sm leading-6 text-amber-800">
-              AI Resume Insights needs the PDF resume uploaded from this page.
-            </p>
-          </div>
-        )}
+            <div>
+              <p className="text-sm font-semibold text-amber-950">
+                Resume required
+              </p>
 
-        {pageStatus === "ready" && hasResume && (!analysis || !isFresh) && (
-          <div className="rounded-2xl border border-white/80 bg-white/75 p-5">
-            <p className="font-black text-slate-950">
-              {analysis
-                ? "Generate insights for your updated resume"
-                : "Your resume is ready for AI insights"}
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              {analysis
-                ? "Your resume file has changed, so the previous analysis is no longer considered current."
-                : "Generate a structured review of your resume, including strengths and improvement opportunities."}
-            </p>
-
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <AiUsageStatus usage={usage} />
-
-              <Button
-                type="button"
-                variant="ai"
-                disabled={!canGenerate}
-                onClick={handleGenerateInsights}
-              >
-                {isGenerating
-                  ? "Generating AI insights..."
-                  : hasUsageRemaining
-                    ? "Generate AI Resume Insights"
-                    : "Daily AI limit reached"}
-              </Button>
+              <p className="mt-1 text-sm leading-6 text-amber-800">
+                Upload a PDF resume before generating insights.
+              </p>
             </div>
           </div>
         )}
 
-        {pageStatus === "ready" && hasResume && analysis && isFresh && (
+        {pageStatus === "ready" && hasResume && !hasCurrentAnalysis && (
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-950">
+                {analysis
+                  ? "Generate insights for your updated resume"
+                  : "Generate your resume analysis"}
+              </p>
+
+              <p className="mt-1 max-w-xl text-sm leading-6 text-slate-600">
+                {analysis
+                  ? "The resume file changed, so the previous analysis is no longer current."
+                  : "Create a structured review using your submitted PDF."}
+              </p>
+
+              <div className="mt-2">
+                <UsageStatus usage={usage} />
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="ai"
+              disabled={!canGenerate}
+              onClick={handleGenerateInsights}
+              className="w-full shrink-0 sm:w-auto"
+            >
+              {isGenerating ? (
+                <LoaderCircle
+                  className="h-4 w-4 animate-spin"
+                  aria-hidden="true"
+                />
+              ) : hasUsageRemaining ? (
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <TriangleAlert className="h-4 w-4" aria-hidden="true" />
+              )}
+
+              {isGenerating
+                ? "Generating..."
+                : hasUsageRemaining
+                  ? "Generate insights"
+                  : "Daily limit reached"}
+            </Button>
+          </div>
+        )}
+
+        {pageStatus === "ready" && hasCurrentAnalysis && (
           <>
             <ResumeInsightsToggle
               analysis={analysis}
               isOpen={isResultOpen}
-              onToggle={handleToggleResult}
+              onToggle={() => setIsResultOpen((currentValue) => !currentValue)}
             />
 
             <div
@@ -613,24 +712,28 @@ const CandidateResumeInsightsCard = ({ hasResume, resumeUrl }) => {
               className={[
                 "grid overflow-hidden",
                 "transition-[grid-template-rows,opacity]",
-                "duration-300 ease-in-out",
+                "duration-300",
+                "ease-in-out",
+
                 isResultOpen
-                  ? "grid-rows-[1fr] opacity-100"
-                  : "grid-rows-[0fr] opacity-0",
+                  ? ["grid-rows-[1fr]", "opacity-100"].join(" ")
+                  : ["grid-rows-[0fr]", "opacity-0"].join(" "),
               ].join(" ")}
             >
               <div className="min-h-0 overflow-hidden">
-                <div className="pt-1">
+                <div className="border-t border-violet-100 pt-4 mt-4">
                   <ResumeInsightsResult analysis={analysis} />
                 </div>
               </div>
             </div>
 
-            <AiUsageStatus usage={usage} />
+            <div className="mt-3">
+              <UsageStatus usage={usage} />
+            </div>
           </>
         )}
       </div>
-    </AiCard>
+    </section>
   );
 };
 

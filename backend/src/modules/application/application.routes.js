@@ -17,6 +17,7 @@ import {
   listManagedApplications,
   listManagedApplicationJobs,
   listManagedJobApplications,
+  getMyApplicationSummary,
   getManagedJobApplicationDetails,
   updateApplicationStatus,
   viewManagedApplicationResume,
@@ -65,6 +66,28 @@ router.post(
   authorize(ROLES.CANDIDATE),
   validate(applyToJobSchema),
   applyToJob,
+);
+
+/**
+ * @openapi
+ * /api/v1/applications/me/summary:
+ *   get:
+ *     tags:
+ *       - Applications
+ *     summary: Get the authenticated candidate's application summary
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Candidate application summary returned
+ *       403:
+ *         description: Candidate role required
+ */
+router.get(
+  "/me/summary",
+  authenticate,
+  authorize(ROLES.CANDIDATE),
+  getMyApplicationSummary,
 );
 
 /**

@@ -5,24 +5,26 @@ import sendEmail from "../../shared/services/email.service.js";
 import ApiError from "../../shared/errors/ApiError.js";
 import { ROLES } from "../../config/constants.js";
 import { generateRandomToken, hashToken } from "../../shared/utils/token.js";
-import RefreshToken from "./refreshToken.model.js";
-import {
-  generateAccessToken,
-  generateRefreshToken,
-  verifyRefreshToken,
-} from "../../shared/utils/jwt.js";
 
 import {
   uploadProfilePhotoFile,
   deleteAsset,
 } from "../../shared/services/media.service.js";
 
-import crypto from "node:crypto";
+import buildVerificationEmail from "../../shared/email/templates/verificationEmail.template.js";
+
+import buildPasswordResetEmail from "../../shared/email/templates/passwordResetEmail.template.js";
+
+import {
+  SESSION_REVOKE_REASONS,
+  createAuthSession,
+  rotateAuthSession,
+  revokeCurrentAuthSession,
+  revokeAllAuthSessions,
+} from "./authSession.service.js";
 
 const EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS =
   Number(process.env.EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS) || 24;
-
-const REFRESH_TOKEN_EXPIRY_DAYS = Number(process.env.REFRESH_TOKEN_EXPIRY) || 7;
 
 const PASSWORD_RESET_TOKEN_EXPIRY_MINUTES =
   Number(process.env.PASSWORD_RESET_TOKEN_EXPIRY_MINUTES) || 15;
@@ -64,9 +66,8 @@ const resetPassword = async (token, password) => {
     PasswordResetToken.deleteMany({
       userId: user._id,
     }),
-    RefreshToken.deleteMany({
-      userId: user._id,
-    }),
+
+    revokeAllAuthSessions(user._id, SESSION_REVOKE_REASONS.PASSWORD_RESET),
   ]);
 
   return {
@@ -111,26 +112,17 @@ const forgotPassword = async (email) => {
 };
 
 const logoutAllSessions = async (userId) => {
-  await RefreshToken.deleteMany({
-    userId,
-  });
+  await revokeAllAuthSessions(userId, SESSION_REVOKE_REASONS.USER_LOGOUT_ALL);
 
   return {
     message: "Logged out from all devices successfully",
   };
 };
 
-const logoutUser = async (refreshToken) => {
-  if (!refreshToken) {
-    return {
-      message: "Logged out successfully",
-    };
-  }
-
-  const tokenHash = hashToken(refreshToken);
-
-  await RefreshToken.findOneAndDelete({
-    tokenHash,
+const logoutUser = async ({ refreshToken, accessToken }) => {
+  await revokeCurrentAuthSession({
+    refreshToken,
+    accessToken,
   });
 
   return {
@@ -194,65 +186,12 @@ const deleteProfilePhoto = async (userId) => {
   };
 };
 
-const createRefreshToken = async (user) => {
-  const payload = {
-    sub: user._id.toString(),
-    role: user.role,
-    jti: crypto.randomUUID(),
-  };
-
-  const refreshToken = generateRefreshToken(payload);
-
-  await RefreshToken.create({
-    userId: user._id,
-    tokenHash: hashToken(refreshToken),
-    expiresAt: new Date(
-      Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
-    ),
-  });
-
-  return refreshToken;
-};
-
 const refreshAccessToken = async (refreshToken) => {
-  if (!refreshToken) {
-    throw new ApiError(401, "Refresh token missing");
-  }
-
-  const decoded = verifyRefreshToken(refreshToken);
-
-  const user = await User.findById(decoded.sub);
-
-  if (!user) {
-    throw new ApiError(401, "Invalid refresh token");
-  }
-
-  const tokenHash = hashToken(refreshToken);
-
-  const storedToken = await RefreshToken.findOne({
-    userId: user._id,
-    tokenHash,
-    expiresAt: { $gt: new Date() },
-  });
-
-  if (!storedToken) {
-    throw new ApiError(401, "Invalid or expired refresh token");
-  }
-
-  await RefreshToken.deleteOne({
-    _id: storedToken._id,
-  });
-
-  const accessToken = generateAccessToken({
-    sub: user._id.toString(),
-    role: user.role,
-  });
-
-  const newRefreshToken = await createRefreshToken(user);
+  const result = await rotateAuthSession(refreshToken);
 
   return {
-    accessToken,
-    refreshToken: newRefreshToken,
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
     message: "Token refreshed successfully",
   };
 };
@@ -278,13 +217,7 @@ const loginUser = async ({ email, password }) => {
     throw new ApiError(401, "Invalid email or password");
   }
 
-  const payload = {
-    sub: user._id.toString(),
-    role: user.role,
-  };
-
-  const accessToken = generateAccessToken(payload);
-  const refreshToken = await createRefreshToken(user);
+  const { accessToken, refreshToken } = await createAuthSession(user);
 
   return {
     user: buildAuthUserResponse(user),
@@ -424,35 +357,35 @@ const registerUser = async ({
 };
 
 const sendVerificationEmail = async (user, rawToken) => {
-  const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${rawToken}`;
+  const verificationUrl =
+    `${process.env.CLIENT_URL}` + `/verify-email/${rawToken}`;
+
+  const emailContent = buildVerificationEmail({
+    username: user.username,
+    verificationUrl,
+
+    expiresInHours: EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS,
+  });
 
   await sendEmail({
     to: user.email,
-    subject: "Verify your HireFlow email",
-    html: `
-      <h2>Welcome to HireFlow</h2>
-      <p>Hello ${user.username},</p>
-      <p>Verify your email by clicking the link below:</p>
-      <p><a href="${verificationUrl}">Verify email</a></p>
-      <p>This link expires in ${EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS} hours.</p>
-    `,
+    ...emailContent,
   });
 };
 
 const sendPasswordResetEmail = async (user, rawToken) => {
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password/${rawToken}`;
+  const resetUrl = `${process.env.CLIENT_URL}` + `/reset-password/${rawToken}`;
+
+  const emailContent = buildPasswordResetEmail({
+    username: user.username,
+    resetUrl,
+
+    expiresInMinutes: PASSWORD_RESET_TOKEN_EXPIRY_MINUTES,
+  });
 
   await sendEmail({
     to: user.email,
-    subject: "Reset your HireFlow password",
-    html: `
-      <h2>HireFlow password reset</h2>
-      <p>Hello ${user.username},</p>
-      <p>Use the link below to reset your password:</p>
-      <p><a href="${resetUrl}">Reset password</a></p>
-      <p>This link expires in ${PASSWORD_RESET_TOKEN_EXPIRY_MINUTES} minutes.</p>
-      <p>If you did not request this, ignore this email.</p>
-    `,
+    ...emailContent,
   });
 };
 

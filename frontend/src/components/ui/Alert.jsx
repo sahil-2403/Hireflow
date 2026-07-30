@@ -1,19 +1,57 @@
+import { AlertCircle, CheckCircle2, Info, TriangleAlert } from "lucide-react";
+
 import cn from "../../utils/cn";
 
-const VARIANT_CLASS_NAMES = {
-  error: "border-red-200 bg-red-50 text-red-700",
-  success: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  warning: "border-amber-200 bg-amber-50 text-amber-800",
-  info: "border-blue-200 bg-blue-50 text-blue-700",
-  neutral: "border-slate-200 bg-slate-50 text-slate-700",
-};
+const VARIANT_CONFIGURATION = {
+  error: {
+    classes: "border-red-200 bg-red-50/70 text-red-800",
 
-const ROLE_BY_VARIANT = {
-  error: "alert",
-  success: "status",
-  warning: "alert",
-  info: "status",
-  neutral: "status",
+    iconClasses: "bg-red-100 text-red-700",
+
+    icon: AlertCircle,
+
+    role: "alert",
+  },
+
+  success: {
+    classes: "border-emerald-200 bg-emerald-50/70 text-emerald-800",
+
+    iconClasses: "bg-emerald-100 text-emerald-700",
+
+    icon: CheckCircle2,
+
+    role: "status",
+  },
+
+  warning: {
+    classes: "border-amber-200 bg-amber-50/70 text-amber-900",
+
+    iconClasses: "bg-amber-100 text-amber-700",
+
+    icon: TriangleAlert,
+
+    role: "alert",
+  },
+
+  info: {
+    classes: "border-blue-200 bg-blue-50/70 text-blue-800",
+
+    iconClasses: "bg-blue-100 text-blue-700",
+
+    icon: Info,
+
+    role: "status",
+  },
+
+  neutral: {
+    classes: "border-slate-200 bg-slate-50 text-slate-700",
+
+    iconClasses: "bg-slate-200 text-slate-600",
+
+    icon: Info,
+
+    role: "status",
+  },
 };
 
 const Alert = ({
@@ -22,21 +60,51 @@ const Alert = ({
   children,
   className = "",
   role,
+  showIcon = true,
+  icon,
 }) => {
-  const resolvedVariant = VARIANT_CLASS_NAMES[variant] ? variant : "neutral";
+  const resolvedVariant = VARIANT_CONFIGURATION[variant] ? variant : "neutral";
+
+  const configuration = VARIANT_CONFIGURATION[resolvedVariant];
+
+  const AlertIcon = icon || configuration.icon;
 
   return (
     <div
+      role={role || configuration.role}
       className={cn(
-        "rounded-xl border px-4 py-3 text-sm leading-6",
-        VARIANT_CLASS_NAMES[resolvedVariant],
+        ["rounded-xl border", "px-4 py-3", "text-sm leading-6"].join(" "),
+
+        configuration.classes,
+
         className,
       )}
-      role={role || ROLE_BY_VARIANT[resolvedVariant]}
     >
-      {title && <p className="font-bold">{title}</p>}
+      <div className="flex items-start gap-3">
+        {showIcon && (
+          <div
+            className={cn(
+              [
+                "mt-0.5 grid",
+                "h-7 w-7",
+                "shrink-0",
+                "place-items-center",
+                "rounded-lg",
+              ].join(" "),
 
-      {children && <div className={cn(title && "mt-1")}>{children}</div>}
+              configuration.iconClasses,
+            )}
+          >
+            <AlertIcon className="h-4 w-4" aria-hidden="true" />
+          </div>
+        )}
+
+        <div className="min-w-0 flex-1">
+          {title && <p className="font-semibold">{title}</p>}
+
+          {children && <div className={cn(title && "mt-1")}>{children}</div>}
+        </div>
+      </div>
     </div>
   );
 };

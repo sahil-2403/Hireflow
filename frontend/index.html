@@ -14,18 +14,18 @@
 
   <body>
     <div id="root">
-      <div class="app-boot-loader">
-        <div class="app-boot-card">
-          <div class="app-boot-spinner"></div>
-
-          <div class="app-boot-text">
-            <p class="app-boot-title">Loading HireFlow...</p>
-            <p class="app-boot-subtitle">Please wait a moment</p>
-          </div>
-        </div>
+      <div
+        class="app-boot-loader"
+        role="status"
+        aria-live="polite"
+        aria-label="Loading HireFlow"
+      >
+        <div
+          class="app-boot-spinner"
+          aria-hidden="true"
+        ></div>
       </div>
     </div>
-
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

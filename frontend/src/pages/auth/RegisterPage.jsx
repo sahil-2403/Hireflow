@@ -1,100 +1,74 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+
+import { Building2, LoaderCircle, UserRound } from "lucide-react";
 
 import { Link, useNavigate } from "react-router-dom";
 
 import { useForm, useWatch } from "react-hook-form";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { registerUser } from "../../api/auth.api";
 
-import { ROLES } from "../../features/auth/auth.constants";
-import { registerSchema } from "../../features/auth/auth.schemas";
-
-import getApiError from "../../utils/getApiError";
-
 import PasswordField from "../../components/common/PasswordField";
 
 import Button from "../../components/ui/Button";
-import { Card, CardBody } from "../../components/ui/Card";
-import Alert from "../../components/ui/Alert";
 import TextInput from "../../components/ui/TextInput";
 
-const registrationOptions = [
+import AuthPageShell from "../../components/auth/AuthPageShell";
+import AuthVisualPanel from "../../components/auth/AuthVisualPanel";
+
+import { ROLES } from "../../features/auth/auth.constants";
+
+import { registerSchema } from "../../features/auth/auth.schemas";
+
+import getApiError from "../../utils/getApiError";
+import notify from "../../utils/notify";
+
+const REGISTRATION_OPTIONS = [
   {
     role: ROLES.CANDIDATE,
-    eyebrow: "Looking for a job?",
-    title: "Register as a candidate",
-    heroEyebrow: "Candidate registration",
-    heroTitle: "Create your profile and start applying smarter.",
-    heroDescription:
-      "Register as a candidate, complete your profile, upload your resume, and track every application from one clean workspace.",
-    formTitle: "Create your candidate account",
-    formDescription:
-      "Start applying to open opportunities and manage your job search from HireFlow.",
+    title: "Candidate",
     submitLabel: "Create candidate account",
-    loadingLabel: "Creating candidate account...",
-    highlights: [
-      {
-        title: "Build a recruiter-ready profile",
-        description:
-          "Add your skills, experience level, location, and portfolio links.",
-      },
-      {
-        title: "Upload your resume",
-        description: "Keep your resume ready before applying to jobs.",
-      },
-      {
-        title: "Track applications",
-        description:
-          "Follow each application status from your candidate dashboard.",
-      },
-    ],
+    loadingLabel: "Creating account...",
+    icon: UserRound,
   },
   {
     role: ROLES.OWNER,
-    eyebrow: "Hiring for your company?",
-    title: "Register as a company admin",
-    heroEyebrow: "Company admin registration",
-    heroTitle: "Create your hiring workspace for your company.",
-    heroDescription:
-      "Register as a company admin first. After email verification, you can create your company profile, post jobs, and invite recruiters.",
-    formTitle: "Create your company admin account",
-    formDescription:
-      "After verifying your email, you can create your company profile and start managing hiring workflows.",
+    title: "Company admin",
     submitLabel: "Create company admin account",
-    loadingLabel: "Creating admin account...",
-    highlights: [
-      {
-        title: "Create your company profile",
-        description:
-          "Add company details that candidates will see on your job listings.",
-      },
-      {
-        title: "Post jobs for your company",
-        description:
-          "Create and manage openings from a dedicated company dashboard.",
-      },
-      {
-        title: "Invite recruiters",
-        description: "Add recruiter accounts that belong only to your company.",
-      },
-    ],
+    loadingLabel: "Creating account...",
+    icon: Building2,
   },
 ];
 
 const getRoleButtonClassName = (isSelected) => {
   return [
-    "rounded-2xl border p-4 text-left transition w-full",
+    "flex min-h-11",
+    "w-full min-w-0",
+    "items-start gap-3",
+    "rounded-xl border",
+    "p-3 text-left",
+    "transition-colors",
+
+    "focus-visible:outline-none",
+    "focus-visible:ring-2",
+    "focus-visible:ring-blue-500",
+    "focus-visible:ring-offset-2",
+
     isSelected
-      ? "border-blue-600 bg-blue-50 shadow-sm ring-2 ring-blue-100"
-      : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50",
+      ? ["border-blue-300", "bg-blue-50/70"].join(" ")
+      : [
+          "border-slate-200",
+          "bg-white",
+          "hover:border-slate-300",
+          "hover:bg-slate-50",
+        ].join(" "),
   ].join(" ");
 };
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-
-  const [apiError, setApiError] = useState("");
 
   const {
     register,
@@ -102,6 +76,7 @@ const RegisterPage = () => {
     setError,
     setValue,
     control,
+
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(registerSchema),
@@ -120,33 +95,14 @@ const RegisterPage = () => {
     name: "role",
   });
 
-  const selectedRegistrationOption = useMemo(() => {
+  const selectedOption = useMemo(() => {
     return (
-      registrationOptions.find((option) => option.role === selectedRole) ||
-      registrationOptions[0]
+      REGISTRATION_OPTIONS.find((option) => option.role === selectedRole) ||
+      REGISTRATION_OPTIONS[0]
     );
   }, [selectedRole]);
 
-  const applyBackendFieldErrors = (backendErrors = []) => {
-    backendErrors.forEach((error) => {
-      const fieldName = error.field;
-
-      if (
-        ["role", "username", "email", "password", "confirmPassword"].includes(
-          fieldName,
-        )
-      ) {
-        setError(fieldName, {
-          type: "server",
-          message: error.message,
-        });
-      }
-    });
-  };
-
   const handleRoleSelect = (role) => {
-    setApiError("");
-
     setValue("role", role, {
       shouldDirty: true,
       shouldTouch: true,
@@ -154,9 +110,34 @@ const RegisterPage = () => {
     });
   };
 
-  const onSubmit = async (formData) => {
-    setApiError("");
+  const applyBackendFieldErrors = (backendErrors = []) => {
+    let appliedErrorCount = 0;
 
+    backendErrors.forEach((backendError) => {
+      const fieldName = backendError.field;
+
+      const supportedFields = [
+        "role",
+        "username",
+        "email",
+        "password",
+        "confirmPassword",
+      ];
+
+      if (supportedFields.includes(fieldName)) {
+        setError(fieldName, {
+          type: "server",
+          message: backendError.message,
+        });
+
+        appliedErrorCount += 1;
+      }
+    });
+
+    return appliedErrorCount;
+  };
+
+  const onSubmit = async (formData) => {
     const registrationData = {
       username: formData.username,
       email: formData.email,
@@ -169,6 +150,7 @@ const RegisterPage = () => {
 
       navigate("/login", {
         replace: true,
+
         state: {
           message: result.message,
         },
@@ -176,177 +158,165 @@ const RegisterPage = () => {
     } catch (error) {
       const normalizedError = getApiError(error);
 
-      applyBackendFieldErrors(normalizedError.errors);
+      const appliedErrorCount = applyBackendFieldErrors(normalizedError.errors);
 
-      setApiError(normalizedError.message);
+      if (appliedErrorCount === 0) {
+        notify.error("Could not create account", {
+          description: normalizedError.message,
+        });
+      }
     }
   };
 
   return (
-    <main className="min-h-[calc(100vh-4rem)] rounded-2xl bg-linear-to-br from-blue-50 via-slate-50 to-white px-4 py-10 sm:px-6">
-      <section className="mx-auto grid max-w-8xl gap-8 lg:grid-cols-[1fr_540px] lg:items-start">
-        <div className="hidden opacity-80 lg:block">
-          <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-            {selectedRegistrationOption.heroEyebrow}
-          </p>
+    <AuthPageShell
+      variant={selectedRole === ROLES.OWNER ? "company" : "candidate"}
+      scene={
+        <AuthVisualPanel
+          variant={selectedRole === ROLES.OWNER ? "company" : "candidate"}
+        />
+      }
+      formClassName="max-w-2xl"
+    >
+      <header>
+        <h2 className="text-2xl font-semibold leading-8 tracking-tight text-slate-950">
+          {selectedRole === ROLES.OWNER
+            ? "Create your company-admin account"
+            : "Create your candidate account"}
+        </h2>
 
-          <h1 className="mt-3 max-w-2xl text-5xl font-black tracking-tight text-slate-950">
-            {selectedRegistrationOption.heroTitle}
-          </h1>
+        <p className="mt-1.5 text-sm leading-6 text-slate-600">
+          {selectedRole === ROLES.OWNER
+            ? "Set up your account before creating your company workspace."
+            : "Create your account and begin building your candidate profile."}
+        </p>
+      </header>
 
-          <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
-            {selectedRegistrationOption.heroDescription}
-          </p>
+      <form
+        className="mt-6 grid gap-5"
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+      >
+        <input type="hidden" {...register("role")} />
 
-          <div className="mt-8 grid max-w-xl gap-4">
-            {selectedRegistrationOption.highlights.map((highlight) => (
-              <div
-                key={highlight.title}
-                className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm"
-              >
-                <p className="text-sm font-bold text-slate-950">
-                  {highlight.title}
-                </p>
+        <fieldset>
+          <legend className="text-sm font-medium leading-5 text-slate-700">
+            Account type
+          </legend>
 
-                <p className="mt-1 text-sm leading-6 text-slate-600">
-                  {highlight.description}
-                </p>
-              </div>
-            ))}
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            {REGISTRATION_OPTIONS.map((option) => {
+              const isSelected = selectedRole === option.role;
+
+              const RoleIcon = option.icon;
+
+              return (
+                <button
+                  key={option.role}
+                  type="button"
+                  onClick={() => handleRoleSelect(option.role)}
+                  aria-pressed={isSelected}
+                  className={getRoleButtonClassName(isSelected)}
+                >
+                  <span
+                    className={[
+                      "grid h-6 w-6",
+                      "shrink-0",
+                      "place-items-center",
+                      "rounded-lg",
+
+                      isSelected
+                        ? ["bg-blue-100", "text-blue-700"].join(" ")
+                        : ["bg-slate-100", "text-slate-600"].join(" "),
+                    ].join(" ")}
+                  >
+                    <RoleIcon className="h-4 w-4" aria-hidden="true" />
+                  </span>
+
+                  <span className="min-w-0 ">
+                    <span className="block text-sm font-semibold leading-5 text-slate-950">
+                      {option.title}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
+
+          {errors.role?.message && (
+            <p
+              role="alert"
+              className="mt-2 text-xs font-medium leading-4.5 text-red-600"
+            >
+              {errors.role.message}
+            </p>
+          )}
+        </fieldset>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextInput
+            id="username"
+            type="text"
+            label="Username"
+            autoComplete="username"
+            placeholder="Choose a username"
+            error={errors.username?.message}
+            {...register("username")}
+          />
+
+          <TextInput
+            id="email"
+            type="email"
+            label="Email address"
+            autoComplete="email"
+            placeholder="you@example.com"
+            error={errors.email?.message}
+            {...register("email")}
+          />
         </div>
 
-        <Card className="w-full">
-          <CardBody className="p-6 sm:p-8">
-            <div className="mb-8">
-              <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Register
-              </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <PasswordField
+            id="password"
+            label="Password"
+            hint="At least 8 characters with uppercase, lowercase, and a number."
+            placeholder="Create a password"
+            autoComplete="new-password"
+            registration={register("password")}
+            error={errors.password?.message}
+          />
 
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-                {selectedRegistrationOption.formTitle}
-              </h1>
+          <PasswordField
+            id="confirmPassword"
+            label="Confirm password"
+            placeholder="Repeat your password"
+            autoComplete="new-password"
+            registration={register("confirmPassword")}
+            error={errors.confirmPassword?.message}
+          />
+        </div>
 
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {selectedRegistrationOption.formDescription}
-              </p>
-            </div>
+        <Button type="submit" disabled={isSubmitting} fullWidth size="lg">
+          {isSubmitting && (
+            <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+          )}
 
-            {apiError && (
-              <Alert variant="error" className="mb-6">
-                {apiError}
-              </Alert>
-            )}
+          {isSubmitting
+            ? selectedOption.loadingLabel
+            : selectedOption.submitLabel}
+        </Button>
+      </form>
 
-            <form
-              className="space-y-5"
-              onSubmit={handleSubmit(onSubmit)}
-              noValidate
-            >
-              <input type="hidden" {...register("role")} />
-
-              <div>
-                <p className="mb-3 text-sm font-bold text-slate-800">
-                  Choose your registration purpose
-                </p>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {registrationOptions.map((option) => {
-                    const isSelected = selectedRole === option.role;
-
-                    return (
-                      <div key={option.role} className="flex flex-col">
-                        <span className="text-[0.7rem] ml-1 font-bold uppercase tracking-wider text-blue-600">
-                          {option.eyebrow}
-                        </span>
-
-                        <button
-                          type="button"
-                          className={getRoleButtonClassName(isSelected)}
-                          onClick={() => handleRoleSelect(option.role)}
-                          aria-pressed={isSelected}
-                        >
-                          <span className=" block text-sm tracking-tight font-black text-slate-950">
-                            {option.title}
-                          </span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {errors.role?.message && (
-                  <p className="mt-2 text-sm text-red-600">
-                    {errors.role.message}
-                  </p>
-                )}
-              </div>
-
-              <TextInput
-                id="username"
-                type="text"
-                label="Username"
-                autoComplete="username"
-                placeholder="Username"
-                error={errors.username?.message}
-                inputClassName="bg-white!"
-                {...register("username")}
-              />
-
-              <TextInput
-                id="email"
-                type="email"
-                label="Email address"
-                autoComplete="email"
-                placeholder="you@example.com"
-                error={errors.email?.message}
-                inputClassName="bg-white!"
-                {...register("email")}
-              />
-
-              <PasswordField
-                id="password"
-                label="Password"
-                placeholder="Create a strong password"
-                autoComplete="new-password"
-                registration={register("password")}
-                error={errors.password?.message}
-              />
-
-              <PasswordField
-                id="confirmPassword"
-                label="Confirm password"
-                placeholder="Enter the password again"
-                autoComplete="new-password"
-                registration={register("confirmPassword")}
-                error={errors.confirmPassword?.message}
-              />
-
-              <div className="rounded-xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-                Passwords must contain at least eight characters, one uppercase
-                letter, one lowercase letter, and one number.
-              </div>
-
-              <Button type="submit" disabled={isSubmitting} fullWidth size="lg">
-                {isSubmitting
-                  ? selectedRegistrationOption.loadingLabel
-                  : selectedRegistrationOption.submitLabel}
-              </Button>
-            </form>
-
-            <p className="mt-6 text-center text-sm text-slate-600">
-              Already have an account?{" "}
-              <Link
-                to="/login"
-                className="font-bold text-blue-600 hover:text-blue-700"
-              >
-                Login
-              </Link>
-            </p>
-          </CardBody>
-        </Card>
-      </section>
-    </main>
+      <p className="mt-6 border-t border-slate-100 pt-5 text-center text-sm leading-6 text-slate-600">
+        Already have an account?{" "}
+        <Link
+          to="/login"
+          className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+        >
+          Sign in
+        </Link>
+      </p>
+    </AuthPageShell>
   );
 };
 

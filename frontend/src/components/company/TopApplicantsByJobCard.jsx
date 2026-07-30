@@ -1,11 +1,19 @@
+import { UserRoundSearch } from "lucide-react";
+
 import { Link } from "react-router-dom";
 
 import ApplicationStatusBadge from "../application/ApplicationStatusBadge";
 import MatchScoreBadge from "../application/MatchScoreBadge";
+
 import ProfileAvatar from "../common/ProfileAvatar";
+
 import Button from "../ui/Button";
+
 import { Card, CardBody, CardHeader } from "../ui/Card";
-import Alert from "../ui/Alert";
+
+import EmptyState from "../ui/EmptyState";
+import SectionError from "../ui/SectionError";
+import Skeleton from "../ui/Skeleton";
 
 const getCandidateName = (candidate) => {
   const name = [candidate?.firstName, candidate?.lastName]
@@ -15,30 +23,62 @@ const getCandidateName = (candidate) => {
   return name || "Candidate unavailable";
 };
 
-const TopApplicantsByJobCard = ({ status, applicants, errorMessage }) => {
+const TopApplicantsSkeleton = () => {
+  return (
+    <div aria-hidden="true" className="divide-y divide-slate-100">
+      {Array.from({
+        length: 5,
+      }).map((_, index) => (
+        <div
+          key={index}
+          className="flex items-start gap-3 py-4 first:pt-0 last:pb-0"
+        >
+          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+
+          <div className="min-w-0 flex-1">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="mt-2 h-3 w-56 max-w-full" />
+            <Skeleton className="mt-2 h-3 w-36" />
+          </div>
+
+          <Skeleton className="h-9 w-20 shrink-0" />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const TopApplicantsByJobCard = ({
+  status,
+  applicants,
+  errorMessage,
+  onRetry,
+}) => {
   return (
     <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
-              Match highlights
-            </p>
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
+              <UserRoundSearch className="h-4.5 w-4.5" aria-hidden="true" />
+            </div>
 
-            <h2 className="mt-1 text-xl font-black text-slate-950">
-              Top applicants by latest jobs
-            </h2>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold leading-6 text-slate-950">
+                Top applicants by job
+              </h2>
 
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              Highest match applicant from each recent job.
-            </p>
+              <p className="mt-1 text-sm leading-5 text-slate-500">
+                The strongest current match from each recent job.
+              </p>
+            </div>
           </div>
 
           <Button
             as={Link}
             to="/company/applications"
             variant="secondary"
-            size="sm"
+            size="xs"
           >
             View all
           </Button>
@@ -46,38 +86,45 @@ const TopApplicantsByJobCard = ({ status, applicants, errorMessage }) => {
       </CardHeader>
 
       <CardBody>
-        {status === "loading" && (
-          <p className="text-sm text-slate-600">Loading top applicants...</p>
+        {status === "loading" && <TopApplicantsSkeleton />}
+
+        {status === "error" && (
+          <SectionError
+            compact
+            title="Could not load top applicants"
+            message={errorMessage}
+            onRetry={onRetry}
+          />
         )}
 
-        {status === "error" && <Alert variant="error">{errorMessage}</Alert>}
-
         {status === "success" && applicants.length === 0 && (
-          <div className="rounded-xl bg-slate-50 px-4 py-6 text-center">
-            <p className="text-sm font-bold text-slate-800">
-              No top applicants yet.
-            </p>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Once applications have match data, top applicants will appear
-              here.
-            </p>
-          </div>
+          <EmptyState
+            size="compact"
+            icon={UserRoundSearch}
+            title="No top applicants yet"
+            description="Top applicants will appear after applications have match data."
+          />
         )}
 
         {status === "success" && applicants.length > 0 && (
           <div className="divide-y divide-slate-100">
             {applicants.map((item) => {
               const candidate = item.topApplicant?.candidate;
+
               const candidateUser = item.topApplicant?.candidateUser;
+
               const candidateName = getCandidateName(candidate);
+
+              const canView = Boolean(
+                item.job?._id && item.topApplicant?.applicationId,
+              );
 
               return (
                 <article
                   key={`${item.job?._id}-${item.topApplicant?.applicationId}`}
                   className="py-4 first:pt-0 last:pb-0"
                 >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center">
                     <div className="flex min-w-0 gap-3">
                       <ProfileAvatar
                         user={candidateUser}
@@ -88,7 +135,7 @@ const TopApplicantsByJobCard = ({ status, applicants, errorMessage }) => {
 
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-bold text-slate-950">
+                          <p className="wrap-break-word text-sm font-semibold text-slate-950">
                             {candidateName}
                           </p>
 
@@ -100,34 +147,33 @@ const TopApplicantsByJobCard = ({ status, applicants, errorMessage }) => {
                         </div>
 
                         {candidate?.headline && (
-                          <p className="mt-1 text-sm text-slate-500">
+                          <p className="mt-1 wrap-break-word text-sm leading-5 text-slate-500">
                             {candidate.headline}
                           </p>
                         )}
 
-                        <p className="mt-1 text-sm font-semibold text-slate-600">
-                          Applied for: {item.job?.title || "Job unavailable"}
+                        <p className="mt-1.5 wrap-break-word text-xs font-medium leading-5 text-slate-600">
+                          {item.job?.title || "Job unavailable"}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:shrink-0">
-                      <MatchScoreBadge
-                        match={item.topApplicant?.match}
-                        size="sm"
-                      />
+                    <MatchScoreBadge
+                      match={item.topApplicant?.match}
+                      size="sm"
+                    />
 
-                      {item.job?._id && item.topApplicant?.applicationId && (
-                        <Button
-                          as={Link}
-                          to={`/company/applications/${item.job._id}/${item.topApplicant.applicationId}`}
-                          variant="secondary"
-                          size="sm"
-                        >
-                          View
-                        </Button>
-                      )}
-                    </div>
+                    {canView && (
+                      <Button
+                        as={Link}
+                        to={`/company/applications/${item.job._id}/${item.topApplicant.applicationId}`}
+                        variant="secondary"
+                        size="xs"
+                        className="w-full lg:w-auto"
+                      >
+                        View application
+                      </Button>
+                    )}
                   </div>
                 </article>
               );

@@ -1,68 +1,95 @@
 import { useState } from "react";
 
+import { Eye, EyeOff } from "lucide-react";
+
+import cn from "../../utils/cn";
+
 import FormField from "../ui/FormField";
+
+import { BASE_INPUT_CLASS_NAME } from "../ui/TextInput";
 
 const PasswordField = ({
   id,
   label,
+  hint,
   placeholder,
   autoComplete,
   registration,
   error,
+  required = false,
+  className = "",
+  inputClassName = "",
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
+  const hintId = hint && id ? `${id}-hint` : undefined;
+
+  const errorId = error && id ? `${id}-error` : undefined;
+
+  const describedBy = error ? errorId : hintId;
+
   return (
-    <FormField label={label} htmlFor={id} error={error}>
-      <div className="relative">
+    <FormField
+      label={label}
+      htmlFor={id}
+      hint={hint}
+      hintId={hintId}
+      error={error}
+      errorId={errorId}
+      required={required}
+      className={className}
+    >
+      <div className="relative min-w-0">
         <input
           id={id}
           type={isVisible ? "text" : "password"}
           autoComplete={autoComplete}
           placeholder={placeholder}
-          className={[
-            "w-full rounded-xl border bg-white px-3 py-2.5 pr-12 text-sm text-slate-900 outline-none transition",
-            "placeholder:text-slate-400 focus:ring-4",
-            error
-              ? "border-red-400 focus:border-red-500 focus:ring-red-50"
-              : "border-slate-200 focus:border-blue-500 focus:ring-blue-50",
-          ].join(" ")}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          className={cn(
+            BASE_INPUT_CLASS_NAME,
+
+            "pr-12",
+
+            error &&
+              [
+                "border-red-300",
+                "focus:border-red-500",
+                "focus:ring-red-100",
+              ].join(" "),
+
+            inputClassName,
+          )}
           {...registration}
         />
 
         <button
           type="button"
           onClick={() => setIsVisible((currentValue) => !currentValue)}
-          className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-slate-500 transition hover:text-slate-800 focus:outline-none focus:ring-4 focus:ring-inset focus:ring-blue-50"
+          className={[
+            "absolute inset-y-0",
+            "right-0 grid w-11",
+            "place-items-center",
+            "rounded-r-xl",
+            "text-slate-500",
+            "transition-colors",
+
+            "hover:bg-slate-50",
+            "hover:text-slate-800",
+
+            "focus-visible:outline-none",
+            "focus-visible:ring-2",
+            "focus-visible:ring-inset",
+            "focus-visible:ring-blue-500",
+          ].join(" ")}
           aria-label={isVisible ? "Hide password" : "Show password"}
           aria-pressed={isVisible}
         >
           {isVisible ? (
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="h-5 w-5"
-              aria-hidden="true"
-            >
-              <path d="M3 3l18 18" />
-              <path d="M10.6 10.6a2 2 0 002.8 2.8" />
-              <path d="M9.9 4.2A10.8 10.8 0 0112 4c5 0 9 4 10 8a11.8 11.8 0 01-2.1 4.1" />
-              <path d="M6.6 6.6A11.5 11.5 0 002 12c1 4 5 8 10 8a10.8 10.8 0 005.4-1.4" />
-            </svg>
+            <EyeOff className="h-5 w-5" aria-hidden="true" />
           ) : (
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="h-5 w-5"
-              aria-hidden="true"
-            >
-              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
+            <Eye className="h-5 w-5" aria-hidden="true" />
           )}
         </button>
       </div>
