@@ -1,4 +1,4 @@
-import { EMAIL_BRAND_LOGO_CID } from "./email.constants.js";
+import { getEmailBrandLogoUrl } from "./email.constants.js";
 
 import { escapeHtml } from "./email.utils.js";
 
@@ -22,6 +22,8 @@ const buildEmailLayout = ({
   const safeNoticeTitle = escapeHtml(noticeTitle);
   const safeNoticeText = escapeHtml(noticeText);
   const safeClosingText = escapeHtml(closingText);
+
+  const safeBrandLogoUrl = escapeHtml(getEmailBrandLogoUrl());
 
   const closingParagraph = closingText
     ? `
@@ -301,7 +303,7 @@ const buildEmailLayout = ({
                           "
                         >
                           <img
-                            src="cid:${EMAIL_BRAND_LOGO_CID}"
+                          src="${safeBrandLogoUrl}"
                             alt="Hireflow"
                             width="158"
                             class="brand-logo"
