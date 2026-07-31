@@ -19,7 +19,7 @@ describe("Email templates", () => {
 
     expect(email.text).toContain(verificationUrl);
 
-    expect(email.html).toContain("cid:hireflow-brand-logo");
+    expect(email.html).toContain("https://cdn.example.com/hireflow-logo.png");
 
     expect(email.html).toContain("@media only screen and (max-width: 620px)");
 

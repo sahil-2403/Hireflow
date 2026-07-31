@@ -1,3 +1,11 @@
-const EMAIL_BRAND_LOGO_CID = "hireflow-brand-logo";
+const getEmailBrandLogoUrl = () => {
+  const logoUrl = process.env.EMAIL_BRAND_LOGO_URL;
 
-export { EMAIL_BRAND_LOGO_CID };
+  if (!logoUrl) {
+    throw new Error("EMAIL_BRAND_LOGO_URL is required");
+  }
+
+  return logoUrl;
+};
+
+export { getEmailBrandLogoUrl };

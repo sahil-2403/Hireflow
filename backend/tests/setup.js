@@ -48,12 +48,13 @@ process.env.AI_MAX_COMPARISON_CANDIDATES = "3";
 process.env.GEMINI_API_BASE_URL =
   "https://generativelanguage.googleapis.com/v1beta";
 
-process.env.SMTP_HOST = "smtp.example.com";
-process.env.SMTP_PORT = "587";
-process.env.SMTP_SECURE = "false";
-process.env.SMTP_USER = "test@example.com";
-process.env.SMTP_PASSWORD = "test-password";
-process.env.EMAIL_FROM = "HireFlow Test <test@example.com>";
+process.env.BREVO_API_KEY = "test-brevo-api-key";
+
+process.env.EMAIL_FROM_NAME = "Hireflow Test";
+
+process.env.EMAIL_FROM_ADDRESS = "test@example.com";
+
+process.env.EMAIL_BRAND_LOGO_URL = "https://cdn.example.com/hireflow-logo.png";
 
 process.env.CLOUDINARY_CLOUD_NAME = "test-cloud";
 process.env.CLOUDINARY_API_KEY = "test-key";
