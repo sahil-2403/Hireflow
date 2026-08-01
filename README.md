@@ -1,11 +1,9 @@
 <div align="center">
-  <div "white">
   <img
     src="./docs/assets/hireflow-readme-banner.png"
     alt="Hireflow — connecting talent with the right opportunities"
     width="100%"
   />
-  </div>
 
   <h3>Connecting talent with the right opportunities.</h3>
 
@@ -41,6 +39,58 @@ The project was built with a backend-first architecture and includes
 secure cookie-based authentication, role-based authorization,
 transactional emails, media uploads, API documentation, automated
 backend tests, and production deployment.
+
+## Application Preview
+
+### Homepage
+
+<p align="center">
+  <img
+    src="./docs/screenshots/homepage.png"
+    alt="Hireflow homepage"
+    width="100%"
+  />
+</p>
+
+### Job Discovery
+
+<p align="center">
+  <img
+    src="./docs/screenshots/jobs.png"
+    alt="Hireflow public job discovery page"
+    width="100%"
+  />
+</p>
+
+### Candidate Dashboard
+
+<p align="center">
+  <img
+    src="./docs/screenshots/candidate-dashboard.png"
+    alt="Hireflow candidate dashboard"
+    width="100%"
+  />
+</p>
+
+### Company Administration
+
+<p align="center">
+  <img
+    src="./docs/screenshots/company-dashboard.png"
+    alt="Hireflow company administrator dashboard"
+    width="100%"
+  />
+</p>
+
+### AI Resume Analysis
+
+<p align="center">
+  <img
+    src="./docs/screenshots/ai-resume-analysis.png"
+    alt="Hireflow AI resume analysis"
+    width="100%"
+  />
+</p>
 
 ## Main Features
 
