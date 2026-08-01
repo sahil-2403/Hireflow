@@ -65,7 +65,7 @@ router.get(
  *       - Company
  *     summary: Create the company profile
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -124,7 +124,7 @@ router.post(
  *       - Company
  *     summary: Update the company profile
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -172,7 +172,7 @@ router.patch(
  *       - Company
  *     summary: Create an internal recruiter account
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -227,7 +227,7 @@ router.post(
  *       - Company
  *     summary: List company recruiters
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Recruiters returned
@@ -244,7 +244,7 @@ router.get("/recruiters", authenticate, authorize(ROLES.OWNER), listRecruiters);
  *       - Company
  *     summary: Activate or deactivate a recruiter
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: recruiterId
@@ -287,7 +287,7 @@ router.patch(
  *       - Uploads
  *     summary: Upload or replace the company logo
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:

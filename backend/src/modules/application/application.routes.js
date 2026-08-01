@@ -32,7 +32,7 @@ const router = express.Router();
  *       - Applications
  *     summary: Apply to an open job
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: jobId
@@ -76,7 +76,7 @@ router.post(
  *       - Applications
  *     summary: Get the authenticated candidate's application summary
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Candidate application summary returned
@@ -98,7 +98,7 @@ router.get(
  *       - Applications
  *     summary: List the authenticated candidate's applications
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: status
@@ -128,7 +128,7 @@ router.get("/me", authenticate, authorize(ROLES.CANDIDATE), listMyApplications);
  *       - Applications
  *     summary: List company applications for owners and recruiters
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: jobId
@@ -204,7 +204,7 @@ router.get(
  *       - Applications
  *     summary: Move an application through the hiring workflow
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: applicationId

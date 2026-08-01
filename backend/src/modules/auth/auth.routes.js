@@ -202,7 +202,7 @@ router.post("/refresh-token", refreshAccessToken);
  *       - Auth
  *     summary: Log out the current device session
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -232,7 +232,7 @@ router.post("/logout", logoutUser);
  *       - Auth
  *     summary: Log out from every active device
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: All sessions revoked
@@ -379,7 +379,7 @@ router.post(
  *       - Auth
  *     summary: Get authenticated user
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Current user returned

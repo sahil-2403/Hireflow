@@ -34,7 +34,7 @@ router.get("/profile/resume/view", viewCandidateResume);
  *       - Candidates
  *     summary: Create the authenticated candidate profile
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -99,7 +99,7 @@ router.post(
  *       - Candidates
  *     summary: Get the authenticated candidate profile
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Candidate profile returned
@@ -118,7 +118,7 @@ router.get("/profile", getMyCandidateProfile);
  *       - Candidates
  *     summary: Update the authenticated candidate profile
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -148,7 +148,7 @@ router.patch(
  *       - Uploads
  *     summary: Upload or replace the candidate resume
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:

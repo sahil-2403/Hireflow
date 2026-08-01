@@ -23,7 +23,7 @@ const router = express.Router();
  *       - Analytics
  *     summary: Get company dashboard overview
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Company overview returned
@@ -45,7 +45,7 @@ router.get(
  *       - Analytics
  *     summary: Get application counts by hiring stage
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Hiring funnel returned
@@ -65,7 +65,7 @@ router.get(
  *       - Analytics
  *     summary: Get jobs ranked by application count
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: limit
@@ -99,7 +99,7 @@ router.get(
  *       - Analytics
  *     summary: Get candidate dashboard overview
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Candidate overview returned

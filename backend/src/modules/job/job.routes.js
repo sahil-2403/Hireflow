@@ -94,7 +94,7 @@ router.get("/", listPublicJobs);
  *       - Jobs
  *     summary: List jobs managed by the current company
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: status
@@ -143,7 +143,7 @@ router.get(
  *       - Jobs
  *     summary: Create a job
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -217,7 +217,7 @@ router.post(
  *       - Jobs
  *     summary: Update a company job
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: jobId
@@ -255,7 +255,7 @@ router.patch(
  *       - Jobs
  *     summary: Open or close a job
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: jobId
