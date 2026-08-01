@@ -71,14 +71,68 @@ app.use(globalLimiter);
 
 /**
  * @openapi
+ * components:
+ *   schemas:
+ *     HealthData:
+ *       type: object
+ *       required:
+ *         - uptimeSeconds
+ *         - timestamp
+ *       properties:
+ *         environment:
+ *           type: string
+ *           example: production
+ *           description: Current Node.js application environment
+ *         uptimeSeconds:
+ *           type: integer
+ *           minimum: 0
+ *           example: 86400
+ *           description: Number of whole seconds for which the API process has been running
+ *         timestamp:
+ *           type: string
+ *           format: date-time
+ *           example: "2026-08-01T17:00:00.000Z"
+ *           description: Current server timestamp
+ */
+
+/**
+ * @openapi
  * /api/v1/health:
  *   get:
  *     tags:
  *       - Health
+ *     operationId: getApiHealth
  *     summary: Check API health
+ *     description: |
+ *       Public health-check endpoint used to confirm that the Hireflow
+ *       API process is running and accepting requests.
+ *
+ *       This endpoint does not verify the availability of MongoDB,
+ *       Cloudinary, the email provider, or the AI provider.
  *     responses:
- *       200:
- *         description: API is operational
+ *       "200":
+ *         description: Hireflow API is operational
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: "#/components/schemas/ApiSuccess"
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: "#/components/schemas/HealthData"
+ *             example:
+ *               statusCode: 200
+ *               success: true
+ *               message: HireFlow API is healthy
+ *               data:
+ *                 environment: production
+ *                 uptimeSeconds: 86400
+ *                 timestamp: "2026-08-01T17:00:00.000Z"
+ *       "429":
+ *         $ref: "#/components/responses/TooManyRequests"
+ *       "500":
+ *         $ref: "#/components/responses/InternalServerError"
  */
 app.get("/api/v1/health", (req, res) => {
   res.status(200).json({
