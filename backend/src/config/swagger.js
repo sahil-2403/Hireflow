@@ -141,6 +141,16 @@ Each protected operation documents its permitted roles.
           "HttpOnly access-token cookie set by the login and refresh endpoints. The cookie is managed automatically by the browser and cannot be entered manually through Swagger UI.",
       },
 
+      refreshCookieAuth: {
+        type: "apiKey",
+        in: "cookie",
+
+        name: process.env.REFRESH_TOKEN_COOKIE_NAME || "hireflow_refresh_token",
+
+        description:
+          "HttpOnly refresh-token cookie set by login and rotated by the refresh endpoint. It is scoped to /api/v1/auth and managed automatically by the browser.",
+      },
+
       csrfToken: {
         type: "apiKey",
         in: "header",
@@ -158,6 +168,95 @@ Each protected operation documents its permitted roles.
         example: "507f1f77bcf86cd799439011",
         description:
           "MongoDB ObjectId represented as a 24-character hexadecimal string",
+      },
+
+      Role: {
+        type: "string",
+
+        enum: ["candidate", "owner", "recruiter"],
+
+        example: "candidate",
+
+        description:
+          "Hireflow account role. The owner role is displayed as company admin in the user interface.",
+      },
+
+      AuthUser: {
+        type: "object",
+
+        required: ["id", "username", "email", "role", "profilePhotoUrl"],
+
+        properties: {
+          id: {
+            $ref: "#/components/schemas/ObjectId",
+          },
+
+          username: {
+            type: "string",
+            example: "sahil_24",
+          },
+
+          email: {
+            type: "string",
+            format: "email",
+            example: "candidate@example.com",
+          },
+
+          role: {
+            $ref: "#/components/schemas/Role",
+          },
+
+          profilePhotoUrl: {
+            type: "string",
+            format: "uri",
+            nullable: true,
+            example:
+              "https://res.cloudinary.com/example/image/upload/profile.jpg",
+          },
+        },
+      },
+
+      CsrfTokenData: {
+        type: "object",
+
+        required: ["csrfToken"],
+
+        properties: {
+          csrfToken: {
+            type: "string",
+            minLength: 64,
+            maxLength: 64,
+            example:
+              "5d26af9b760b03c33e9948eae1dc6b88eb29304ea5a159ad1d09cb8e4cf9c7af",
+
+            description:
+              "Token that must be sent in the X-CSRF-Token header for unsafe requests",
+          },
+        },
+      },
+
+      RegistrationData: {
+        type: "object",
+
+        required: ["userId", "email", "role"],
+
+        properties: {
+          userId: {
+            $ref: "#/components/schemas/ObjectId",
+          },
+
+          email: {
+            type: "string",
+            format: "email",
+            example: "candidate@example.com",
+          },
+
+          role: {
+            type: "string",
+            enum: ["candidate", "owner"],
+            example: "candidate",
+          },
+        },
       },
 
       ValidationIssue: {
@@ -518,7 +617,7 @@ Each protected operation documents its permitted roles.
 
       PayloadTooLarge: {
         description:
-          "The request body or uploaded file exceeds the permitted size",
+          "The JSON or URL-encoded request body exceeds the permitted size",
 
         content: {
           "application/json": {
