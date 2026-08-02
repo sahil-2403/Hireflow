@@ -14,12 +14,12 @@
   </p>
 
   <p>
-    <a href="https://hireflow-hireflow4.vercel.app">
-      <strong>Live Application</strong>
+    <a href="https://hireflow-eight-ochre.vercel.app">
+      <strong>Live Application link</strong>
     </a>
     ·
     <a href="https://hireflow-api-sahil-pawar.onrender.com/api-docs">
-      <strong>API Documentation</strong>
+      <strong>API Documentation link</strong>
     </a>
   </p>
 </div>
