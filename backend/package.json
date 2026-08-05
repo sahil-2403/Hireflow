@@ -4,6 +4,7 @@
   "description": "HireFlow backend API",
   "main": "src/server.js",
   "scripts": {
+    "lint": "npx --yes eslint@10.3.0 .",
     "test": "vitest",
     "test:run": "vitest run",
     "test:watch": "vitest",
