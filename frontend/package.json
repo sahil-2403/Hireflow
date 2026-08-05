@@ -7,7 +7,6 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "test:auth-refresh": "node --test tests/refreshSessionSingleFlight.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
