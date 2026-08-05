@@ -6,18 +6,32 @@ import {
   useState,
 } from "react";
 
-import { getCurrentUser, refreshSession } from "../../api/auth.api";
+import { getCurrentUser } from "../../api/auth.api";
+
+import refreshSessionOnce from "./refreshSessionOnce";
 
 const AuthContext = createContext(null);
+
+const hasAlreadyAttemptedSessionRefresh = (error) => {
+  const requestUrl = error?.config?.url || "";
+
+  return Boolean(
+    error?.config?._authRetry || requestUrl.includes("/auth/refresh-token"),
+  );
+};
 
 const getSessionUser = async () => {
   try {
     const result = await getCurrentUser();
 
     return result.data;
-  } catch {
+  } catch (error) {
+    if (hasAlreadyAttemptedSessionRefresh(error)) {
+      return null;
+    }
+
     try {
-      await refreshSession();
+      await refreshSessionOnce();
 
       const result = await getCurrentUser();
 
