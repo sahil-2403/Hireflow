@@ -510,6 +510,37 @@ Preview the production build:
 npm run preview
 ```
 
+## Local Demo Data
+
+The backend includes fictional development fixtures for reviewing each
+role without creating records manually. The seed script refuses to run
+when `NODE_ENV=production` and is intended only for a local database.
+
+From `backend/`, run:
+
+```bash
+npm run seed:demo:reset
+```
+
+Useful local accounts:
+
+| Role              | Email                                |
+| ----------------- | ------------------------------------ |
+| Company admin     | `owner.technova@hireflow.demo`       |
+| Recruiter         | `recruiter.technova1@hireflow.demo`  |
+| Candidate         | `candidate.aarav@hireflow.demo`      |
+| Candidate edge case | `candidate.tina@hireflow.demo`     |
+
+Shared local password:
+
+```text
+Demo@1234
+```
+
+These credentials are development fixtures and are not guaranteed to
+exist in the public production deployment. Use fictional information
+when testing uploads, profiles, résumés, jobs, or applications.
+
 ## Testing
 
 The backend test suite uses:
@@ -551,9 +582,9 @@ npm run build
 Production URLs:
 
 - Application:
-  `https://hireflow-hireflow4.vercel.app`
+  `https://hireflow-eight-ochre.vercel.app`
 - API health:
-  `https://hireflow-hireflow4.vercel.app/api/v1/health`
+  `https://hireflow-eight-ochre.vercel.app/api/v1/health`
 - API documentation:
   `https://hireflow-api-sahil-pawar.onrender.com/api-docs`
 
@@ -572,6 +603,20 @@ Production URLs:
 - Swagger API documentation
 - Automated backend integration and unit tests
 - Production deployment across multiple managed services
+
+## Known Limitations
+
+- The Render backend can enter an idle state. The first request after a
+  period of inactivity may take longer while the service starts, and a
+  temporary `502` response may require one retry.
+- AI-assisted features depend on Gemini availability, configured usage
+  limits, and valid third-party credentials.
+- Public users should use fictional data and non-sensitive test résumés
+  because this is a portfolio deployment rather than a production hiring
+  service.
+- Frontend automated tests, end-to-end browser tests, continuous
+  integration, production error tracking, and uptime monitoring are not
+  implemented yet.
 
 ## Future Improvements
 
