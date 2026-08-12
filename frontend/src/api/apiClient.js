@@ -8,6 +8,7 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
 const UPLOAD_REQUEST_TIMEOUT_MS = 120000;
 
 let csrfToken = null;
+let csrfTokenRequest = null;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -20,18 +21,31 @@ const isUnsafeRequest = (method = "get") => {
 };
 
 const fetchCsrfToken = async () => {
-  const response = await apiClient.get("/auth/csrf-token", {
-    _skipCsrf: true,
-  });
-
-  const token = response.data?.data?.csrfToken;
-
-  if (!token) {
-    throw new Error("CSRF token missing from response");
+  if (csrfToken) {
+    return csrfToken;
   }
 
-  csrfToken = token;
-  return token;
+  if (!csrfTokenRequest) {
+    csrfTokenRequest = apiClient
+      .get("/auth/csrf-token", {
+        _skipCsrf: true,
+      })
+      .then((response) => {
+        const token = response.data?.data?.csrfToken;
+
+        if (!token) {
+          throw new Error("CSRF token missing from response");
+        }
+
+        csrfToken = token;
+        return token;
+      })
+      .finally(() => {
+        csrfTokenRequest = null;
+      });
+  }
+
+  return csrfTokenRequest;
 };
 
 apiClient.interceptors.request.use(async (config) => {
@@ -39,7 +53,7 @@ apiClient.interceptors.request.use(async (config) => {
     return config;
   }
 
-  const token = csrfToken || (await fetchCsrfToken());
+  const token = await fetchCsrfToken();
 
   config.headers = config.headers ?? {};
   config.headers[CSRF_HEADER_NAME] = token;
