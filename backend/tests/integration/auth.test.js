@@ -8,11 +8,6 @@ vi.mock("../../src/shared/services/email.service.js", () => ({
 
 import User from "../../src/modules/auth/auth.model.js";
 import EmailVerificationToken from "../../src/modules/auth/emailVerificationToken.model.js";
-
-import AuthSession from "../../src/modules/auth/authSession.model.js";
-
-import { hashToken } from "../../src/shared/utils/token.js";
-
 import { ROLES } from "../../src/config/constants.js";
 
 import {
@@ -30,7 +25,6 @@ import {
 describe("Authentication API", () => {
   test("registers a candidate and stores a hashed password", async () => {
     const agent = createTestAgent();
-
     const candidate = {
       username: "sahil_test",
       email: "sahil.test@example.com",
@@ -48,7 +42,6 @@ describe("Authentication API", () => {
     expect(response.body.message).toContain(
       "Candidate registration successful",
     );
-
     expect(response.body.data).toEqual(
       expect.objectContaining({
         email: candidate.email,
@@ -56,7 +49,6 @@ describe("Authentication API", () => {
         role: ROLES.CANDIDATE,
       }),
     );
-
     expect(response.body.data.verificationUrl).toBeUndefined();
 
     const user = await User.findOne({
@@ -65,9 +57,9 @@ describe("Authentication API", () => {
 
     expect(user).not.toBeNull();
     expect(user.password).not.toBe(candidate.password);
-
     expect(user.role).toBe(ROLES.CANDIDATE);
     expect(user.isEmailVerified).toBe(false);
+    expect(user.tokenVersion).toBe(0);
 
     const verificationToken = await EmailVerificationToken.findOne({
       userId: user._id,
@@ -79,7 +71,6 @@ describe("Authentication API", () => {
 
   test("registers a company admin account", async () => {
     const agent = createTestAgent();
-
     const response = await postWithCsrf(
       agent,
       "/api/v1/auth/register",
@@ -96,7 +87,6 @@ describe("Authentication API", () => {
     expect(response.body.message).toContain(
       "Company admin registration successful",
     );
-
     expect(response.body.data).toEqual(
       expect.objectContaining({
         email: "company.admin.test@example.com",
@@ -114,7 +104,6 @@ describe("Authentication API", () => {
 
   test("rejects an invalid registration payload", async () => {
     const agent = createTestAgent();
-
     const response = await postWithCsrf(
       agent,
       "/api/v1/auth/register",
@@ -128,15 +117,12 @@ describe("Authentication API", () => {
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe("Validation failed");
-
     expect(response.body.errors.length).toBeGreaterThan(0);
-
     expect(await User.countDocuments()).toBe(0);
   });
 
   test("rejects public registration with recruiter role", async () => {
     const agent = createTestAgent();
-
     const response = await postWithCsrf(
       agent,
       "/api/v1/auth/register",
@@ -150,7 +136,6 @@ describe("Authentication API", () => {
     );
 
     expect(response.body.success).toBe(false);
-
     expect(await User.countDocuments()).toBe(0);
   });
 
@@ -165,7 +150,6 @@ describe("Authentication API", () => {
     });
 
     const agent = createTestAgent();
-
     const response = await postWithCsrf(
       agent,
       "/api/v1/auth/register",
@@ -192,7 +176,6 @@ describe("Authentication API", () => {
     });
 
     const agent = createTestAgent();
-
     const response = await postWithCsrf(
       agent,
       "/api/v1/auth/register",
@@ -210,7 +193,6 @@ describe("Authentication API", () => {
 
   test("prevents login before email verification", async () => {
     const agent = createTestAgent();
-
     const candidate = {
       username: "unverified_candidate",
       email: "unverified.candidate@example.com",
@@ -234,14 +216,14 @@ describe("Authentication API", () => {
     );
   });
 
-  test("logs in a verified candidate and creates auth cookies plus refresh session", async () => {
+  test("logs in a verified candidate and creates access and refresh cookies", async () => {
     const candidate = {
       username: "verified_candidate_login",
       email: "verified.candidate.login@example.com",
       password: "Password123",
     };
 
-    const user = await User.create({
+    await User.create({
       ...candidate,
       role: ROLES.CANDIDATE,
       isEmailVerified: true,
@@ -249,7 +231,6 @@ describe("Authentication API", () => {
     });
 
     const agent = createTestAgent();
-
     const response = await postWithCsrf(
       agent,
       "/api/v1/auth/login",
@@ -261,7 +242,6 @@ describe("Authentication API", () => {
     );
 
     expect(response.body.success).toBe(true);
-
     expect(response.body.data).toEqual(
       expect.objectContaining({
         user: expect.objectContaining({
@@ -270,40 +250,15 @@ describe("Authentication API", () => {
         }),
       }),
     );
-
     expect(response.body.data.accessToken).toBeUndefined();
     expect(response.body.data.refreshToken).toBeUndefined();
 
     const cookies = getSetCookies(response);
-
     const accessToken = getCookieValue(cookies, getAccessTokenCookieName());
-
     const refreshToken = getCookieValue(cookies, getRefreshTokenCookieName());
 
     expect(accessToken).toEqual(expect.any(String));
     expect(refreshToken).toEqual(expect.any(String));
-
-    const storedSessions = await AuthSession.find({
-      userId: user._id,
-    }).select("+refreshTokenHash");
-
-    expect(storedSessions).toHaveLength(1);
-
-    const storedSession = storedSessions[0];
-
-    expect(storedSession.sessionId).toEqual(expect.any(String));
-
-    expect(storedSession.userId.toString()).toBe(user._id.toString());
-
-    expect(storedSession.refreshTokenHash).toBe(hashToken(refreshToken));
-
-    expect(storedSession.refreshTokenHash).not.toBe(refreshToken);
-
-    expect(storedSession.revokedAt).toBeNull();
-    expect(storedSession.revokedReason).toBeNull();
-
-    expect(storedSession.expiresAt).toBeInstanceOf(Date);
-    expect(storedSession.lastUsedAt).toBeInstanceOf(Date);
   });
 
   test("rejects incorrect login credentials", async () => {
@@ -321,7 +276,6 @@ describe("Authentication API", () => {
     });
 
     const agent = createTestAgent();
-
     const response = await postWithCsrf(
       agent,
       "/api/v1/auth/login",
@@ -346,7 +300,6 @@ describe("Authentication API", () => {
     });
 
     const agent = createTestAgent();
-
     const response = await postWithCsrf(
       agent,
       "/api/v1/auth/login",
