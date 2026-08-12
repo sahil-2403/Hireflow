@@ -4,17 +4,11 @@ import ApiError from "../../shared/errors/ApiError.js";
 const AI_NOT_AVAILABLE_MESSAGE =
   "AI features are currently unavailable. Please try again later.";
 
-const GEMINI_PROVIDER = "gemini";
-
-const assertAiReady = () => {
+const getGeminiConfig = () => {
   const config = getAiConfig();
 
   if (!config.enabled) {
     throw new ApiError(503, AI_NOT_AVAILABLE_MESSAGE);
-  }
-
-  if (config.provider !== GEMINI_PROVIDER) {
-    throw new ApiError(503, "Configured AI provider is not supported");
   }
 
   if (!config.model) {
@@ -25,24 +19,13 @@ const assertAiReady = () => {
     throw new ApiError(503, "Gemini API key is not configured");
   }
 
-  if (typeof fetch !== "function") {
-    throw new ApiError(503, "Fetch API is not available in this Node runtime");
-  }
-
   return config;
 };
 
-const ensureAiProviderReady = () => {
-  return assertAiReady();
-};
+const ensureAiProviderReady = () => getGeminiConfig();
 
-const normalizeGeminiModelName = (model) => {
-  if (model.startsWith("models/")) {
-    return model;
-  }
-
-  return `models/${model}`;
-};
+const normalizeGeminiModelName = (model) =>
+  model.startsWith("models/") ? model : `models/${model}`;
 
 const buildGeminiGenerateContentUrl = ({ baseUrl, model, apiKey }) => {
   const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
@@ -56,26 +39,19 @@ const buildGeminiGenerateContentUrl = ({ baseUrl, model, apiKey }) => {
 const buildGeminiRequestBody = ({
   prompt = null,
   parts = null,
-  systemInstruction,
-  responseMimeType = "application/json",
+  systemInstruction = null,
+  responseMimeType = "text/plain",
   responseSchema = null,
   temperature = 0.2,
   maxOutputTokens = 2048,
 }) => {
-  const contentParts = parts || [
-    {
-      text: prompt,
-    },
-  ];
-
   const body = {
     contents: [
       {
         role: "user",
-        parts: contentParts,
+        parts: parts || [{ text: prompt }],
       },
     ],
-
     generationConfig: {
       temperature,
       maxOutputTokens,
@@ -85,11 +61,7 @@ const buildGeminiRequestBody = ({
 
   if (systemInstruction) {
     body.systemInstruction = {
-      parts: [
-        {
-          text: systemInstruction,
-        },
-      ],
+      parts: [{ text: systemInstruction }],
     };
   }
 
@@ -100,22 +72,8 @@ const buildGeminiRequestBody = ({
   return body;
 };
 
-const readProviderError = async (response) => {
-  try {
-    const data = await response.json();
-
-    return (
-      data?.error?.message || data?.message || "AI provider request failed"
-    );
-  } catch {
-    return "AI provider request failed";
-  }
-};
-
 const extractGeminiText = (data) => {
-  const parts = data?.candidates?.[0]?.content?.parts || [];
-
-  const text = parts
+  const text = (data?.candidates?.[0]?.content?.parts || [])
     .map((part) => part.text)
     .filter(Boolean)
     .join("\n")
@@ -128,13 +86,12 @@ const extractGeminiText = (data) => {
   return text;
 };
 
-const stripJsonCodeFence = (text) => {
-  return text
+const stripJsonCodeFence = (text) =>
+  text
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
     .replace(/```$/i, "")
     .trim();
-};
 
 const parseAiJson = (text) => {
   try {
@@ -144,7 +101,7 @@ const parseAiJson = (text) => {
   }
 };
 
-const generateAiText = async ({
+const callGemini = async ({
   prompt = null,
   parts = null,
   systemInstruction = null,
@@ -153,12 +110,9 @@ const generateAiText = async ({
   temperature = 0.2,
   maxOutputTokens = 2048,
 }) => {
-  const config = assertAiReady();
-
+  const config = getGeminiConfig();
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => {
-    controller.abort();
-  }, config.requestTimeoutMs);
+  const timeoutId = setTimeout(() => controller.abort(), config.requestTimeoutMs);
 
   try {
     const response = await fetch(
@@ -188,14 +142,10 @@ const generateAiText = async ({
     );
 
     if (!response.ok) {
-      await readProviderError(response);
-
       throw new ApiError(502, "AI provider request failed");
     }
 
-    const data = await response.json();
-
-    return extractGeminiText(data);
+    return extractGeminiText(await response.json());
   } catch (error) {
     if (error.name === "AbortError") {
       throw new ApiError(504, "AI provider request timed out");
@@ -211,22 +161,12 @@ const generateAiText = async ({
   }
 };
 
-const generateAiJson = async ({
-  prompt = null,
-  parts = null,
-  systemInstruction = null,
-  responseSchema = null,
-  temperature = 0.2,
-  maxOutputTokens = 2048,
-}) => {
-  const text = await generateAiText({
-    prompt,
-    parts,
-    systemInstruction,
+const generateAiText = async (options) => callGemini(options);
+
+const generateAiJson = async (options) => {
+  const text = await callGemini({
+    ...options,
     responseMimeType: "application/json",
-    responseSchema,
-    temperature,
-    maxOutputTokens,
   });
 
   return parseAiJson(text);
