@@ -2,10 +2,10 @@ import asyncHandler from "../../shared/utils/asyncHandler.js";
 import ApiResponse from "../../shared/responses/ApiResponse.js";
 
 import {
+  setAccessTokenCookie,
   setAuthCookies,
   clearAuthCookies,
   getRefreshTokenCookieName,
-  getAccessTokenCookieName,
 } from "./auth.cookie.js";
 
 import {
@@ -50,23 +50,15 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const refreshToken = req.cookies?.[getRefreshTokenCookieName()];
-
   const result = await authService.refreshAccessToken(refreshToken);
 
-  setAuthCookies(res, {
-    accessToken: result.accessToken,
-    refreshToken: result.refreshToken,
-  });
+  setAccessTokenCookie(res, result.accessToken);
 
   return res.status(200).json(new ApiResponse(200, result.message));
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
-  const result = await authService.logoutUser({
-    accessToken: req.cookies?.[getAccessTokenCookieName()],
-
-    refreshToken: req.cookies?.[getRefreshTokenCookieName()],
-  });
+  const result = await authService.logoutUser();
 
   clearAuthCookies(res);
 

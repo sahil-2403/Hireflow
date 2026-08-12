@@ -5,6 +5,11 @@ import sendEmail from "../../shared/services/email.service.js";
 import ApiError from "../../shared/errors/ApiError.js";
 import { ROLES } from "../../config/constants.js";
 import { generateRandomToken, hashToken } from "../../shared/utils/token.js";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from "../../shared/utils/jwt.js";
 
 import {
   uploadProfilePhotoFile,
@@ -12,16 +17,7 @@ import {
 } from "../../shared/services/media.service.js";
 
 import buildVerificationEmail from "../../shared/email/templates/verificationEmail.template.js";
-
 import buildPasswordResetEmail from "../../shared/email/templates/passwordResetEmail.template.js";
-
-import {
-  SESSION_REVOKE_REASONS,
-  createAuthSession,
-  rotateAuthSession,
-  revokeCurrentAuthSession,
-  revokeAllAuthSessions,
-} from "./authSession.service.js";
 
 const EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS =
   Number(process.env.EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS) || 24;
@@ -39,6 +35,23 @@ const buildAuthUserResponse = (user) => {
     role: user.role,
     profilePhotoUrl: user.profilePhotoUrl,
   };
+};
+
+const getTokenVersion = (user) => Number(user?.tokenVersion ?? 0);
+
+const createAccessToken = (user) => {
+  return generateAccessToken({
+    userId: user._id.toString(),
+    role: user.role,
+    tokenVersion: getTokenVersion(user),
+  });
+};
+
+const createRefreshToken = (user) => {
+  return generateRefreshToken({
+    userId: user._id.toString(),
+    tokenVersion: getTokenVersion(user),
+  });
 };
 
 const resetPassword = async (token, password) => {
@@ -60,15 +73,12 @@ const resetPassword = async (token, password) => {
   }
 
   user.password = password;
+  user.tokenVersion = getTokenVersion(user) + 1;
   await user.save();
 
-  await Promise.all([
-    PasswordResetToken.deleteMany({
-      userId: user._id,
-    }),
-
-    revokeAllAuthSessions(user._id, SESSION_REVOKE_REASONS.PASSWORD_RESET),
-  ]);
+  await PasswordResetToken.deleteMany({
+    userId: user._id,
+  });
 
   return {
     message: "Password reset successfully. Please log in again.",
@@ -112,19 +122,29 @@ const forgotPassword = async (email) => {
 };
 
 const logoutAllSessions = async (userId) => {
-  await revokeAllAuthSessions(userId, SESSION_REVOKE_REASONS.USER_LOGOUT_ALL);
+  const user = await User.findByIdAndUpdate(
+    userId,
+    {
+      $inc: {
+        tokenVersion: 1,
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
 
   return {
     message: "Logged out from all devices successfully",
   };
 };
 
-const logoutUser = async ({ refreshToken, accessToken }) => {
-  await revokeCurrentAuthSession({
-    refreshToken,
-    accessToken,
-  });
-
+const logoutUser = async () => {
   return {
     message: "Logged out successfully",
   };
@@ -142,17 +162,14 @@ const uploadProfilePhoto = async (userId, file) => {
   }
 
   const oldPublicId = user.profilePhotoPublicId;
-
   const uploadedAsset = await uploadProfilePhotoFile(file.buffer);
 
   try {
     user.profilePhotoUrl = uploadedAsset.url;
     user.profilePhotoPublicId = uploadedAsset.publicId;
-
     await user.save();
   } catch (error) {
     await deleteAsset(uploadedAsset.publicId, "image");
-
     throw error;
   }
 
@@ -175,7 +192,6 @@ const deleteProfilePhoto = async (userId) => {
 
   user.profilePhotoUrl = null;
   user.profilePhotoPublicId = null;
-
   await user.save();
 
   await deleteAsset(oldPublicId, "image");
@@ -187,11 +203,32 @@ const deleteProfilePhoto = async (userId) => {
 };
 
 const refreshAccessToken = async (refreshToken) => {
-  const result = await rotateAuthSession(refreshToken);
+  if (!refreshToken) {
+    throw new ApiError(401, "Refresh token missing");
+  }
+
+  const decoded = verifyRefreshToken(refreshToken);
+
+  if (!decoded?.userId) {
+    throw new ApiError(401, "Invalid refresh token");
+  }
+
+  const user = await User.findById(decoded.userId);
+
+  if (!user) {
+    throw new ApiError(401, "Invalid refresh token");
+  }
+
+  if (!user.isActive) {
+    throw new ApiError(403, "This account has been deactivated");
+  }
+
+  if (Number(decoded.tokenVersion) !== getTokenVersion(user)) {
+    throw new ApiError(401, "This session has been revoked");
+  }
 
   return {
-    accessToken: result.accessToken,
-    refreshToken: result.refreshToken,
+    accessToken: createAccessToken(user),
     message: "Token refreshed successfully",
   };
 };
@@ -217,12 +254,10 @@ const loginUser = async ({ email, password }) => {
     throw new ApiError(401, "Invalid email or password");
   }
 
-  const { accessToken, refreshToken } = await createAuthSession(user);
-
   return {
     user: buildAuthUserResponse(user),
-    accessToken,
-    refreshToken,
+    accessToken: createAccessToken(user),
+    refreshToken: createRefreshToken(user),
     message: "Login successful",
   };
 };
@@ -345,7 +380,6 @@ const registerUser = async ({
   });
 
   const verificationToken = await createEmailVerificationToken(user._id);
-
   await sendVerificationEmail(user, verificationToken);
 
   return {
@@ -363,7 +397,6 @@ const sendVerificationEmail = async (user, rawToken) => {
   const emailContent = buildVerificationEmail({
     username: user.username,
     verificationUrl,
-
     expiresInHours: EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS,
   });
 
@@ -379,7 +412,6 @@ const sendPasswordResetEmail = async (user, rawToken) => {
   const emailContent = buildPasswordResetEmail({
     username: user.username,
     resetUrl,
-
     expiresInMinutes: PASSWORD_RESET_TOKEN_EXPIRY_MINUTES,
   });
 
@@ -402,7 +434,6 @@ const resendVerificationEmail = async (email) => {
   }
 
   const verificationToken = await createEmailVerificationToken(user._id);
-
   await sendVerificationEmail(user, verificationToken);
 
   return {

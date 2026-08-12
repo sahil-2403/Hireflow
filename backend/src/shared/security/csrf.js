@@ -3,12 +3,9 @@ import crypto from "crypto";
 import ApiError from "../errors/ApiError.js";
 
 const CSRF_COOKIE_NAME = process.env.CSRF_COOKIE_NAME || "hireflow_csrf_token";
-
 const CSRF_COOKIE_MAX_AGE_MINUTES =
   Number(process.env.CSRF_COOKIE_MAX_AGE_MINUTES) || 60;
-
 const CSRF_HEADER_NAME = "x-csrf-token";
-
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 const getCsrfCookieOptions = () => {
@@ -29,41 +26,15 @@ const setCsrfCookie = (res, csrfToken) => {
   res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions());
 };
 
-const isSafeMethod = (method) => {
-  return !UNSAFE_METHODS.has(method);
-};
-
-const isCsrfTokenRoute = (req) => {
-  return (
-    req.method === "GET" &&
-    req.originalUrl.startsWith("/api/v1/auth/csrf-token")
-  );
-};
-
-const areTokensEqual = (tokenA, tokenB) => {
-  if (!tokenA || !tokenB) {
-    return false;
-  }
-
-  const tokenABuffer = Buffer.from(tokenA);
-  const tokenBBuffer = Buffer.from(tokenB);
-
-  if (tokenABuffer.length !== tokenBBuffer.length) {
-    return false;
-  }
-
-  return crypto.timingSafeEqual(tokenABuffer, tokenBBuffer);
-};
-
 const csrfProtection = (req, res, next) => {
-  if (isSafeMethod(req.method) || isCsrfTokenRoute(req)) {
+  if (!UNSAFE_METHODS.has(req.method)) {
     return next();
   }
 
   const csrfCookie = req.cookies?.[CSRF_COOKIE_NAME];
   const csrfHeader = req.get(CSRF_HEADER_NAME);
 
-  if (!areTokensEqual(csrfCookie, csrfHeader)) {
+  if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
     throw new ApiError(403, "Invalid CSRF token");
   }
 

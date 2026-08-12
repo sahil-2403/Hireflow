@@ -1,9 +1,8 @@
 import { useEffect } from "react";
 
 import apiClient from "../../api/apiClient";
+import { refreshSession } from "../../api/auth.api";
 import useAuth from "../../hooks/useAuth";
-
-import refreshSessionOnce from "./refreshSessionOnce";
 
 const AuthInterceptor = ({ children }) => {
   const { signOut } = useAuth();
@@ -13,32 +12,25 @@ const AuthInterceptor = ({ children }) => {
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
-
-        const status = error.response?.status;
         const requestUrl = originalRequest?.url;
 
-        const isAuthRefreshRequest = requestUrl?.includes(
-          "/auth/refresh-token",
-        );
-
-        const isAuthLoginRequest = requestUrl?.includes("/auth/login");
+        const isRefreshRequest = requestUrl?.includes("/auth/refresh-token");
+        const isLoginRequest = requestUrl?.includes("/auth/login");
 
         if (
-          status === 401 &&
+          error.response?.status === 401 &&
           originalRequest &&
           !originalRequest._authRetry &&
-          !isAuthRefreshRequest &&
-          !isAuthLoginRequest
+          !isRefreshRequest &&
+          !isLoginRequest
         ) {
           originalRequest._authRetry = true;
 
           try {
-            await refreshSessionOnce();
-
+            await refreshSession();
             return apiClient(originalRequest);
           } catch (refreshError) {
             signOut();
-
             return Promise.reject(refreshError);
           }
         }
