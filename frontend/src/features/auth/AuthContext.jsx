@@ -6,9 +6,7 @@ import {
   useState,
 } from "react";
 
-import { getCurrentUser } from "../../api/auth.api";
-
-import refreshSessionOnce from "./refreshSessionOnce";
+import { getCurrentUser, refreshSession } from "../../api/auth.api";
 
 const AuthContext = createContext(null);
 
@@ -23,7 +21,6 @@ const hasAlreadyAttemptedSessionRefresh = (error) => {
 const getSessionUser = async () => {
   try {
     const result = await getCurrentUser();
-
     return result.data;
   } catch (error) {
     if (hasAlreadyAttemptedSessionRefresh(error)) {
@@ -31,10 +28,8 @@ const getSessionUser = async () => {
     }
 
     try {
-      await refreshSessionOnce();
-
+      await refreshSession();
       const result = await getCurrentUser();
-
       return result.data;
     } catch {
       return null;
