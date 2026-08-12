@@ -150,25 +150,23 @@ cached-result handling, timeout protection, and structured responses.
 
 ## Authentication and Security
 
-Hireflow uses secure, server-managed authentication rather than storing
+Hireflow uses secure cookie-based JWT authentication rather than storing
 JWTs in browser local storage.
 
 Security features include:
 
-- HttpOnly access and refresh-token cookies
+- Short-lived access tokens and longer-lived refresh tokens
+- HttpOnly authentication cookies
 - CSRF protection for state-changing requests
-- Stable authentication sessions per login or device
-- Refresh-token rotation
-- Refresh-token reuse detection
-- Current-device logout
-- Logout from all devices
-- Session revocation after password reset
+- Automatic access-token refresh through Axios
+- Current-device logout by clearing authentication cookies
+- Logout from all devices using a user-level `tokenVersion`
+- Token invalidation after password reset
 - Role-based authorization
 - Password hashing with bcrypt
 - Request validation with Zod
 - Helmet security headers
 - Global and authentication-specific rate limiting
-- Proxy-aware production rate limiting
 - Restricted CORS configuration
 - Request body-size limits
 - Centralized error handling
@@ -549,9 +547,9 @@ The backend test suite uses:
 - Supertest
 - MongoDB Memory Server
 
-Tests cover core API behavior, authentication sessions, applications,
-recommendations, transactional email templates, and other backend
-workflows.
+Tests cover core API behavior, authentication and token lifecycle,
+applications, recommendations, transactional email templates, and other
+backend workflows.
 
 Run the complete backend suite:
 
@@ -593,7 +591,7 @@ Production URLs:
 - Modular feature-based backend architecture
 - RESTful API design
 - Role-based candidate and company workflows
-- Secure revocable authentication sessions
+- JWT authentication with HttpOnly cookies and account-wide token invalidation
 - Same-origin production API proxy
 - Responsive interface across desktop, tablet, and mobile
 - Route-based lazy loading and code splitting
