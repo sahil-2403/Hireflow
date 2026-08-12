@@ -84,24 +84,6 @@ const matchSnapshotSchema = new mongoose.Schema(
       default: [],
     },
 
-    engineVersion: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    jobSignature: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    candidateSignature: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
     calculatedAt: {
       type: Date,
       required: true,
