@@ -1,9 +1,4 @@
-import {
-  MATCH_ENGINE_VERSION,
-  buildCandidateMatchSignature,
-  buildJobMatchSignature,
-  calculateJobCandidateMatch,
-} from "../../shared/services/matchScore.service.js";
+import { calculateJobCandidateMatch } from "../../shared/services/matchScore.service.js";
 
 const createApplicationMatchSnapshot = (job, candidate, options = {}) => {
   const result = calculateJobCandidateMatch(job, candidate, options);
@@ -19,27 +14,12 @@ const createApplicationMatchSnapshot = (job, candidate, options = {}) => {
     extraCandidateSkills: result.extraCandidateSkills,
     reasons: result.reasons,
     warnings: result.warnings,
-    engineVersion: result.engineVersion,
-    jobSignature: result.jobSignature,
-    candidateSignature: result.candidateSignature,
     calculatedAt: result.calculatedAt,
   };
 };
 
-const isApplicationMatchSnapshotCurrent = (snapshot, job, candidate) => {
-  if (!snapshot) {
-    return false;
-  }
-
-  return (
-    snapshot.engineVersion === MATCH_ENGINE_VERSION &&
-    snapshot.jobSignature === buildJobMatchSignature(job) &&
-    snapshot.candidateSignature === buildCandidateMatchSignature(candidate)
-  );
-};
-
-const shouldRefreshApplicationMatchSnapshot = (snapshot, job, candidate) => {
-  return !isApplicationMatchSnapshotCurrent(snapshot, job, candidate);
+const shouldRefreshApplicationMatchSnapshot = (snapshot) => {
+  return !snapshot;
 };
 
 const buildApplicationMatchResponse = (snapshot) => {
@@ -78,6 +58,5 @@ const buildApplicationMatchResponse = (snapshot) => {
 export {
   buildApplicationMatchResponse,
   createApplicationMatchSnapshot,
-  isApplicationMatchSnapshotCurrent,
   shouldRefreshApplicationMatchSnapshot,
 };
