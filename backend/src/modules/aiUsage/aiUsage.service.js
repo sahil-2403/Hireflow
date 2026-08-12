@@ -102,14 +102,9 @@ const consumeAiUsage = async ({
 
   const userObjectId = normalizeObjectId(userId, "user ID");
   const companyObjectId = normalizeObjectId(companyId, "company ID");
-
   const dateKey = getUtcDateKey(date);
   const resetAt = getNextUtcResetAt(date);
   const limit = getAiFeatureDailyLimit(featureKey);
-
-  if (limit <= 0) {
-    throw new ApiError(429, AI_LIMIT_REACHED_MESSAGE);
-  }
 
   let usage = await AiUsage.findOne({
     userId: userObjectId,
@@ -122,39 +117,14 @@ const consumeAiUsage = async ({
   }
 
   if (!usage) {
-    try {
-      usage = await AiUsage.create({
-        userId: userObjectId,
-        companyId: companyObjectId,
-        featureKey,
-        dateKey,
-        count: 1,
-        lastUsedAt: new Date(),
-      });
-    } catch (error) {
-      if (error.code !== 11000) {
-        throw error;
-      }
-
-      usage = await AiUsage.findOne({
-        userId: userObjectId,
-        featureKey,
-        dateKey,
-      });
-
-      if (!usage || usage.count >= limit) {
-        throw new ApiError(429, AI_LIMIT_REACHED_MESSAGE);
-      }
-
-      usage.count += 1;
-      usage.lastUsedAt = new Date();
-
-      if (companyObjectId) {
-        usage.companyId = companyObjectId;
-      }
-
-      await usage.save();
-    }
+    usage = await AiUsage.create({
+      userId: userObjectId,
+      companyId: companyObjectId,
+      featureKey,
+      dateKey,
+      count: 1,
+      lastUsedAt: new Date(),
+    });
   } else {
     usage.count += 1;
     usage.lastUsedAt = new Date();
