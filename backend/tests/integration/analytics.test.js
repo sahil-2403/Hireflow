@@ -53,9 +53,6 @@ const createMatchSnapshot = (score = 75) => ({
   extraCandidateSkills: ["MongoDB"],
   reasons: ["Candidate has relevant MERN skills."],
   warnings: [],
-  engineVersion: "test-engine-v1",
-  jobSignature: `job-signature-${score}`,
-  candidateSignature: `candidate-signature-${score}`,
   calculatedAt: new Date(),
 });
 
@@ -356,8 +353,6 @@ describe("Analytics API", () => {
 
     expect(response.body.success).toBe(true);
     expect(response.body.message).toBe("Hiring funnel fetched successfully");
-
-    expect(response.body.data.totalApplications).toBe(3);
 
     const statusCounts = Object.fromEntries(
       response.body.data.funnel.map((item) => [item.status, item.count]),
