@@ -18,10 +18,6 @@ const createApplicationMatchSnapshot = (job, candidate, options = {}) => {
   };
 };
 
-const shouldRefreshApplicationMatchSnapshot = (snapshot) => {
-  return !snapshot;
-};
-
 const buildApplicationMatchResponse = (snapshot) => {
   if (!snapshot) {
     return null;
@@ -55,8 +51,4 @@ const buildApplicationMatchResponse = (snapshot) => {
   };
 };
 
-export {
-  buildApplicationMatchResponse,
-  createApplicationMatchSnapshot,
-  shouldRefreshApplicationMatchSnapshot,
-};
+export { buildApplicationMatchResponse, createApplicationMatchSnapshot };
