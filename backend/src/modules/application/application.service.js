@@ -17,7 +17,6 @@ import { getStaffCompany } from "../../shared/utils/companyAccess.js";
 import {
   buildApplicationMatchResponse,
   createApplicationMatchSnapshot,
-  shouldRefreshApplicationMatchSnapshot,
 } from "./applicationMatch.service.js";
 
 import { buildApplicationResumeSource } from "../resumeAnalysis/resumeAnalysis.service.js";
@@ -38,58 +37,6 @@ import { getCandidateComparisonAvailability } from "../ai/aiComparison.service.j
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
-
-const JOB_MATCH_DEPENDENCY_FIELDS = [
-  "title",
-  "description",
-  "requirements",
-  "skills",
-  "location",
-  "employmentType",
-  "workplaceType",
-  "experienceLevel",
-  "status",
-].join(" ");
-
-const CANDIDATE_MATCH_DEPENDENCY_FIELDS = [
-  "headline",
-  "summary",
-  "skills",
-  "experienceLevel",
-  "location",
-  "resumeUrl",
-  "linkedinUrl",
-  "githubUrl",
-  "portfolioUrl",
-  "targetJobTitles",
-  "preferredLocations",
-  "preferredWorkplaceTypes",
-  "preferredEmploymentTypes",
-].join(" ");
-
-const MANAGED_APPLICATION_POPULATE_OPTIONS = [
-  {
-    path: "jobId",
-    select: "title status",
-  },
-  {
-    path: "candidateId",
-    select:
-      "firstName lastName headline skills experienceLevel location resumeUrl",
-  },
-  {
-    path: "candidateUserId",
-    select: "username email profilePhotoUrl",
-  },
-  {
-    path: "reviewedBy",
-    select: "username email role",
-  },
-  {
-    path: "statusHistory.changedBy",
-    select: "username email role",
-  },
-];
 
 const JOB_APPLICATION_LIST_POPULATE_OPTIONS = [
   {
@@ -190,20 +137,6 @@ const getIdKey = (value) => {
   const id = value?._id ?? value;
 
   return id ? String(id) : null;
-};
-
-const getUniqueReferenceIds = (applications, fieldName) => {
-  return [
-    ...new Set(
-      applications
-        .map((application) => getIdKey(application[fieldName]))
-        .filter(Boolean),
-    ),
-  ];
-};
-
-const buildDocumentMap = (documents) => {
-  return new Map(documents.map((document) => [String(document._id), document]));
 };
 
 const createEmptyStatusCounts = () => {
@@ -314,85 +247,6 @@ const buildApplicationListMatchResponse = (snapshot) => {
     warnings: match.warnings,
     calculatedAt: match.calculatedAt,
   };
-};
-
-const refreshApplicationMatches = async (applications) => {
-  if (applications.length === 0) {
-    return applications;
-  }
-
-  const jobIds = getUniqueReferenceIds(applications, "jobId");
-  const candidateIds = getUniqueReferenceIds(applications, "candidateId");
-
-  const [jobs, candidates] = await Promise.all([
-    jobIds.length > 0
-      ? Job.find({
-          _id: {
-            $in: jobIds,
-          },
-        })
-          .select(JOB_MATCH_DEPENDENCY_FIELDS)
-          .lean()
-      : [],
-
-    candidateIds.length > 0
-      ? Candidate.find({
-          _id: {
-            $in: candidateIds,
-          },
-        })
-          .select(CANDIDATE_MATCH_DEPENDENCY_FIELDS)
-          .lean()
-      : [],
-  ]);
-
-  const jobsById = buildDocumentMap(jobs);
-
-  const candidatesById = buildDocumentMap(candidates);
-
-  const snapshotUpdates = [];
-
-  const refreshedApplications = applications.map((application) => {
-    const job = jobsById.get(getIdKey(application.jobId));
-
-    const candidate = candidatesById.get(getIdKey(application.candidateId));
-
-    let snapshot = application.matchSnapshot ?? null;
-
-    if (
-      job &&
-      candidate &&
-      shouldRefreshApplicationMatchSnapshot(snapshot, job, candidate)
-    ) {
-      snapshot = createApplicationMatchSnapshot(job, candidate);
-
-      snapshotUpdates.push({
-        updateOne: {
-          filter: {
-            _id: application._id,
-          },
-          update: {
-            $set: {
-              matchSnapshot: snapshot,
-            },
-          },
-        },
-      });
-    }
-
-    return {
-      ...application,
-      matchSnapshot: snapshot,
-    };
-  });
-
-  if (snapshotUpdates.length > 0) {
-    await Application.bulkWrite(snapshotUpdates, {
-      ordered: false,
-    });
-  }
-
-  return refreshedApplications;
 };
 
 const buildApplicationStatusSummary = (applications) => {
@@ -801,17 +655,6 @@ const buildAiInterviewKitEligibility = async ({ userId, application }) => {
   };
 };
 
-const buildLegacyManagedApplicationResponse = (application) => {
-  const applicationResponse = {
-    ...application,
-    match: buildApplicationListMatchResponse(application.matchSnapshot),
-  };
-
-  delete applicationResponse.matchSnapshot;
-
-  return applicationResponse;
-};
-
 const getOwnedJobOrThrow = async (companyId, jobId) => {
   if (!mongoose.isValidObjectId(jobId)) {
     throw new ApiError(400, "Invalid job ID");
@@ -939,74 +782,6 @@ const listMyApplications = async (candidateUserId, query) => {
 
   return {
     applications,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-      hasNextPage: page * limit < total,
-      hasPreviousPage: page > 1,
-    },
-  };
-};
-
-const listManagedApplications = async (userId, role, query) => {
-  const company = await getStaffCompany(
-    userId,
-    role,
-    "You are not allowed to manage applications",
-  );
-
-  const { page, limit, skip } = normalizePagination(query);
-
-  const filters = {
-    companyId: company._id,
-  };
-
-  if (query.jobId) {
-    if (!mongoose.isValidObjectId(query.jobId)) {
-      throw new ApiError(400, "Invalid job ID");
-    }
-
-    filters.jobId = query.jobId;
-  }
-
-  if (query.status) {
-    if (!Object.values(APPLICATION_STATUS).includes(query.status)) {
-      throw new ApiError(400, "Invalid application status");
-    }
-
-    filters.status = query.status;
-  }
-
-  const sortOrder = query.order === "asc" ? 1 : -1;
-
-  const [applications, total] = await Promise.all([
-    Application.find(filters)
-      .select("+matchSnapshot")
-      .sort({
-        appliedAt: sortOrder,
-      })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-
-    Application.countDocuments(filters),
-  ]);
-
-  const refreshedApplications = await refreshApplicationMatches(applications);
-
-  const applicationsWithMatches = refreshedApplications.map(
-    buildLegacyManagedApplicationResponse,
-  );
-
-  const populatedApplications = await Application.populate(
-    applicationsWithMatches,
-    MANAGED_APPLICATION_POPULATE_OPTIONS,
-  );
-
-  return {
-    applications: populatedApplications,
     pagination: {
       page,
       limit,
@@ -1147,10 +922,7 @@ const listManagedApplicationJobs = async (userId, role, query) => {
           .lean()
       : [];
 
-  const refreshedApplications =
-    await refreshApplicationMatches(pageApplications);
-
-  const summaryByJobId = buildJobApplicationSummaryMap(refreshedApplications);
+  const summaryByJobId = buildJobApplicationSummaryMap(pageApplications);
 
   const jobsWithApplicationSummary = jobs.map((job) => {
     const summary = summaryByJobId.get(String(job._id)) || {
@@ -1212,10 +984,8 @@ const listManagedJobApplications = async (userId, role, jobId, query) => {
     .select("+matchSnapshot +resumeReviewSnapshot")
     .lean();
 
-  const refreshedApplications = await refreshApplicationMatches(applications);
-
   const populatedApplications = await Application.populate(
-    refreshedApplications,
+    applications,
     JOB_APPLICATION_LIST_POPULATE_OPTIONS,
   );
 
@@ -1330,10 +1100,8 @@ const getManagedJobApplicationDetails = async (
     throw new ApiError(404, "Application not found");
   }
 
-  const [refreshedApplication] = await refreshApplicationMatches([application]);
-
   const populatedApplication = await Application.populate(
-    refreshedApplication,
+    application,
     JOB_APPLICATION_DETAIL_POPULATE_OPTIONS,
   );
 
@@ -1495,7 +1263,6 @@ const getMyApplicationSummary = async (candidateUserId) => {
 export {
   applyToJob,
   listMyApplications,
-  listManagedApplications,
   listManagedApplicationJobs,
   listManagedJobApplications,
   getManagedJobApplicationDetails,
