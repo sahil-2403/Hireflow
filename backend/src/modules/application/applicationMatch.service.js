@@ -19,35 +19,21 @@ const createApplicationMatchSnapshot = (job, candidate, options = {}) => {
 };
 
 const buildApplicationMatchResponse = (snapshot) => {
-  if (!snapshot) {
-    return null;
-  }
-
   const value =
     typeof snapshot.toObject === "function" ? snapshot.toObject() : snapshot;
 
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-
   return {
-    matchScore: value.matchScore ?? null,
-    matchLabel: value.matchLabel ?? null,
-    confidenceScore: value.confidenceScore ?? null,
-    confidenceLevel: value.confidenceLevel ?? null,
-    breakdown: value.breakdown ?? {},
-    matchedSkills: Array.isArray(value.matchedSkills)
-      ? value.matchedSkills
-      : [],
-    missingSkills: Array.isArray(value.missingSkills)
-      ? value.missingSkills
-      : [],
-    extraCandidateSkills: Array.isArray(value.extraCandidateSkills)
-      ? value.extraCandidateSkills
-      : [],
-    reasons: Array.isArray(value.reasons) ? value.reasons : [],
-    warnings: Array.isArray(value.warnings) ? value.warnings : [],
-    calculatedAt: value.calculatedAt ?? null,
+    matchScore: value.matchScore,
+    matchLabel: value.matchLabel,
+    confidenceScore: value.confidenceScore,
+    confidenceLevel: value.confidenceLevel,
+    breakdown: value.breakdown,
+    matchedSkills: value.matchedSkills,
+    missingSkills: value.missingSkills,
+    extraCandidateSkills: value.extraCandidateSkills,
+    reasons: value.reasons,
+    warnings: value.warnings,
+    calculatedAt: value.calculatedAt,
   };
 };
 
