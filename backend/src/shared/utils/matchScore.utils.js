@@ -1,7 +1,5 @@
 import crypto from "crypto";
 
-export const MATCH_ENGINE_VERSION = "1.0.0";
-
 export const MATCH_SCORE_WEIGHTS = Object.freeze({
   skills: 50,
   title: 15,
@@ -129,8 +127,6 @@ const normalizeTextArray = (values, normalizer = normalizeMatchText) =>
       .filter(Boolean),
   ).sort();
 
-const normalizeUrl = (value) => (hasText(value) ? value.trim() : null);
-
 const removeEmptyValues = (object) =>
   Object.fromEntries(
     Object.entries(object).filter(([, value]) => {
@@ -161,36 +157,6 @@ export const buildJobMatchSignature = (job) => {
       workplaceType: normalizeMatchText(job.workplaceType),
       experienceLevel: normalizeMatchText(job.experienceLevel),
       status: normalizeMatchText(job.status),
-    }),
-  );
-};
-
-export const buildCandidateMatchSignature = (candidate) => {
-  if (!isObject(candidate)) {
-    throw new TypeError(
-      "buildCandidateMatchSignature requires a candidate object",
-    );
-  }
-
-  return hashNormalizedObject(
-    removeEmptyValues({
-      headline: normalizeMatchText(candidate.headline),
-      summary: normalizeMatchText(candidate.summary),
-      skills: normalizeTextArray(candidate.skills, normalizeSkillKey),
-      experienceLevel: normalizeMatchText(candidate.experienceLevel),
-      location: normalizeMatchText(candidate.location),
-      resumeUrl: normalizeUrl(candidate.resumeUrl),
-      linkedinUrl: normalizeUrl(candidate.linkedinUrl),
-      githubUrl: normalizeUrl(candidate.githubUrl),
-      portfolioUrl: normalizeUrl(candidate.portfolioUrl),
-      targetJobTitles: normalizeTextArray(candidate.targetJobTitles),
-      preferredLocations: normalizeTextArray(candidate.preferredLocations),
-      preferredWorkplaceTypes: normalizeTextArray(
-        candidate.preferredWorkplaceTypes,
-      ),
-      preferredEmploymentTypes: normalizeTextArray(
-        candidate.preferredEmploymentTypes,
-      ),
     }),
   );
 };
