@@ -407,7 +407,7 @@ const applicationSchema = new mongoose.Schema(
 
     matchSnapshot: {
       type: matchSnapshotSchema,
-      default: null,
+      required: true,
       select: false,
     },
 
