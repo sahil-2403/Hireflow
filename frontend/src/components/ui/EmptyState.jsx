@@ -51,19 +51,6 @@ const EmptyState = ({
       return iconValue;
     }
 
-    /*
-     * Keep compatibility with legacy pages
-     * that still pass emoji or text icons.
-     */
-    if (typeof iconValue === "string" || typeof iconValue === "number") {
-      return iconValue;
-    }
-
-    /*
-     * Lucide icons are React forwardRef
-     * components and can be represented as
-     * objects rather than normal functions.
-     */
     const IconComponent = iconValue;
 
     return <IconComponent className={sizeClasses.icon} aria-hidden="true" />;
