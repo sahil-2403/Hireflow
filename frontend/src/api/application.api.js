@@ -17,14 +17,6 @@ const applyToJob = async (jobId, applicationData) => {
   return response.data;
 };
 
-const listManagedApplications = async (params = {}) => {
-  const response = await apiClient.get("/applications/manage", {
-    params,
-  });
-
-  return response.data;
-};
-
 const listManagedApplicationJobs = async (params = {}) => {
   const response = await apiClient.get("/applications/manage/jobs", {
     params,
@@ -83,7 +75,6 @@ const getMyApplicationSummary = async () => {
 export {
   listMyApplications,
   applyToJob,
-  listManagedApplications,
   listManagedApplicationJobs,
   listManagedJobApplications,
   getManagedJobApplicationDetails,
