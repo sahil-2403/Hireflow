@@ -28,7 +28,7 @@ const authenticate = asyncHandler(async (req, res, next) => {
     throw new ApiError(403, "This account has been deactivated");
   }
 
-  if (Number(decoded.tokenVersion) !== Number(user.tokenVersion ?? 0)) {
+  if (Number(decoded.tokenVersion) !== Number(user.tokenVersion)) {
     throw new ApiError(401, "This session has been revoked");
   }
 
