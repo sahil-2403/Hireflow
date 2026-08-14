@@ -396,9 +396,11 @@ const getTopApplicantsByLatestJobs = async (userId, role, requestedLimit) => {
 
     const existingApplication = applicationsByJobId.get(jobId);
 
-    const currentScore = application.matchSnapshot?.matchScore ?? -1;
+    const currentScore = application.matchSnapshot.matchScore;
 
-    const existingScore = existingApplication?.matchSnapshot?.matchScore ?? -1;
+    const existingScore = existingApplication
+      ? existingApplication.matchSnapshot.matchScore
+      : -1;
 
     const shouldReplace =
       !existingApplication ||
@@ -453,13 +455,11 @@ const getTopApplicantsByLatestJobs = async (userId, role, requestedLimit) => {
               }
             : null,
 
-          match: topApplication.matchSnapshot
-            ? {
-                matchScore: topApplication.matchSnapshot.matchScore,
-                matchLabel: topApplication.matchSnapshot.matchLabel,
-                confidenceLevel: topApplication.matchSnapshot.confidenceLevel,
-              }
-            : null,
+          match: {
+            matchScore: topApplication.matchSnapshot.matchScore,
+            matchLabel: topApplication.matchSnapshot.matchLabel,
+            confidenceLevel: topApplication.matchSnapshot.confidenceLevel,
+          },
         },
       };
     })
