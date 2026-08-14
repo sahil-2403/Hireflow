@@ -27,20 +27,6 @@ const listMyApplications = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Applications fetched successfully", result));
 });
 
-const listManagedApplications = asyncHandler(async (req, res) => {
-  const result = await applicationService.listManagedApplications(
-    req.user.id,
-    req.user.role,
-    req.query,
-  );
-
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, "Managed applications fetched successfully", result),
-    );
-});
-
 const listManagedApplicationJobs = asyncHandler(async (req, res) => {
   const result = await applicationService.listManagedApplicationJobs(
     req.user.id,
@@ -137,7 +123,6 @@ const getMyApplicationSummary = asyncHandler(async (req, res) => {
 export {
   applyToJob,
   listMyApplications,
-  listManagedApplications,
   listManagedApplicationJobs,
   listManagedJobApplications,
   getManagedJobApplicationDetails,

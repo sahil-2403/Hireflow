@@ -1,7 +1,5 @@
 import {
-  MATCH_ENGINE_VERSION,
   MATCH_SCORE_WEIGHTS,
-  buildCandidateMatchSignature,
   buildJobMatchSignature,
   buildSkillMap,
   calculateTextSimilarity,
@@ -15,9 +13,7 @@ import {
 } from "../utils/matchScore.utils.js";
 
 export {
-  MATCH_ENGINE_VERSION,
   MATCH_SCORE_WEIGHTS,
-  buildCandidateMatchSignature,
   buildJobMatchSignature,
   getConfidenceLevel,
   getMatchLabel,
@@ -279,9 +275,6 @@ const calculateProfileMatch = (job, candidate, calculatedAt) => {
     extraCandidateSkills: skills.extraCandidateSkills,
     reasons: buildReasons({ skills, title, experience, location }),
     warnings: [],
-    jobSignature: buildJobMatchSignature(job),
-    candidateSignature: buildCandidateMatchSignature(candidate),
-    engineVersion: MATCH_ENGINE_VERSION,
     calculatedAt: timestamp,
   };
 };

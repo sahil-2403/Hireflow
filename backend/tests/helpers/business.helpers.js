@@ -77,9 +77,27 @@ const createOpenJob = async ({
   });
 };
 
+const buildTestMatchSnapshot = (overrides = {}) => {
+  return {
+    matchScore: 70,
+    matchLabel: "Strong match",
+    confidenceScore: 80,
+    confidenceLevel: "high",
+    breakdown: {},
+    matchedSkills: [],
+    missingSkills: [],
+    extraCandidateSkills: [],
+    reasons: [],
+    warnings: [],
+    calculatedAt: new Date(),
+    ...overrides,
+  };
+};
+
 export {
   createCompanyForOwner,
   createRecruiterProfile,
   createCandidateProfile,
   createOpenJob,
+  buildTestMatchSnapshot,
 };

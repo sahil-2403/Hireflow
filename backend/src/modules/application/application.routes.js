@@ -14,7 +14,6 @@ import {
 import {
   applyToJob,
   listMyApplications,
-  listManagedApplications,
   listManagedApplicationJobs,
   listManagedJobApplications,
   getMyApplicationSummary,
@@ -154,7 +153,6 @@ const router = express.Router();
  *
  *     ApplicationMatch:
  *       type: object
- *       nullable: true
  *       required:
  *         - matchScore
  *         - matchLabel
@@ -221,7 +219,6 @@ const router = express.Router();
  *
  *     ApplicationListMatch:
  *       type: object
- *       nullable: true
  *       required:
  *         - matchScore
  *         - matchLabel
@@ -459,122 +456,6 @@ const router = express.Router();
  *           example: 12
  *         statusCounts:
  *           $ref: "#/components/schemas/ApplicationStatusCounts"
- *
- *     ManagedApplicationJobSummary:
- *       type: object
- *       required:
- *         - _id
- *         - title
- *         - status
- *       properties:
- *         _id:
- *           $ref: "#/components/schemas/ObjectId"
- *         title:
- *           type: string
- *           example: MERN Stack Developer
- *         status:
- *           $ref: "#/components/schemas/JobStatus"
- *
- *     ManagedApplicationCandidate:
- *       type: object
- *       required:
- *         - _id
- *         - firstName
- *         - lastName
- *         - headline
- *         - skills
- *         - experienceLevel
- *         - location
- *         - resumeUrl
- *       properties:
- *         _id:
- *           $ref: "#/components/schemas/ObjectId"
- *         firstName:
- *           type: string
- *           example: Sahil
- *         lastName:
- *           type: string
- *           example: Pawar
- *         headline:
- *           type: string
- *           nullable: true
- *           example: MERN Stack Developer
- *         skills:
- *           type: array
- *           items:
- *             type: string
- *         experienceLevel:
- *           $ref: "#/components/schemas/ExperienceLevel"
- *         location:
- *           type: string
- *           example: Pune, Maharashtra
- *         resumeUrl:
- *           type: string
- *           format: uri
- *           nullable: true
- *
- *     LegacyManagedApplication:
- *       type: object
- *       required:
- *         - _id
- *         - jobId
- *         - candidateId
- *         - candidateUserId
- *         - companyId
- *         - status
- *         - statusHistory
- *         - appliedAt
- *         - match
- *       properties:
- *         _id:
- *           $ref: "#/components/schemas/ObjectId"
- *         jobId:
- *           $ref: "#/components/schemas/ManagedApplicationJobSummary"
- *         candidateId:
- *           $ref: "#/components/schemas/ManagedApplicationCandidate"
- *         candidateUserId:
- *           $ref: "#/components/schemas/ApplicationUserSummary"
- *         companyId:
- *           $ref: "#/components/schemas/ObjectId"
- *         coverLetter:
- *           type: string
- *           nullable: true
- *         resumeUrl:
- *           type: string
- *           format: uri
- *         status:
- *           $ref: "#/components/schemas/ApplicationStatus"
- *         statusHistory:
- *           type: array
- *           items:
- *             $ref: "#/components/schemas/ApplicationStatusHistoryItem"
- *         reviewedBy:
- *           $ref: "#/components/schemas/ApplicationUserSummary"
- *           nullable: true
- *         appliedAt:
- *           type: string
- *           format: date-time
- *         match:
- *           $ref: "#/components/schemas/ApplicationListMatch"
- *         createdAt:
- *           type: string
- *           format: date-time
- *         updatedAt:
- *           type: string
- *           format: date-time
- *
- *     PaginatedManagedApplications:
- *       type: object
- *       required:
- *         - applications
- *         - pagination
- *       properties:
- *         applications:
- *           type: array
- *           items:
- *             $ref: "#/components/schemas/LegacyManagedApplication"
- *         pagination:
- *           $ref: "#/components/schemas/Pagination"
  *
  *     ApplicationJobBestMatch:
  *       type: object
@@ -1238,70 +1119,6 @@ router.get(
  *         $ref: "#/components/responses/InternalServerError"
  */
 router.get("/me", authenticate, authorize(ROLES.CANDIDATE), listMyApplications);
-
-/**
- * @openapi
- * /api/v1/applications/manage:
- *   get:
- *     tags:
- *       - Applications
- *     operationId: listManagedApplications
- *     summary: List company applications
- *     description: |
- *       Returns a paginated cross-job application list for the
- *       authenticated company administrator or active recruiter.
- *
- *       Match snapshots are refreshed when job or candidate matching
- *       information has changed.
- *
- *       Results are sorted by application date.
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - $ref: "#/components/parameters/PageQuery"
- *       - $ref: "#/components/parameters/LimitQuery"
- *       - in: query
- *         name: jobId
- *         required: false
- *         schema:
- *           $ref: "#/components/schemas/ObjectId"
- *         description: Filter applications by job
- *       - in: query
- *         name: status
- *         required: false
- *         schema:
- *           $ref: "#/components/schemas/ApplicationStatus"
- *         description: Filter by application status
- *       - $ref: "#/components/parameters/OrderQuery"
- *     responses:
- *       "200":
- *         description: Paginated company applications returned
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: "#/components/schemas/ApiSuccess"
- *                 - type: object
- *                   properties:
- *                     data:
- *                       $ref: "#/components/schemas/PaginatedManagedApplications"
- *       "400":
- *         $ref: "#/components/responses/BadRequest"
- *       "401":
- *         $ref: "#/components/responses/Unauthorized"
- *       "403":
- *         $ref: "#/components/responses/Forbidden"
- *       "404":
- *         $ref: "#/components/responses/NotFound"
- *       "500":
- *         $ref: "#/components/responses/InternalServerError"
- */
-router.get(
-  "/manage",
-  authenticate,
-  authorize(ROLES.OWNER, ROLES.RECRUITER),
-  listManagedApplications,
-);
 
 /**
  * @openapi

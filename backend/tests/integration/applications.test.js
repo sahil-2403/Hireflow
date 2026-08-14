@@ -24,6 +24,7 @@ import {
   createRecruiterProfile,
   createCandidateProfile,
   createOpenJob,
+  buildTestMatchSnapshot,
 } from "../helpers/business.helpers.js";
 
 const createOwnerData = (suffix) => ({
@@ -348,52 +349,6 @@ describe("Application workflow API", () => {
       .expect(400);
 
     expect(response.body.message).toBe("Invalid application status");
-  });
-
-  test("candidate cannot access managed applications", async () => {
-    const { candidateSession } = await setupApplicationFlow("candmanage");
-
-    const response = await candidateSession.agent
-      .get("/api/v1/applications/manage")
-      .expect(403);
-
-    expect(response.body.message).toBe(
-      "You are not allowed to perform this action",
-    );
-  });
-
-  test("company user can list managed applications for own company", async () => {
-    const { job, candidateSession, recruiterSession } =
-      await setupApplicationFlow("managed");
-
-    await applyToJob({
-      agent: candidateSession.agent,
-      jobId: job._id,
-      coverLetter: "Managed application",
-    });
-
-    const response = await recruiterSession.agent
-      .get("/api/v1/applications/manage")
-      .expect(200);
-
-    expect(response.body.success).toBe(true);
-    expect(response.body.message).toBe(
-      "Managed applications fetched successfully",
-    );
-
-    expect(response.body.data.pagination.total).toBe(1);
-    expect(response.body.data.applications).toHaveLength(1);
-
-    expect(response.body.data.applications[0]).toEqual(
-      expect.objectContaining({
-        status: APPLICATION_STATUS.APPLIED,
-        match: expect.objectContaining({
-          matchScore: expect.any(Number),
-          matchedSkills: expect.any(Array),
-          missingSkills: expect.any(Array),
-        }),
-      }),
-    );
   });
 
   test("company user can list jobs with applications", async () => {
@@ -726,6 +681,7 @@ describe("Application workflow API", () => {
         companyId: company._id,
         resumeUrl: candidateProfile.resumeUrl,
         status: applicationStatuses[index % applicationStatuses.length],
+        matchSnapshot: buildTestMatchSnapshot(),
         appliedAt: new Date(Date.now() - index * 1000),
       }),
     );

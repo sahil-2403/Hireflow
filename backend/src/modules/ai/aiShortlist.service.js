@@ -15,11 +15,6 @@ import Application from "../application/application.model.js";
 import Job from "../job/job.model.js";
 import JobShortlist from "../jobShortlist/jobShortlist.model.js";
 
-import {
-  createApplicationMatchSnapshot,
-  shouldRefreshApplicationMatchSnapshot,
-} from "../application/applicationMatch.service.js";
-
 import { createResumeSignature } from "../resumeAnalysis/resumeAnalysis.service.js";
 
 import { consumeAiUsage, getAiUsageState } from "../aiUsage/aiUsage.service.js";
@@ -117,52 +112,6 @@ const getCompleteEligibleApplications = (applications) => {
   });
 };
 
-const refreshApplicationMatchSnapshots = async ({ applications, job }) => {
-  const updates = [];
-
-  for (const application of applications) {
-    const candidate = application.candidateId;
-
-    if (!candidate) {
-      continue;
-    }
-
-    if (
-      shouldRefreshApplicationMatchSnapshot(
-        application.matchSnapshot,
-        job,
-        candidate,
-      )
-    ) {
-      application.matchSnapshot = createApplicationMatchSnapshot(
-        job,
-        candidate,
-      );
-
-      updates.push({
-        updateOne: {
-          filter: {
-            _id: application._id,
-          },
-          update: {
-            $set: {
-              matchSnapshot: application.matchSnapshot,
-            },
-          },
-        },
-      });
-    }
-  }
-
-  if (updates.length > 0) {
-    await Application.bulkWrite(updates, {
-      ordered: false,
-    });
-  }
-
-  return applications;
-};
-
 const buildRankedCandidate = ({ application, jobSignature }) => {
   const candidate = application.candidateId;
 
@@ -177,28 +126,26 @@ const buildRankedCandidate = ({ application, jobSignature }) => {
   const matchSnapshot = application.matchSnapshot;
 
   const matchScore =
-    resumeReview?.enhancedMatchScore ?? matchSnapshot?.matchScore ?? 0;
+    resumeReview?.enhancedMatchScore ?? matchSnapshot.matchScore;
 
   const matchLabel =
-    resumeReview?.alignmentLevel ||
-    matchSnapshot?.matchLabel ||
-    "Match unavailable";
+    resumeReview?.alignmentLevel || matchSnapshot.matchLabel;
 
   const confidenceScore =
-    resumeReview?.confidenceScore ?? matchSnapshot?.confidenceScore ?? 0;
+    resumeReview?.confidenceScore ?? matchSnapshot.confidenceScore;
 
   const confidenceLevel =
-    resumeReview?.confidenceLevel || matchSnapshot?.confidenceLevel || null;
+    resumeReview?.confidenceLevel || matchSnapshot.confidenceLevel;
 
   const matchedSkills =
     resumeReview?.matchedSkills?.length > 0
       ? resumeReview.matchedSkills
-      : matchSnapshot?.matchedSkills || [];
+      : matchSnapshot.matchedSkills;
 
   const missingSkills =
     resumeReview?.missingSkills?.length > 0
       ? resumeReview.missingSkills
-      : matchSnapshot?.missingSkills || [];
+      : matchSnapshot.missingSkills;
 
   return {
     applicationId: application._id.toString(),
@@ -220,12 +167,6 @@ const buildRankedCandidate = ({ application, jobSignature }) => {
     confidenceLevel,
     matchedSkills,
     missingSkills,
-
-    matchEngineVersion: matchSnapshot?.engineVersion || null,
-
-    matchJobSignature: matchSnapshot?.jobSignature || null,
-
-    matchCandidateSignature: matchSnapshot?.candidateSignature || null,
 
     resumeReview: resumeReview
       ? {
@@ -266,25 +207,12 @@ const buildCandidateSetSignature = ({ jobSignature, candidates }) => {
 
     candidates: candidates.map((candidate) => ({
       applicationId: candidate.applicationId,
-
       candidateId: candidate.candidateId,
-
       applicationStatus: candidate.applicationStatus,
-
       matchScore: candidate.matchScore,
-
       confidenceScore: candidate.confidenceScore,
-
-      matchEngineVersion: candidate.matchEngineVersion,
-
-      matchJobSignature: candidate.matchJobSignature,
-
-      matchCandidateSignature: candidate.matchCandidateSignature,
-
       resumeReviewJobSignature: candidate.resumeReviewJobSignature,
-
       resumeReviewResumeSignature: candidate.resumeReviewResumeSignature,
-
       resumeReviewGeneratedAt: candidate.resumeReviewGeneratedAt,
     })),
   };
@@ -561,11 +489,6 @@ const generateSuggestedShortlist = async ({
     throw new ApiError(400, "No eligible applications found for this job");
   }
 
-  await refreshApplicationMatchSnapshots({
-    applications: completeApplications,
-    job,
-  });
-
   const {
     jobSignature,
     rankedCandidates,
@@ -574,9 +497,7 @@ const generateSuggestedShortlist = async ({
     maxShortlistCandidates,
   } = buildShortlistCandidateContext({
     job,
-
     applications: completeApplications,
-
     requestedLimit,
   });
 

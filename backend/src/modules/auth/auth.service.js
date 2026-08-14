@@ -37,7 +37,7 @@ const buildAuthUserResponse = (user) => {
   };
 };
 
-const getTokenVersion = (user) => Number(user?.tokenVersion ?? 0);
+const getTokenVersion = (user) => Number(user.tokenVersion);
 
 const createAccessToken = (user) => {
   return generateAccessToken({
