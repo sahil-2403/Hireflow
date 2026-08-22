@@ -285,7 +285,6 @@ Hireflow/
 │   │   │   ├── job/
 │   │   │   └── recommendation/
 │   │   ├── shared/
-│   │   ├── scripts/
 │   │   ├── app.js
 │   │   └── server.js
 │   ├── tests/
@@ -470,18 +469,6 @@ Generate test coverage:
 npm run test:coverage
 ```
 
-Seed demo data:
-
-```bash
-npm run seed:demo
-```
-
-Reset and recreate demo data:
-
-```bash
-npm run seed:demo:reset
-```
-
 ### Frontend
 
 Run the development server:
@@ -507,37 +494,6 @@ Preview the production build:
 ```bash
 npm run preview
 ```
-
-## Local Demo Data
-
-The backend includes fictional development fixtures for reviewing each
-role without creating records manually. The seed script refuses to run
-when `NODE_ENV=production` and is intended only for a local database.
-
-From `backend/`, run:
-
-```bash
-npm run seed:demo:reset
-```
-
-Useful local accounts:
-
-| Role              | Email                                |
-| ----------------- | ------------------------------------ |
-| Company admin     | `owner.technova@hireflow.demo`       |
-| Recruiter         | `recruiter.technova1@hireflow.demo`  |
-| Candidate         | `candidate.aarav@hireflow.demo`      |
-| Candidate edge case | `candidate.tina@hireflow.demo`     |
-
-Shared local password:
-
-```text
-Demo@1234
-```
-
-These credentials are development fixtures and are not guaranteed to
-exist in the public production deployment. Use fictional information
-when testing uploads, profiles, résumés, jobs, or applications.
 
 ## Testing
 
