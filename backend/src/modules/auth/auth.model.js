@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 import { hashPassword, comparePassword } from "../../shared/utils/password.js";
-import { ROLES } from "../../config/constants.js";
+import { AUTH_PROVIDERS, ROLES } from "../../config/constants.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -25,9 +25,28 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
-      required: true,
+      required() {
+        return this.authProvider === AUTH_PROVIDERS.LOCAL;
+      },
       minlength: 8,
       select: false,
+    },
+
+    authProvider: {
+      type: String,
+      enum: Object.values(AUTH_PROVIDERS),
+      required: true,
+      default: AUTH_PROVIDERS.LOCAL,
+    },
+
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      required() {
+        return this.authProvider === AUTH_PROVIDERS.GOOGLE;
+      },
     },
 
     role: {
@@ -71,7 +90,7 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.pre("save", async function () {
-  if (!this.isModified("password")) {
+  if (!this.isModified("password") || !this.password) {
     return;
   }
 
