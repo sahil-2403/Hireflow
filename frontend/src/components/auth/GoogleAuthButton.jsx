@@ -66,6 +66,7 @@ const GoogleAuthButton = ({
 
   useEffect(() => {
     let cancelled = false;
+    const buttonElement = buttonRef.current;
 
     if (!GOOGLE_CLIENT_ID) {
       setLoadError("Google sign-in is not configured.");
@@ -76,7 +77,7 @@ const GoogleAuthButton = ({
 
     loadGoogleIdentityServices()
       .then(() => {
-        if (cancelled || !buttonRef.current) {
+        if (cancelled || !buttonElement) {
           return;
         }
 
@@ -89,16 +90,16 @@ const GoogleAuthButton = ({
           },
         });
 
-        buttonRef.current.innerHTML = "";
+        buttonElement.innerHTML = "";
 
-        window.google.accounts.id.renderButton(buttonRef.current, {
+        window.google.accounts.id.renderButton(buttonElement, {
           type: "standard",
           theme: "outline",
           size: "large",
           shape: "rectangular",
           text,
           logo_alignment: "left",
-          width: Math.min(buttonRef.current.clientWidth || 400, 400),
+          width: Math.min(buttonElement.clientWidth || 400, 400),
         });
       })
       .catch(() => {
@@ -110,8 +111,8 @@ const GoogleAuthButton = ({
     return () => {
       cancelled = true;
 
-      if (buttonRef.current) {
-        buttonRef.current.innerHTML = "";
+      if (buttonElement) {
+        buttonElement.innerHTML = "";
       }
     };
   }, [text]);
