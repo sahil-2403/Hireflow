@@ -7,36 +7,48 @@ on:
     paths:
       - .github/workflows/validate-google-auth.yml
 
-jobs:
-  backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-      - working-directory: backend
-        run: npm ci
-      - working-directory: backend
-        run: npm run test:run
+permissions:
+  contents: write
 
-  frontend:
+jobs:
+  validate:
     runs-on: ubuntu-latest
     env:
       VITE_API_BASE_URL: http://localhost:5000/api/v1
       VITE_GOOGLE_CLIENT_ID: test-google-client-id.apps.googleusercontent.com
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: agent/add-google-auth
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - working-directory: frontend
-        run: npm ci
-      - working-directory: frontend
-        run: npm run lint
-      - working-directory: frontend
-        run: npm run build
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Validate backend and frontend
+        id: validation
+        shell: bash
+        run: |
+          set +e
+
+          (cd backend && npm ci && npm run test:run)
+          backend_status=$?
+
+          (cd frontend && npm ci && npm run lint && npm run build)
+          frontend_status=$?
+
+          printf "backend=%s\nfrontend=%s\n" "$backend_status" "$frontend_status" > .google-auth-validation-result
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .google-auth-validation-result
+          git commit -m "Record Google auth validation result"
+          git push origin HEAD:agent/add-google-auth
+
+          if [ "$backend_status" -ne 0 ] || [ "$frontend_status" -ne 0 ]; then
+            exit 1
+          fi
