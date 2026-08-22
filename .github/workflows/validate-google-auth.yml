@@ -1,0 +1,42 @@
+name: Validate Google auth feature
+
+on:
+  push:
+    branches:
+      - agent/add-google-auth
+    paths:
+      - .github/workflows/validate-google-auth.yml
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - working-directory: backend
+        run: npm ci
+      - working-directory: backend
+        run: npm run test:run
+
+  frontend:
+    runs-on: ubuntu-latest
+    env:
+      VITE_API_BASE_URL: http://localhost:5000/api/v1
+      VITE_GOOGLE_CLIENT_ID: test-google-client-id.apps.googleusercontent.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: npm ci
+      - working-directory: frontend
+        run: npm run lint
+      - working-directory: frontend
+        run: npm run build
