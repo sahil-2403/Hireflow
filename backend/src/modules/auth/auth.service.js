@@ -1,9 +1,11 @@
+import { createHash } from "node:crypto";
+
 import User from "./auth.model.js";
 import PasswordResetToken from "./passwordResetToken.model.js";
 import EmailVerificationToken from "./emailVerificationToken.model.js";
 import sendEmail from "../../shared/services/email.service.js";
 import ApiError from "../../shared/errors/ApiError.js";
-import { ROLES } from "../../config/constants.js";
+import { AUTH_PROVIDERS, ROLES } from "../../config/constants.js";
 import { generateRandomToken, hashToken } from "../../shared/utils/token.js";
 import {
   generateAccessToken,
@@ -18,6 +20,7 @@ import {
 
 import buildVerificationEmail from "../../shared/email/templates/verificationEmail.template.js";
 import buildPasswordResetEmail from "../../shared/email/templates/passwordResetEmail.template.js";
+import { verifyGoogleCredential } from "./googleAuth.service.js";
 
 const EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS =
   Number(process.env.EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS) || 24;
@@ -52,6 +55,29 @@ const createRefreshToken = (user) => {
     userId: user._id.toString(),
     tokenVersion: getTokenVersion(user),
   });
+};
+
+const buildAuthenticatedResult = (user, message) => {
+  return {
+    user: buildAuthUserResponse(user),
+    accessToken: createAccessToken(user),
+    refreshToken: createRefreshToken(user),
+    message,
+  };
+};
+
+const buildGoogleUsername = (email, googleId) => {
+  const emailPrefix = email
+    .split("@")[0]
+    .replace(/[^a-zA-Z0-9_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toLowerCase();
+
+  const base = emailPrefix.length >= 3 ? emailPrefix : "google_user";
+  const suffix = createHash("sha256").update(googleId).digest("hex").slice(0, 8);
+
+  return `${base.slice(0, 21)}_${suffix}`;
 };
 
 const resetPassword = async (token, password) => {
@@ -91,7 +117,7 @@ const forgotPassword = async (email) => {
 
   const user = await User.findOne({ email });
 
-  if (!user) {
+  if (!user || user.authProvider !== AUTH_PROVIDERS.LOCAL) {
     return {
       message: genericMessage,
     };
@@ -244,6 +270,10 @@ const loginUser = async ({ email, password }) => {
     throw new ApiError(403, "This account has been deactivated");
   }
 
+  if (user.authProvider !== AUTH_PROVIDERS.LOCAL) {
+    throw new ApiError(401, "Please sign in with Google");
+  }
+
   if (!user.isEmailVerified) {
     throw new ApiError(403, "Please verify your email before logging in");
   }
@@ -254,12 +284,29 @@ const loginUser = async ({ email, password }) => {
     throw new ApiError(401, "Invalid email or password");
   }
 
-  return {
-    user: buildAuthUserResponse(user),
-    accessToken: createAccessToken(user),
-    refreshToken: createRefreshToken(user),
-    message: "Login successful",
-  };
+  return buildAuthenticatedResult(user, "Login successful");
+};
+
+const loginWithGoogle = async ({ credential }) => {
+  const googleIdentity = await verifyGoogleCredential(credential);
+
+  const user = await User.findOne({
+    googleId: googleIdentity.googleId,
+    authProvider: AUTH_PROVIDERS.GOOGLE,
+  });
+
+  if (!user) {
+    throw new ApiError(
+      401,
+      "Google account is not registered. Please create an account first.",
+    );
+  }
+
+  if (!user.isActive) {
+    throw new ApiError(403, "This account has been deactivated");
+  }
+
+  return buildAuthenticatedResult(user, "Google login successful");
 };
 
 const verifyEmail = async (token) => {
@@ -390,6 +437,54 @@ const registerUser = async ({
   };
 };
 
+const registerWithGoogle = async ({
+  credential,
+  role = ROLES.CANDIDATE,
+}) => {
+  if (!PUBLIC_REGISTRATION_ROLES.includes(role)) {
+    throw new ApiError(
+      400,
+      "Registration role must be either candidate or owner",
+    );
+  }
+
+  const googleIdentity = await verifyGoogleCredential(credential);
+
+  const existingGoogleUser = await User.findOne({
+    googleId: googleIdentity.googleId,
+  });
+
+  if (existingGoogleUser) {
+    throw new ApiError(
+      409,
+      "This Google account is already registered. Please sign in instead.",
+    );
+  }
+
+  const existingEmailUser = await User.findOne({
+    email: googleIdentity.email,
+  });
+
+  if (existingEmailUser) {
+    throw new ApiError(
+      409,
+      "An account already exists with this email. Please sign in using your existing login method.",
+    );
+  }
+
+  const user = await User.create({
+    username: buildGoogleUsername(googleIdentity.email, googleIdentity.googleId),
+    email: googleIdentity.email,
+    authProvider: AUTH_PROVIDERS.GOOGLE,
+    googleId: googleIdentity.googleId,
+    role,
+    isEmailVerified: true,
+    profilePhotoUrl: googleIdentity.profilePhotoUrl,
+  });
+
+  return buildAuthenticatedResult(user, "Google registration successful");
+};
+
 const sendVerificationEmail = async (user, rawToken) => {
   const verificationUrl =
     `${process.env.CLIENT_URL}` + `/verify-email/${rawToken}`;
@@ -443,8 +538,10 @@ const resendVerificationEmail = async (email) => {
 
 export {
   registerUser,
+  registerWithGoogle,
   verifyEmail,
   loginUser,
+  loginWithGoogle,
   refreshAccessToken,
   logoutUser,
   logoutAllSessions,
