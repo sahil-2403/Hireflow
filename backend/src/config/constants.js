@@ -4,6 +4,11 @@ export const ROLES = Object.freeze({
   CANDIDATE: "candidate",
 });
 
+export const AUTH_PROVIDERS = Object.freeze({
+  LOCAL: "local",
+  GOOGLE: "google",
+});
+
 export const APPLICATION_STATUS = Object.freeze({
   APPLIED: "applied",
   SCREENING: "screening",
