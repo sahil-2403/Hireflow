@@ -35,6 +35,11 @@ const publicRegistrationRoleSchema = z
   })
   .default(ROLES.CANDIDATE);
 
+const googleCredentialSchema = z
+  .string()
+  .trim()
+  .min(1, "Google credential is required");
+
 export const registerSchema = z.object({
   username: usernameSchema,
   email: emailSchema,
@@ -42,9 +47,18 @@ export const registerSchema = z.object({
   role: publicRegistrationRoleSchema,
 });
 
+export const googleRegisterSchema = z.object({
+  credential: googleCredentialSchema,
+  role: publicRegistrationRoleSchema,
+});
+
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, "Password is required"),
+});
+
+export const googleLoginSchema = z.object({
+  credential: googleCredentialSchema,
 });
 
 export const forgotPasswordSchema = z.object({
