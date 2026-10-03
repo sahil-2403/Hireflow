@@ -30,6 +30,21 @@ const loginUser = asyncHandler(async (req, res) => {
   );
 });
 
+const loginWithGoogle = asyncHandler(async (req, res) => {
+  const result = await authService.loginWithGoogle(req.body);
+
+  setAuthCookies(res, {
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, result.message, {
+      user: result.user,
+    }),
+  );
+});
+
 const verifyEmail = asyncHandler(async (req, res) => {
   const result = await authService.verifyEmail(req.params.token);
 
@@ -44,6 +59,21 @@ const registerUser = asyncHandler(async (req, res) => {
       userId: result.userId,
       email: result.email,
       role: result.role,
+    }),
+  );
+});
+
+const registerWithGoogle = asyncHandler(async (req, res) => {
+  const result = await authService.registerWithGoogle(req.body);
+
+  setAuthCookies(res, {
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+  });
+
+  return res.status(201).json(
+    new ApiResponse(201, result.message, {
+      user: result.user,
     }),
   );
 });
@@ -128,8 +158,10 @@ const getCsrfToken = asyncHandler(async (req, res) => {
 
 export {
   registerUser,
+  registerWithGoogle,
   verifyEmail,
   loginUser,
+  loginWithGoogle,
   refreshAccessToken,
   logoutUser,
   logoutAllSessions,

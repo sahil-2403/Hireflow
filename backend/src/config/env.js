@@ -7,6 +7,7 @@ const requiredEnvVars = [
   "REFRESH_TOKEN_EXPIRY",
   "API_BASE_URL",
   "CLIENT_URL",
+  "GOOGLE_CLIENT_ID",
   "BREVO_API_KEY",
   "EMAIL_FROM_NAME",
   "EMAIL_FROM_ADDRESS",

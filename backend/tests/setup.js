@@ -16,6 +16,8 @@ process.env.REFRESH_TOKEN_SECRET =
 process.env.REFRESH_TOKEN_EXPIRY = "7d";
 process.env.REFRESH_TOKEN_EXPIRY_DAYS = "7";
 
+process.env.GOOGLE_CLIENT_ID = "test-google-client-id.apps.googleusercontent.com";
+
 process.env.EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS = "24";
 process.env.PASSWORD_RESET_TOKEN_EXPIRY_MINUTES = "15";
 

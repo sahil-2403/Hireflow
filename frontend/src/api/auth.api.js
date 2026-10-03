@@ -6,8 +6,25 @@ const login = async (credentials) => {
   return response.data;
 };
 
+const googleLogin = async (credential) => {
+  const response = await apiClient.post("/auth/google/login", {
+    credential,
+  });
+
+  return response.data;
+};
+
 const registerUser = async (registrationData) => {
   const response = await apiClient.post("/auth/register", registrationData);
+
+  return response.data;
+};
+
+const googleRegister = async ({ credential, role }) => {
+  const response = await apiClient.post("/auth/google/register", {
+    credential,
+    role,
+  });
 
   return response.data;
 };
@@ -88,7 +105,9 @@ const logoutAllDevices = async () => {
 
 export {
   login,
+  googleLogin,
   registerUser,
+  googleRegister,
   resendVerificationEmail,
   forgotPassword,
   resetPassword,

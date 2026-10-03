@@ -8,10 +8,11 @@ import { useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { login } from "../../api/auth.api";
+import { googleLogin, login } from "../../api/auth.api";
 
 import AuthPageShell from "../../components/auth/AuthPageShell";
 import AuthVisualPanel from "../../components/auth/AuthVisualPanel";
+import GoogleAuthButton from "../../components/auth/GoogleAuthButton";
 
 import PasswordField from "../../components/common/PasswordField";
 
@@ -36,6 +37,7 @@ const LoginPage = () => {
   const { signIn } = useAuth();
 
   const [apiError, setApiError] = useState("");
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   const navigationMessage = location.state?.message || "";
 
@@ -70,33 +72,49 @@ const LoginPage = () => {
     });
   }, [location.pathname, navigationMessage, navigate]);
 
+  const completeSignIn = (user) => {
+    signIn(user);
+
+    if (user.role === ROLES.CANDIDATE) {
+      navigate("/candidate/dashboard", {
+        replace: true,
+      });
+
+      return;
+    }
+
+    if (user.role === ROLES.RECRUITER || user.role === ROLES.OWNER) {
+      navigate("/company/dashboard", {
+        replace: true,
+      });
+
+      return;
+    }
+
+    setApiError("Your account role is not supported.");
+  };
+
+  const handleGoogleCredential = async (credential) => {
+    setApiError("");
+    setIsGoogleSubmitting(true);
+
+    try {
+      const result = await googleLogin(credential);
+      completeSignIn(result.data.user);
+    } catch (error) {
+      const normalizedError = getApiError(error);
+      setApiError(normalizedError.message);
+    } finally {
+      setIsGoogleSubmitting(false);
+    }
+  };
+
   const onSubmit = async (formData) => {
     setApiError("");
 
     try {
       const result = await login(formData);
-
-      signIn(result.data.user);
-
-      const role = result.data.user.role;
-
-      if (role === ROLES.CANDIDATE) {
-        navigate("/candidate/dashboard", {
-          replace: true,
-        });
-
-        return;
-      }
-
-      if (role === ROLES.RECRUITER || role === ROLES.OWNER) {
-        navigate("/company/dashboard", {
-          replace: true,
-        });
-
-        return;
-      }
-
-      setApiError("Your account role is not supported.");
+      completeSignIn(result.data.user);
     } catch (error) {
       const normalizedError = getApiError(error);
 
@@ -130,8 +148,31 @@ const LoginPage = () => {
         </Alert>
       )}
 
+      <div className="mt-6 grid gap-2">
+        <GoogleAuthButton
+          text="signin_with"
+          onCredential={handleGoogleCredential}
+          disabled={isSubmitting || isGoogleSubmitting}
+        />
+
+        {isGoogleSubmitting && (
+          <p className="flex items-center justify-center gap-2 text-xs text-slate-500">
+            <LoaderCircle className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+            Signing in with Google...
+          </p>
+        )}
+      </div>
+
+      <div className="mt-5 flex items-center gap-3" aria-hidden="true">
+        <div className="h-px flex-1 bg-slate-200" />
+        <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
+          or continue with email
+        </span>
+        <div className="h-px flex-1 bg-slate-200" />
+      </div>
+
       <form
-        className="mt-6 grid gap-4"
+        className="mt-5 grid gap-4"
         onSubmit={handleSubmit(onSubmit)}
         noValidate
       >
@@ -173,7 +214,7 @@ const LoginPage = () => {
 
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isGoogleSubmitting}
           fullWidth
           size="lg"
           className="mt-1"

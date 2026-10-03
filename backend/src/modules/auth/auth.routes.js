@@ -8,7 +8,9 @@ import { uploadProfilePhoto as uploadProfilePhotoFile } from "../../shared/middl
 
 import {
   registerSchema,
+  googleRegisterSchema,
   loginSchema,
+  googleLoginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
   resendVerificationSchema,
@@ -16,8 +18,10 @@ import {
 
 import {
   registerUser,
+  registerWithGoogle,
   verifyEmail,
   loginUser,
+  loginWithGoogle,
   refreshAccessToken,
   logoutUser,
   logoutAllSessions,
@@ -60,6 +64,29 @@ router.get("/csrf-token", getCsrfToken);
  *         $ref: "#/components/responses/Conflict"
  */
 router.post("/register", authLimiter, validate(registerSchema), registerUser);
+
+/**
+ * @openapi
+ * /api/v1/auth/google/register:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Register a candidate or company admin with Google
+ *     security:
+ *       - csrfToken: []
+ *     responses:
+ *       "201":
+ *         description: Google account registered and authenticated
+ *       "401":
+ *         $ref: "#/components/responses/Unauthorized"
+ *       "409":
+ *         $ref: "#/components/responses/Conflict"
+ */
+router.post(
+  "/google/register",
+  authLimiter,
+  validate(googleRegisterSchema),
+  registerWithGoogle,
+);
 
 /**
  * @openapi
@@ -118,6 +145,29 @@ router.post(
  *         $ref: "#/components/responses/Forbidden"
  */
 router.post("/login", authLimiter, validate(loginSchema), loginUser);
+
+/**
+ * @openapi
+ * /api/v1/auth/google/login:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Log in with Google
+ *     security:
+ *       - csrfToken: []
+ *     responses:
+ *       "200":
+ *         description: Google login successful
+ *       "401":
+ *         $ref: "#/components/responses/Unauthorized"
+ *       "403":
+ *         $ref: "#/components/responses/Forbidden"
+ */
+router.post(
+  "/google/login",
+  authLimiter,
+  validate(googleLoginSchema),
+  loginWithGoogle,
+);
 
 /**
  * @openapi

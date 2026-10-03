@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { Building2, LoaderCircle, UserRound } from "lucide-react";
 
@@ -8,7 +8,7 @@ import { useForm, useWatch } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { registerUser } from "../../api/auth.api";
+import { googleRegister, registerUser } from "../../api/auth.api";
 
 import PasswordField from "../../components/common/PasswordField";
 
@@ -17,10 +17,13 @@ import TextInput from "../../components/ui/TextInput";
 
 import AuthPageShell from "../../components/auth/AuthPageShell";
 import AuthVisualPanel from "../../components/auth/AuthVisualPanel";
+import GoogleAuthButton from "../../components/auth/GoogleAuthButton";
 
 import { ROLES } from "../../features/auth/auth.constants";
 
 import { registerSchema } from "../../features/auth/auth.schemas";
+
+import useAuth from "../../hooks/useAuth";
 
 import getApiError from "../../utils/getApiError";
 import notify from "../../utils/notify";
@@ -69,6 +72,8 @@ const getRoleButtonClassName = (isSelected) => {
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   const {
     register,
@@ -108,6 +113,37 @@ const RegisterPage = () => {
       shouldTouch: true,
       shouldValidate: true,
     });
+  };
+
+  const navigateToDashboard = (role) => {
+    navigate(
+      role === ROLES.OWNER ? "/company/dashboard" : "/candidate/dashboard",
+      {
+        replace: true,
+      },
+    );
+  };
+
+  const handleGoogleCredential = async (credential) => {
+    setIsGoogleSubmitting(true);
+
+    try {
+      const result = await googleRegister({
+        credential,
+        role: selectedRole,
+      });
+
+      signIn(result.data.user);
+      navigateToDashboard(result.data.user.role);
+    } catch (error) {
+      const normalizedError = getApiError(error);
+
+      notify.error("Could not create account with Google", {
+        description: normalizedError.message,
+      });
+    } finally {
+      setIsGoogleSubmitting(false);
+    }
   };
 
   const applyBackendFieldErrors = (backendErrors = []) => {
@@ -253,6 +289,29 @@ const RegisterPage = () => {
           )}
         </fieldset>
 
+        <div className="grid gap-2">
+          <GoogleAuthButton
+            text="signup_with"
+            onCredential={handleGoogleCredential}
+            disabled={isSubmitting || isGoogleSubmitting}
+          />
+
+          {isGoogleSubmitting && (
+            <p className="flex items-center justify-center gap-2 text-xs text-slate-500">
+              <LoaderCircle className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              Creating your account with Google...
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3" aria-hidden="true">
+          <div className="h-px flex-1 bg-slate-200" />
+          <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            or continue with email
+          </span>
+          <div className="h-px flex-1 bg-slate-200" />
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <TextInput
             id="username"
@@ -296,7 +355,12 @@ const RegisterPage = () => {
           />
         </div>
 
-        <Button type="submit" disabled={isSubmitting} fullWidth size="lg">
+        <Button
+          type="submit"
+          disabled={isSubmitting || isGoogleSubmitting}
+          fullWidth
+          size="lg"
+        >
           {isSubmitting && (
             <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
           )}

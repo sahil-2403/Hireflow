@@ -16,13 +16,15 @@ const AuthInterceptor = ({ children }) => {
 
         const isRefreshRequest = requestUrl?.includes("/auth/refresh-token");
         const isLoginRequest = requestUrl?.includes("/auth/login");
+        const isGoogleAuthRequest = requestUrl?.includes("/auth/google/");
 
         if (
           error.response?.status === 401 &&
           originalRequest &&
           !originalRequest._authRetry &&
           !isRefreshRequest &&
-          !isLoginRequest
+          !isLoginRequest &&
+          !isGoogleAuthRequest
         ) {
           originalRequest._authRetry = true;
 
