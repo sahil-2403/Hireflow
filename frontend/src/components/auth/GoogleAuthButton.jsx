@@ -96,7 +96,7 @@ const GoogleAuthButton = ({
           type: "standard",
           theme: "outline",
           size: "large",
-          shape: "rectangular",
+          shape: "pill",
           text,
           logo_alignment: "left",
           width: Math.min(buttonElement.clientWidth || 400, 400),
